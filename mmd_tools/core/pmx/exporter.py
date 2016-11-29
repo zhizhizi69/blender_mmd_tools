@@ -20,9 +20,9 @@ from mmd_tools.utils import saferelpath
 
 class _Vertex:
     def __init__(self, co, groups, offsets, old_index, edge_scale, vertex_order):
-        self.co = copy.deepcopy(co)
-        self.groups = copy.copy(groups) # [(group_number, weight), ...]
-        self.offsets = copy.deepcopy(offsets)
+        self.co = co
+        self.groups = groups # [(group_number, weight), ...]
+        self.offsets = offsets
         self.old_index = old_index # used for exporting uv morphs
         self.edge_scale = edge_scale
         self.vertex_order = vertex_order # used for controlling vertex order
@@ -35,7 +35,7 @@ class _Face:
     def __init__(self, vertices):
         ''' Temporary Face Class
         '''
-        self.vertices = copy.copy(vertices)
+        self.vertices = vertices
 
 class _Mesh:
     def __init__(self, mesh_data, material_faces, shape_key_names, vertex_group_names, materials):
@@ -498,7 +498,7 @@ class __PmxExporter:
             if bone.is_mmd_shadow_bone:
                 continue
             for c in bone.constraints:
-                if c.type == 'IK'and not c.mute:
+                if c.type == 'IK' and not c.mute:
                     logging.debug('  Found IK constraint.')
                     ik_pose_bone = pose_bones[c.subtarget]
                     if ik_pose_bone.mmd_shadow_bone_type == 'IK_TARGET':
@@ -777,6 +777,8 @@ class __PmxExporter:
         rigid_map = {}
         rigid_cnt = 0
         for obj in rigid_bodies:
+            t, r, s = obj.matrix_world.decompose()
+            r = r.to_euler('YXZ')
             rb = obj.rigid_body
             if rb is None:
                 logging.warning(' * Settings of rigid body "%s" not found, skipped!', obj.name)
@@ -785,8 +787,8 @@ class __PmxExporter:
             mmd_rigid = obj.mmd_rigid
             p_rigid.name = mmd_rigid.name_j
             p_rigid.name_e = mmd_rigid.name_e
-            p_rigid.location = mathutils.Vector(obj.location) * self.__scale * self.TO_PMX_MATRIX
-            p_rigid.rotation = mathutils.Vector(obj.rotation_euler) * self.TO_PMX_MATRIX * -1
+            p_rigid.location = mathutils.Vector(t) * self.TO_PMX_MATRIX * self.__scale
+            p_rigid.rotation = mathutils.Vector(r) * self.TO_PMX_MATRIX * -1
             p_rigid.mode = int(mmd_rigid.type)
 
             rigid_shape = mmd_rigid.shape
@@ -824,6 +826,8 @@ class __PmxExporter:
 
     def __exportJoints(self, joints, rigid_map):
         for joint in joints:
+            t, r, s = joint.matrix_world.decompose()
+            r = r.to_euler('YXZ')
             rbc = joint.rigid_body_constraint
             if rbc is None:
                 logging.warning(' * Settings of joint "%s" not found, skipped!', joint.name)
@@ -832,8 +836,8 @@ class __PmxExporter:
             mmd_joint = joint.mmd_joint
             p_joint.name = mmd_joint.name_j
             p_joint.name_e = mmd_joint.name_e
-            p_joint.location = (mathutils.Vector(joint.location) * self.TO_PMX_MATRIX * self.__scale).xyz
-            p_joint.rotation = (mathutils.Vector(joint.rotation_euler) * self.TO_PMX_MATRIX * -1).xyz
+            p_joint.location = mathutils.Vector(t) * self.TO_PMX_MATRIX * self.__scale
+            p_joint.rotation = mathutils.Vector(r) * self.TO_PMX_MATRIX * -1
             p_joint.src_rigid = rigid_map.get(rbc.object1, -1)
             p_joint.dest_rigid = rigid_map.get(rbc.object2, -1)
             p_joint.maximum_location = (mathutils.Vector([
@@ -870,9 +874,9 @@ class __PmxExporter:
                 i.uv = uv
                 i.normal = normal
                 return i
-            elif (i.uv[0] - uv[0])**2 + (i.uv[1] - uv[1])**2 < 0.0001 and (normal - i.normal).length < 0.01:
+            elif (i.uv - uv).length < 0.001 and (normal - i.normal).length < 0.01:
                 return i
-        n = copy.deepcopy(i)
+        n = copy.copy(i) # shadow copy should be fine
         n.uv = uv
         n.normal = normal
         vertices.append(n)
@@ -1046,7 +1050,7 @@ class __PmxExporter:
             uv_data = uv_data.data
         else:
             class _DummyUV:
-                uv1 = uv2 = uv3 = (0, 0)
+                uv1 = uv2 = uv3 = mathutils.Vector((0, 0))
             uv_data = iter(lambda: _DummyUV, None)
         for face, uv in zip(base_mesh.tessfaces, uv_data):
             if len(face.vertices) != 3:

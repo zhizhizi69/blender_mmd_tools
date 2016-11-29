@@ -6,6 +6,8 @@ import unittest
 
 import bpy
 
+from math import pi
+from mathutils import Euler
 from mathutils import Vector
 from mmd_tools.core import pmx
 from mmd_tools.core.model import Model
@@ -45,6 +47,11 @@ class TestPmxExporter(unittest.TestCase):
 
     def __vector_error(self, vec0, vec1):
         return (Vector(vec0) - Vector(vec1)).length
+
+    def __quaternion_error(self, quat0, quat1):
+        angle = quat0.rotation_difference(quat1).angle % pi
+        assert(angle >= 0)
+        return min(angle, pi-angle)
 
     #********************************************
     # Header & Informations
@@ -125,7 +132,7 @@ class TestPmxExporter(unittest.TestCase):
         result_table = sorted(result_materials, key=lambda x: x.name)
         for mat0, mat1 in zip(source_table, result_table):
             msg = mat0.name
-            self.assertEqual(mat0.name, mat1.name)
+            self.assertEqual(mat0.name, mat1.name, msg)
             self.assertEqual(mat0.name_e or mat0.name, mat1.name_e, msg)
             self.assertEqual(mat0.diffuse, mat1.diffuse, msg)
             self.assertEqual(mat0.specular, mat1.specular, msg)
@@ -219,7 +226,7 @@ class TestPmxExporter(unittest.TestCase):
 
         for bone0, bone1 in zip(source_bones, result_bones):
             msg = bone0.name
-            self.assertEqual(bone0.name, bone1.name)
+            self.assertEqual(bone0.name, bone1.name, msg)
             self.assertEqual(bone0.name_e or bone0.name, bone1.name_e, msg)
             self.assertLess(self.__vector_error(bone0.location, bone1.location), 1e-6, msg)
 
@@ -315,7 +322,7 @@ class TestPmxExporter(unittest.TestCase):
         result_table = sorted(result_rigids, key=lambda x: x.name)
         for rigid0, rigid1 in zip(source_table, result_table):
             msg = rigid0.name
-            self.assertEqual(rigid0.name, rigid1.name)
+            self.assertEqual(rigid0.name, rigid1.name, msg)
             self.assertEqual(rigid0.name_e, rigid1.name_e, msg)
 
             bone0 = self.__get_bone_name(rigid0.bone, source_bones)
@@ -334,7 +341,9 @@ class TestPmxExporter(unittest.TestCase):
                 self.assertLess(self.__vector_error(rigid0.size[0:2], rigid1.size[0:2]), 1e-6, msg)
 
             self.assertLess(self.__vector_error(rigid0.location, rigid1.location), 1e-6, msg)
-            self.assertEqual(rigid0.rotation, rigid1.rotation, msg)
+            rigid0_rotation = Euler(rigid0.rotation,'YXZ').to_quaternion()
+            rigid1_rotation = Euler(rigid1.rotation,'YXZ').to_quaternion()
+            self.assertLess(self.__quaternion_error(rigid0_rotation, rigid1_rotation), 1e-6, msg)
             self.assertEqual(rigid0.mass, rigid1.mass, msg)
             self.assertEqual(rigid0.velocity_attenuation, rigid1.velocity_attenuation, msg)
             self.assertEqual(rigid0.rotation_attenuation, rigid1.rotation_attenuation, msg)
@@ -352,7 +361,7 @@ class TestPmxExporter(unittest.TestCase):
         result_table = sorted(result_joints, key=lambda x: x.name)
         for joint0, joint1 in zip(source_table, result_table):
             msg = joint0.name
-            self.assertEqual(joint0.name, joint1.name)
+            self.assertEqual(joint0.name, joint1.name, msg)
             self.assertEqual(joint0.name_e, joint1.name_e, msg)
             self.assertEqual(joint0.mode, joint1.mode, msg)
 
@@ -365,7 +374,9 @@ class TestPmxExporter(unittest.TestCase):
             self.assertEqual(dest_rigid0, dest_rigid1, msg)
 
             self.assertEqual(joint0.location, joint1.location, msg)
-            self.assertEqual(joint0.rotation, joint1.rotation, msg)
+            joint0_rotation = Euler(joint0.rotation,'YXZ').to_quaternion()
+            joint1_rotation = Euler(joint1.rotation,'YXZ').to_quaternion()
+            self.assertLess(self.__quaternion_error(joint0_rotation, joint1_rotation), 1e-6, msg)
             self.assertEqual(joint0.maximum_location, joint1.maximum_location, msg)
             self.assertEqual(joint0.minimum_location, joint1.minimum_location, msg)
             self.assertEqual(joint0.maximum_rotation, joint1.maximum_rotation, msg)
@@ -570,20 +581,6 @@ class TestPmxExporter(unittest.TestCase):
                         ret.append(os.path.join(root, name))
         return ret
 
-    def __mute_constraints(self):
-        active_obj = bpy.context.scene.objects.active
-        self.assertEqual(active_obj, Model.findRoot(active_obj), 'Model root not found')
-        rig = Model(active_obj)
-        arm = rig.armature()
-        if arm:
-            for pb in arm.pose.bones:
-                for c in pb.constraints:
-                    c.mute = True
-        for m in rig.meshes():
-            for c in m.modifiers:
-                c.show_viewport = False
-                c.show_render = False
-
     def test_pmx_exporter(self):
         '''
         '''
@@ -621,7 +618,6 @@ class TestPmxExporter(unittest.TestCase):
                     renameBones=False,
                     )
                 bpy.context.scene.update()
-                #self.__mute_constraints()
             except Exception:
                 self.fail('Exception happened during import %s'%filepath)
             else:

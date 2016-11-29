@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import struct
+import os
 import re
 import logging
 import collections
@@ -160,6 +161,7 @@ class Material:
         self.edge_flag = fs.readByte()
         self.vertex_count = fs.readUnsignedInt()
         tex_path = fs.readStr(20)
+        tex_path = tex_path.replace('\\', os.path.sep)
         t = tex_path.split('*')
         if not re.search(r'\.sp([ha])$', t[0], flags=re.I):
             self.texture_path = t.pop(0)
