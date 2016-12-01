@@ -87,6 +87,8 @@ def convertToCyclesShader(obj):
     mmd_basic_shader_grp = create_MMDBasicShader()
     mmd_alpha_shader_grp = create_MMDAlphaShader()
 
+    bpy.context.scene.render.engine = 'CYCLES'
+
     for i in obj.material_slots:
         if i.material.use_nodes:
             continue
@@ -100,6 +102,14 @@ def convertToCyclesShader(obj):
 
 
         i.material.node_tree.links.clear()
+
+        # Delete the redundant node
+        for node in i.material.node_tree.nodes:
+            if isinstance(node, bpy.types.ShaderNodeBsdfDiffuse):
+                i.material.node_tree.nodes.remove(node)
+                break
+
+        # Add nodes for Cycles Render
         shader = i.material.node_tree.nodes.new('ShaderNodeGroup')
         shader.node_tree = mmd_basic_shader_grp
         texture = None
@@ -153,3 +163,14 @@ def convertToCyclesShader(obj):
         i.material.node_tree.links.new(material_output.inputs['Surface'], outplug)
         material_output.location.x = shader.location.x + 500
         material_output.location.y = shader.location.y - 150
+
+        # Add necessary nodes to retain Blender Render functionality
+        mat_node = i.material.node_tree.nodes.new('ShaderNodeMaterial')
+        out_node = i.material.node_tree.nodes.new('ShaderNodeOutput')
+        mat_node.material = i.material
+        mat_node.location.x = shader.location.x - 250
+        mat_node.location.y = shader.location.y + 500
+        out_node.location.x = mat_node.location.x + 750
+        out_node.location.y = mat_node.location.y
+        i.material.node_tree.links.new(out_node.inputs['Color'], mat_node.outputs['Color'])
+        i.material.node_tree.links.new(out_node.inputs['Alpha'], mat_node.outputs['Alpha'])
