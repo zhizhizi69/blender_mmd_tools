@@ -8,6 +8,7 @@ import time
 
 import bpy
 from bpy.types import Operator
+from bpy.types import OperatorFileListElement
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from mmd_tools import auto_scene_setup
@@ -60,8 +61,11 @@ def _update_types(cls, prop):
 class ImportPmx(Operator, ImportHelper):
     bl_idname = 'mmd_tools.import_model'
     bl_label = 'Import Model file (.pmd, .pmx)'
-    bl_description = 'Import a Model file (.pmd, .pmx)'
+    bl_description = 'Import Model file(s) (.pmd, .pmx)'
     bl_options = {'PRESET'}
+
+    files = bpy.props.CollectionProperty(type=OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
+    directory = bpy.props.StringProperty(maxlen=1024, subtype='FILE_PATH', options={'HIDDEN', 'SKIP_SAVE'})
 
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx;*.pmd', options={'HIDDEN'})
@@ -133,6 +137,19 @@ class ImportPmx(Operator, ImportHelper):
         )
 
     def execute(self, context):
+        try:
+            if self.directory:
+                for f in self.files:
+                    self.filepath = os.path.join(self.directory, f.name)
+                    self._do_execute(context)
+            elif self.filepath:
+                self._do_execute(context)
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            self.report({'ERROR'}, err_msg)
+        return {'FINISHED'}
+
+    def _do_execute(self, context):
         logger = logging.getLogger()
         logger.setLevel(self.log_level)
         if self.save_log:
@@ -155,6 +172,7 @@ class ImportPmx(Operator, ImportHelper):
                 sph_blend_factor=self.sph_blend_factor,
                 spa_blend_factor=self.spa_blend_factor,
                 )
+            self.report({'INFO'}, 'Imported MMD model from "%s"'%self.filepath)
         except Exception as e:
             err_msg = traceback.format_exc()
             logging.error(err_msg)
@@ -300,7 +318,7 @@ class ImportVmd(Operator, ImportHelper):
 class ExportPmx(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_pmx'
     bl_label = 'Export PMX file (.pmx)'
-    bl_description = 'Export a PMX file (.pmx)'
+    bl_description = 'Export selected MMD model(s) to PMX file(s) (.pmx)'
     bl_options = {'PRESET'}
 
     filename_ext = '.pmx'
@@ -344,10 +362,30 @@ class ExportPmx(Operator, ExportHelper):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return obj and mmd_model.Model.findRoot(obj)
+        return len(context.selected_objects) > 0
 
     def execute(self, context):
+        try:
+            folder = os.path.dirname(self.filepath)
+            models = {mmd_model.Model.findRoot(i) for i in context.selected_objects}
+            for root in models:
+                if root is None:
+                    continue
+                # use original self.filepath when export only one model
+                # otherwise, use root object's name as file name
+                if len(models) > 1:
+                    model_name = bpy.path.clean_name(root.name)
+                    model_folder = os.path.join(folder, model_name)
+                    os.makedirs(model_folder, exist_ok=True)
+                    self.filepath = os.path.join(model_folder, model_name + '.pmx')
+                context.scene.objects.active = root
+                self._do_execute(context)
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            self.report({'ERROR'}, err_msg)
+        return {'FINISHED'}
+
+    def _do_execute(self, context):
         active_object = context.active_object
         logger = logging.getLogger()
         logger.setLevel(self.log_level)
@@ -384,6 +422,7 @@ class ExportPmx(Operator, ExportHelper):
                 sort_materials=self.sort_materials,
                 sort_vertices=self.sort_vertices,
                 )
+            self.report({'INFO'}, 'Exported MMD model "%s" to "%s"'%(root.name, self.filepath))
         except Exception as e:
             err_msg = traceback.format_exc()
             logging.error(err_msg)
