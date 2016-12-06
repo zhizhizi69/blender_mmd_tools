@@ -234,6 +234,17 @@ class PMXImporter:
                         t.use_connect = not pmx_bones[m_bone.displayConnection].isMovable
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
+                if m_bone.isIK and m_bone.target != -1:
+                    b_bone_ik = editBoneTable[m_bone.target].parent
+                    if b_bone_ik and b_bone_ik.length < 0.001:
+                        logging.debug(' * special ik link 0 %s', b_bone_ik.name)
+                        loc = b_bone.head - b_bone_ik.head
+                        if loc.length < 0.001:
+                            logging.warning('   ** unsolved bone **')
+                        else:
+                            b_bone_ik.tail = b_bone_ik.head + loc
+
+            for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 # Set the length of too short bones to 1 because Blender delete them.
                 if b_bone.length < 0.001:
                     loc = mathutils.Vector([0, 0, 1]) * self.__scale
