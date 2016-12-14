@@ -80,17 +80,18 @@ class PMXImporter:
         """ Create main objects and link them to scene.
         """
         pmxModel = self.__model
-        self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale)
+        obj_name = bpy.path.display_name(pmxModel.filepath)
+        self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale, obj_name)
         root = self.__rig.rootObject()
         mmd_root = root.mmd_root
 
         root['import_folder'] = os.path.dirname(pmxModel.filepath)
 
-        txt = bpy.data.texts.new(pmxModel.name+'_comment')
+        txt = bpy.data.texts.new(obj_name+'_comment')
         txt.from_string(pmxModel.comment.replace('\r', ''))
         txt.current_line_index = 0
         mmd_root.comment_text = txt.name
-        txt = bpy.data.texts.new(pmxModel.name+'_comment_e')
+        txt = bpy.data.texts.new(obj_name+'_comment_e')
         txt.from_string(pmxModel.comment_e.replace('\r', ''))
         txt.current_line_index = 0
         mmd_root.comment_e_text = txt.name
@@ -102,7 +103,7 @@ class PMXImporter:
         self.__targetScene.objects.active = root
 
     def __createMeshObject(self):
-        model_name = self.__model.name
+        model_name = self.__rig.rootObject().name
         self.__meshObj = bpy.data.objects.new(name=model_name+'_mesh', object_data=bpy.data.meshes.new(name=model_name))
         self.__meshObj.parent = self.__armObj
         self.__targetScene.objects.link(self.__meshObj)

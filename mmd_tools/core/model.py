@@ -57,10 +57,12 @@ class Model:
         self.__temporary_grp = None
 
     @staticmethod
-    def create(name, name_e='', scale=1):
+    def create(name, name_e='', scale=1, obj_name=None):
         scene = bpy.context.scene
+        if obj_name is None:
+            obj_name = name
 
-        root = bpy.data.objects.new(name=name, object_data=None)
+        root = bpy.data.objects.new(name=obj_name, object_data=None)
         root.mmd_type = 'ROOT'
         root.mmd_root.name = name
         root.mmd_root.name_e = name_e
@@ -69,9 +71,9 @@ class Model:
         #root.lock_rotation = [True, True, True]
         root.lock_scale = [True, True, True]
 
-        arm = bpy.data.armatures.new(name=name)
+        arm = bpy.data.armatures.new(name=obj_name)
         #arm.draw_type = 'STICK'
-        armObj = bpy.data.objects.new(name=name+'_arm', object_data=arm)
+        armObj = bpy.data.objects.new(name=obj_name+'_arm', object_data=arm)
         armObj.lock_rotation = armObj.lock_location = armObj.lock_scale = [True, True, True]
         armObj.show_x_ray = True
         armObj.parent = root
