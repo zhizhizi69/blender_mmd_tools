@@ -394,18 +394,6 @@ class PMXImporter:
                 logging.debug('bone %s is not using a vector tail and is not a tip bone. DisplayConnection: %s', 
                               pmx_bone.name, str(pmx_bone.displayConnection))
 
-            #if pmx_bone.axis is not None and pmx_bone.parent != -1:
-            #    #The twist bones (type 8 in PMD) are special, without this the tail will not be displayed during export
-            #    pose_bones[pmx_bone.parent].mmd_bone.use_tail_location = True
-
-            #Movable bones should have a tail too
-            #if pmx_bone.isMovable and pmx_bone.visible:
-            #    mmd_bone.use_tail_location = True
-
-            #Some models don't have correct tail bones, let's try to fix it
-            #if re.search(u'先$', pmx_bone.name):
-            #    mmd_bone.is_tip = True
-
             b_bone.bone.hide = not pmx_bone.visible #or mmd_bone.is_tip
 
             if not pmx_bone.isRotatable:

@@ -238,12 +238,6 @@ class MMDRoot(PropertyGroup):
         default='',
         )
 
-#     advanced_mode = BoolProperty(
-#         name='Advanced Mode',
-#         description='This option enables advanced and experimental features',
-#         default=False,
-#         )
-
     show_meshes = BoolProperty(
         name='Show Meshes',
         description='Show all meshes of the MMD model',

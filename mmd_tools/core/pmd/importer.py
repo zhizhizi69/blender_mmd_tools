@@ -141,9 +141,9 @@ def import_pmd_to_pmx(filepath):
         if re.search(u'ひざ$', pmx_bone.name):
             knee_bones.append(i)
 
-    for i in pmx_model.bones:
-        if i.parent != -1 and pmd_model.bones[i.parent].type == 2:
-            i.transform_order = 2
+    #for i in pmx_model.bones:
+    #    if i.parent != -1 and pmd_model.bones[i.parent].type == 2:
+    #        i.transform_order = 1
     logging.info('----- Converted %d boness', len(pmx_model.bones))
 
     logging.info('')
@@ -224,13 +224,11 @@ def import_pmd_to_pmx(filepath):
             tex_path = pmd_model.toon_textures[mat.toon_index]
             if tex_path not in texture_map:
                 logging.info('  Create pmx.Texture %s', tex_path)
-                tex = pmx.Texture()
-                tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
-                if not os.path.exists(tex.path) and re.search(r'toon(0[1-9]|10)\.bmp$', tex_path, flags=re.I):
-                    # If the texture does not exist and the file name is one of {toon01.bmp ~ toon10.bmp},
-                    # then it should be a shared toon texture.
+                if re.match(r'toon(0[1-9]|10)\.bmp$', tex_path):
                     texture_map[tex_path] = (True, int(tex_path[-6:-4])-1)
                 else:
+                    tex = pmx.Texture()
+                    tex.path = os.path.normpath(os.path.join(os.path.dirname(target_path), tex_path))
                     pmx_model.textures.append(tex)
                     texture_map[tex_path] = (False, len(pmx_model.textures)-1)
             pmx_mat.is_shared_toon_texture, pmx_mat.toon_texture = texture_map[tex_path]

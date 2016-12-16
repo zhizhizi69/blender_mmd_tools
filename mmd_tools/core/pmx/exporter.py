@@ -362,7 +362,7 @@ class __PmxExporter:
                     logging.debug(' * fix location of bone %s, parent %s is tip', bone.name, bone.parent.name)
                     pmx_bone.location = boneMap[bone.parent].location
 
-                # a connected child bone is prefered
+                # a connected child bone is preferred
                 pmx_bone.displayConnection = None
                 for child in bone.children:
                     if child.use_connect:
@@ -876,7 +876,7 @@ class __PmxExporter:
                 return i
             elif (i.uv - uv).length < 0.001 and (normal - i.normal).length < 0.01:
                 return i
-        n = copy.copy(i) # shadow copy should be fine
+        n = copy.copy(i) # shallow copy should be fine
         n.uv = uv
         n.normal = normal
         vertices.append(n)

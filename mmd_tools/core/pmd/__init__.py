@@ -532,6 +532,7 @@ class Model:
         self.toon_textures = []
         for i in range(10):
             t = fs.readStr(100)
+            t = t.replace('\\', os.path.sep)
             self.toon_textures.append(t)
             logging.info('Toon Texture %d: %s', i, t)
         logging.info('----- Loaded %d textures', len(self.toon_textures))

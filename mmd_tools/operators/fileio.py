@@ -176,7 +176,7 @@ class ImportPmx(Operator, ImportHelper):
         except Exception as e:
             err_msg = traceback.format_exc()
             logging.error(err_msg)
-            self.report({'ERROR'}, err_msg)
+            raise
         finally:
             if self.save_log:
                 logger.removeHandler(handler)
@@ -426,7 +426,7 @@ class ExportPmx(Operator, ExportHelper):
         except Exception as e:
             err_msg = traceback.format_exc()
             logging.error(err_msg)
-            self.report({'ERROR'}, err_msg)
+            raise
         finally:
             if orig_pose_position:
                 arm.data.pose_position = orig_pose_position
