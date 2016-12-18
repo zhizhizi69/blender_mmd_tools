@@ -12,7 +12,6 @@ from bpy.types import OperatorFileListElement
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 from mmd_tools import auto_scene_setup
-from mmd_tools.utils import selectAObject
 from mmd_tools.utils import makePmxBoneMap
 from mmd_tools.core.camera import MMDCamera
 from mmd_tools.core.lamp import MMDLamp
@@ -337,6 +336,12 @@ class ExportPmx(Operator, ExportHelper):
                      'E.g. blush meshes'),
         default=False,
         )
+    disable_specular = bpy.props.BoolProperty(
+        name='Disable SPH/SPA',
+        description = ('Disables all the Specular Map textures. ' +
+                       'It is required for some MME Shaders.'),
+        default = False,
+        )
     sort_vertices = bpy.props.EnumProperty(
         name='Sort Vertices',
         description='Choose the method to sort vertices',
@@ -421,6 +426,7 @@ class ExportPmx(Operator, ExportHelper):
                 copy_textures=self.copy_textures,
                 sort_materials=self.sort_materials,
                 sort_vertices=self.sort_vertices,
+                disable_specular=self.disable_specular,
                 )
             self.report({'INFO'}, 'Exported MMD model "%s" to "%s"'%(root.name, self.filepath))
         except Exception as e:

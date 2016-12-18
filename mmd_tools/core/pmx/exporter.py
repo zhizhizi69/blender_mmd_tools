@@ -84,6 +84,7 @@ class __PmxExporter:
         self.__vertex_index_map = {} # used for exporting uv morphs
         self.__default_material = None
         self.__vertex_order_map = None # used for controlling vertex order
+        self.__disable_specular = False
 
     @staticmethod
     def flipUV_V(uv):
@@ -270,6 +271,8 @@ class __PmxExporter:
         p_mat.edge_color = mmd_mat.edge_color
         p_mat.edge_size = mmd_mat.edge_weight
         p_mat.sphere_texture_mode = int(mmd_mat.sphere_texture_type)
+        if self.__disable_specular:
+            p_mat.sphere_texture_mode = pmx.Material.SPHERE_MODE_OFF
         p_mat.comment = mmd_mat.comment
 
         p_mat.vertex_count = num_faces * 3
@@ -508,10 +511,10 @@ class __PmxExporter:
                         ik_bone_index = bone_map[c.subtarget]
 
                     ik_target_bone = self.__get_ik_target_bone(bone)
+                    pmx_ik_bone = pmx_bones[ik_bone_index]
                     if ik_target_bone is None:
                         logging.warning('  - IK bone: %s, IK Target not found !!!', pmx_ik_bone.name)
                         continue
-                    pmx_ik_bone = pmx_bones[ik_bone_index]
                     logging.debug('  - IK bone: %s, IK Target: %s', pmx_ik_bone.name, ik_target_bone.name)
                     pmx_ik_bone.isIK = True
                     pmx_ik_bone.loopCount = max(int(c.iterations/ik_loop_factor), 1)
@@ -1153,6 +1156,7 @@ class __PmxExporter:
         for i in meshes:
             mesh_data.append(self.__loadMeshData(i, nameMap))
 
+        self.__disable_specular = args.get('disable_specular', False)
         self.__exportMeshes(mesh_data, nameMap)
         self.__exportVertexMorphs(mesh_data, root)
         if sort_materials:
