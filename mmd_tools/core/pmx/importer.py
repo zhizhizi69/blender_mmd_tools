@@ -236,14 +236,16 @@ class PMXImporter:
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 if m_bone.isIK and m_bone.target != -1:
-                    b_bone_ik = editBoneTable[m_bone.target].parent
-                    if b_bone_ik and b_bone_ik.length < 0.001:
-                        logging.debug(' * special ik link 0 %s', b_bone_ik.name)
-                        loc = b_bone.head - b_bone_ik.head
-                        if loc.length < 0.001:
-                            logging.warning('   ** unsolved bone **')
-                        else:
-                            b_bone_ik.tail = b_bone_ik.head + loc
+                    for i in range(len(m_bone.ik_links)):
+                        b_bone_link = editBoneTable[m_bone.ik_links[i].target]
+                        if b_bone_link.length < 0.001:
+                            logging.debug(' * special IK link %d %s of IK bone %s', i, b_bone_link.name, b_bone.name)
+                            b_bone_tail = b_bone if i == 0 else editBoneTable[m_bone.ik_links[i-1].target]
+                            loc = b_bone_tail.head - b_bone_link.head
+                            if loc.length < 0.001:
+                                logging.warning('   ** unsolved IK link %s **', b_bone_link.name)
+                            else:
+                                b_bone_link.tail = b_bone_link.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 # Set the length of too short bones to 1 because Blender delete them.
