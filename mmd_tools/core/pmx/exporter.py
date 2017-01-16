@@ -278,11 +278,11 @@ class __PmxExporter:
         p_mat.vertex_count = num_faces * 3
         fnMat = FnMaterial(material)
         tex = fnMat.get_texture()
-        if tex and tex.type == 'IMAGE':  # Ensure the texture is an image
+        if tex and tex.type == 'IMAGE' and tex.image:  # Ensure the texture is an image
             index = self.__exportTexture(tex.image.filepath)
             p_mat.texture = index
         tex = fnMat.get_sphere_texture()
-        if tex and tex.type == 'IMAGE':  # Ensure the texture is an image
+        if tex and tex.type == 'IMAGE' and tex.image:  # Ensure the texture is an image
             index = self.__exportTexture(tex.image.filepath)
             p_mat.sphere_texture = index
 
@@ -568,31 +568,26 @@ class __PmxExporter:
                 morph_categories[vtx_morph.name] = categories.get(vtx_morph.category, pmx.Morph.CATEGORY_OHTER)
 
         for i in shape_key_names:
-            exported_vert = set()
             morph = pmx.VertexMorph(i, '', 4)
             morph.name_e = morph_english_names.get(i, '')
             morph.category = morph_categories.get(i, pmx.Morph.CATEGORY_OHTER)
-            for mesh in meshes:
-                vertices = []
-                for mf in mesh.material_faces.values():
-                    for f in mf:
-                        vertices.extend(f.vertices)
+            self.__model.morphs.append(morph)
 
-                if i in mesh.shape_key_names:
-                    for v in vertices:
+        append_table = dict(zip(shape_key_names, [m.offsets.append for m in self.__model.morphs]))
+        exported_vert = set()
+        for mesh in meshes:
+            for mf in mesh.material_faces.values():
+                for f in mf:
+                    for v in f.vertices:
                         if v.index in exported_vert:
                             continue
                         exported_vert.add(v.index)
 
-                        offset = v.offsets.get(i, None)
-                        if offset is None:
-                            continue
-
-                        mo = pmx.VertexMorphOffset()
-                        mo.index = v.index
-                        mo.offset = offset
-                        morph.offsets.append(mo)
-            self.__model.morphs.append(morph)
+                        for i, offset in v.offsets.items():
+                            mo = pmx.VertexMorphOffset()
+                            mo.index = v.index
+                            mo.offset = offset
+                            append_table[i](mo)
 
     def __export_material_morphs(self, root):
         mmd_root = root.mmd_root
@@ -950,7 +945,7 @@ class __PmxExporter:
         logging.debug('   - Done (polygons:%d)', len(mesh.polygons))
         return custom_normals
 
-    def __doLoadMeshData(self, meshObj, bone_map, key_blocks):
+    def __doLoadMeshData(self, meshObj, bone_map):
         vertex_group_names = {i:x.name for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
         vg_edge_scale = meshObj.vertex_groups.get('mmd_edge_scale', None)
         vg_vertex_order = meshObj.vertex_groups.get('mmd_vertex_order', None)
@@ -1008,43 +1003,55 @@ class __PmxExporter:
                 get_vertex_order(v),
                 )]
 
-        # restore SDEF data from shape keys
-        sdef_shape_key_names = ('mmd_sdef_c', 'mmd_sdef_r0', 'mmd_sdef_r1')
-        if all([i in key_blocks for i in sdef_shape_key_names]):
-            sdef_counts = 0
-            basis_data = key_blocks[0].data
-            sdef_c_data = key_blocks[sdef_shape_key_names[0]].data
-            sdef_r0_data = key_blocks[sdef_shape_key_names[1]].data
-            sdef_r1_data = key_blocks[sdef_shape_key_names[2]].data
-            for key in base_vertices.keys():
-                c_co = sdef_c_data[key].co
-                if (c_co - basis_data[key].co).length < 0.001:
-                    continue
-                c_co = pmx_matrix * c_co
-                r0_co = pmx_matrix * sdef_r0_data[key].co
-                r1_co = pmx_matrix * sdef_r1_data[key].co
-                base_vertices[key][0].sdef_data = (c_co, r0_co, r1_co)
-                sdef_counts += 1
-            key_blocks = [i for i in key_blocks if i.name not in sdef_shape_key_names]
-            logging.info('Restored %d SDEF vertices', sdef_counts)
-
         # calculate offsets
+        shape_key_list = []
+        if meshObj.data.shape_keys:
+            for i, kb in enumerate(meshObj.data.shape_keys.key_blocks):
+                if i == 0: # Basis
+                    continue
+                if kb.name == 'mmd_sdef_c': # make sure 'mmd_sdef_c' is at first
+                    shape_key_list = [(i, kb)] + shape_key_list
+                else:
+                    shape_key_list.append((i, kb))
+
         shape_key_names = []
-        for i in key_blocks[1:]:
-            shape_key_names.append(i.name)
-            i.value = 1.0
+        sdef_counts = 0
+        for i, kb in shape_key_list:
+            shape_key_name = kb.name
+            logging.info(' - processing shape key: %s', shape_key_name)
+            meshObj.active_shape_key_index = i
             mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
             mesh.transform(pmx_matrix)
             mesh.update(calc_tessface=True)
-            for key in base_vertices.keys():
-                base = base_vertices[key][0]
-                v = mesh.vertices[key]
-                offset = mathutils.Vector(v.co) - mathutils.Vector(base.co)
-                if offset.length < 0.001:
-                    continue
-                base.offsets[i.name] = offset
+            if shape_key_name in {'mmd_sdef_c', 'mmd_sdef_r0', 'mmd_sdef_r1'}:
+                if shape_key_name == 'mmd_sdef_c':
+                    for v in mesh.vertices:
+                        base = base_vertices[v.index][0]
+                        if len(base.groups) != 2:
+                            continue
+                        base_co = base.co
+                        c_co = v.co
+                        if (c_co - base_co).length < 0.001:
+                            continue
+                        base.sdef_data = [tuple(c_co), base_co, base_co]
+                        sdef_counts += 1
+                    logging.info('   - Restored %d SDEF vertices', sdef_counts)
+                elif sdef_counts > 0:
+                    ri = 1 if shape_key_name == 'mmd_sdef_r0' else 2
+                    for v in mesh.vertices:
+                        sdef_data = base_vertices[v.index][0].sdef_data
+                        if sdef_data:
+                            sdef_data[ri] = tuple(v.co)
+                    logging.info('   - Updated SDEF data')
+            else:
+                shape_key_names.append(shape_key_name)
+                for v in mesh.vertices:
+                    base = base_vertices[v.index][0]
+                    offset = v.co - base.co
+                    if offset.length < 0.001:
+                        continue
+                    base.offsets[shape_key_name] = offset
             bpy.data.meshes.remove(mesh)
-            i.value = 0.0
 
         # load face data
         materials = {}
@@ -1086,15 +1093,9 @@ class __PmxExporter:
 
     def __loadMeshData(self, meshObj, bone_map):
         show_only_shape_key = meshObj.show_only_shape_key
-        meshObj.show_only_shape_key = False
-
-        shape_key_weights = []
-        key_blocks = ()
-        if meshObj.data.shape_keys:
-            key_blocks = meshObj.data.shape_keys.key_blocks
-        for i in key_blocks:
-            shape_key_weights.append(i.value)
-            i.value = 0.0
+        meshObj.show_only_shape_key = True
+        active_shape_key_index = meshObj.active_shape_key_index
+        meshObj.active_shape_key_index = 0
 
         muted_modifiers = []
         for m in meshObj.modifiers:
@@ -1105,11 +1106,11 @@ class __PmxExporter:
                 m.show_viewport = False
 
         try:
-            return self.__doLoadMeshData(meshObj, bone_map, key_blocks)
+            logging.info('Loading mesh: %s', meshObj.name)
+            return self.__doLoadMeshData(meshObj, bone_map)
         finally:
             meshObj.show_only_shape_key = show_only_shape_key
-            for i, sk in enumerate(key_blocks):
-                sk.value = shape_key_weights[i]
+            meshObj.active_shape_key_index = active_shape_key_index
             for m, show in muted_modifiers:
                 m.show_viewport = show
 

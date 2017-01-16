@@ -383,22 +383,19 @@ class ExportPmx(Operator, ExportHelper):
                     model_folder = os.path.join(folder, model_name)
                     os.makedirs(model_folder, exist_ok=True)
                     self.filepath = os.path.join(model_folder, model_name + '.pmx')
-                context.scene.objects.active = root
-                self._do_execute(context)
+                self._do_execute(context, root)
         except Exception as e:
             err_msg = traceback.format_exc()
             self.report({'ERROR'}, err_msg)
         return {'FINISHED'}
 
-    def _do_execute(self, context):
-        active_object = context.active_object
+    def _do_execute(self, context, root):
         logger = logging.getLogger()
         logger.setLevel(self.log_level)
         if self.save_log:
             handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.export.log')
             logger.addHandler(handler)
 
-        root = mmd_model.Model.findRoot(context.active_object)
         if root.mmd_root.editing_morphs > 0:
             # We have two options here: 
             # 1- report it to the user
@@ -410,10 +407,12 @@ class ExportPmx(Operator, ExportHelper):
         rig = mmd_model.Model(root)
         arm = rig.armature()
         orig_pose_position = None
-        if arm: # use 'REST' pose before exporting
+        if not root.mmd_root.is_built: # use 'REST' pose when the model is not built
             orig_pose_position = arm.data.pose_position
             arm.data.pose_position = 'REST'
-        rig.clean()
+            arm.update_tag()
+            context.scene.frame_set(context.scene.frame_current)
+
         try:
             pmx_exporter.export(
                 filepath=self.filepath,
@@ -439,8 +438,6 @@ class ExportPmx(Operator, ExportHelper):
             if self.save_log:
                 logger.removeHandler(handler)
 
-        active_object.select = True
-        context.scene.objects.active = active_object
         return {'FINISHED'}
 
     def invoke(self, context, event):
