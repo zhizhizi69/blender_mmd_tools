@@ -90,7 +90,7 @@ def convertToCyclesShader(obj):
     bpy.context.scene.render.engine = 'CYCLES'
 
     for i in obj.material_slots:
-        if i.material and i.material.use_nodes:
+        if i.material is None or i.material.use_nodes:
             continue
 
         i.material.use_nodes = True

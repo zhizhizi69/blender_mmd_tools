@@ -459,6 +459,11 @@ class ExportVmd(Operator, ExportHelper):
         description='Scaling factor of the model',
         default=0.2,
         )
+    use_frame_range = bpy.props.BoolProperty(
+        name='Use Frame Range',
+        description = 'Export frames only in the frame range of context scene',
+        default = False,
+        )
 
     @classmethod
     def poll(cls, context):
@@ -480,6 +485,7 @@ class ExportVmd(Operator, ExportHelper):
         params = {
             'filepath':self.filepath,
             'scale':self.scale,
+            'use_frame_range':self.use_frame_range,
             }
 
         if obj.mmd_type == 'ROOT':

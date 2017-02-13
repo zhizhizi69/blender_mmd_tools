@@ -21,12 +21,13 @@ class _FCurve:
         self.__fcurve = None
 
     def setFCurve(self, fcurve):
+        assert(fcurve.is_valid and self.__fcurve is None)
         self.__fcurve = fcurve
 
     def frameNumbers(self):
         if self.__fcurve is None:
             return set()
-        return {int(kp.co[0]) for kp in self.__fcurve.keyframe_points}
+        return {int(kp.co[0]+0.5) for kp in self.__fcurve.keyframe_points}
 
     @staticmethod
     def getVMDControlPoints(kp0, kp1):
@@ -53,41 +54,43 @@ class _FCurve:
                 yield [self.__default_value, ((20, 20), (107, 107))]
             return
 
+        evaluate = fcurve.evaluate
         frame_iter = iter(frame_numbers)
         prev_kp = None
+        prev_i = None
         for kp in sorted(fcurve.keyframe_points, key=lambda x: x.co[0]):
-            i = int(kp.co[0])
+            i = int(kp.co[0]+0.5)
+            if i == prev_i:
+                continue
+            prev_i = i
             frames = []
             while True:
                 frame = next(frame_iter)
                 frames.append(frame)
                 if frame >= i:
                     break
-            assert(len(frames) >= 1 and frames[-1] == i and i > 0)
+            assert(len(frames) >= 1 and frames[-1] == i)
             if prev_kp is None:
-                for i in frames: # starting key frames
+                for f in frames: # starting key frames
                     yield [kp.co[1], ((20, 20), (107, 107))]
             elif len(frames) == 1:
                 yield [kp.co[1], self.getVMDControlPoints(prev_kp, kp)]
             else:
                 #FIXME better evaluated values and interpolations
                 for f in frames:
-                    yield [fcurve.evaluate(f), ((20, 20), (107, 107))]
+                    yield [evaluate(f), ((20, 20), (107, 107))]
             prev_kp = kp
 
-        # ending key frames
-        try:
-            while next(frame_iter) > 0:
-                yield [prev_kp.co[1], ((20, 20), (107, 107))]
-        except StopIteration:
-            pass
+        for f in frame_iter: # ending key frames
+            yield [prev_kp.co[1], ((20, 20), (107, 107))]
 
 
 class VMDExporter:
 
     def __init__(self):
         self.__scale = 1
-        self.__frame_offset = -1
+        self.__frame_start = 1
+        self.__frame_end = float('inf')
 
     @staticmethod
     def makeVMDBoneLocationMatrix(blender_bone):
@@ -117,14 +120,31 @@ class VMDExporter:
         v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
         return mathutils.Quaternion(v, angle).normalized()
 
-    @staticmethod
-    def __allFrameKeys(curves):
+    def __allFrameKeys(self, curves):
         all_frames = set()
         for i in curves:
             all_frames |= i.frameNumbers()
+
+        frame_start = min(all_frames)
+        if frame_start < self.__frame_start:
+            frame_start = self.__frame_start
+            all_frames.add(frame_start)
+
+        frame_end = max(all_frames)
+        if frame_end > self.__frame_end:
+            frame_end = self.__frame_end
+            all_frames.add(frame_end)
+
         all_frames = sorted(all_frames)
         all_keys = [i.sampleFrames(all_frames) for i in curves]
-        return zip(all_frames, *all_keys)
+        #return zip(all_frames, *all_keys)
+        for data in zip(all_frames, *all_keys):
+            frame_number = data[0]
+            if frame_number < frame_start:
+                continue
+            if frame_number > frame_end:
+                break
+            yield data
 
     @staticmethod
     def __minRotationDiff(prev_q, curr_q):
@@ -183,9 +203,6 @@ class VMDExporter:
         anim_bones = {}
         rePath = re.compile(r'^pose\.bones\["(.+)"\]\.([a-z_]+)$')
         for fcurve in animation_data.action.fcurves:
-            if not fcurve.is_valid:
-                logging.warning(' * FCurve is not valid: %s', fcurve.data_path)
-                continue
             m = rePath.match(fcurve.data_path)
             if m is None:
                 continue
@@ -215,7 +232,7 @@ class VMDExporter:
             prev_rot = None
             for frame_number, x, y, z, rw, rx, ry, rz in self.__allFrameKeys(bone_curves):
                 key = vmd.BoneFrameKey()
-                key.frame_number = frame_number + self.__frame_offset
+                key.frame_number = frame_number - self.__frame_start
                 key.location = mat * mathutils.Vector([x[0], y[0], z[0]]) * self.__scale
                 curr_rot = mathutils.Quaternion([rw[0], rx[0], ry[0], rz[0]])
                 curr_rot = self.convertToVMDBoneRotation(bone, curr_rot)
@@ -249,12 +266,23 @@ class VMDExporter:
             m = rePath.match(fcurve.data_path)
             if m is None:
                 continue
+
             key_name = m.group(1)
+            kb = meshObj.data.shape_keys.key_blocks.get(key_name, None)
+            if kb is None:
+                logging.warning(' * Shape key not found: %s', key_name)
+                continue
+
+            assert(key_name not in vmd_morph_anim)
             anim = vmd_morph_anim[key_name]
-            for kp in fcurve.keyframe_points:
+
+            curve = _FCurve(kb.value)
+            curve.setFCurve(fcurve)
+
+            for frame_number, weight in self.__allFrameKeys([curve]):
                 key = vmd.ShapeKeyFrameKey()
-                key.frame_number = int(kp.co[0]) + self.__frame_offset
-                key.weight = kp.co[1]
+                key.frame_number = frame_number - self.__frame_start
+                key.weight = weight[0]
                 anim.append(key)
             logging.info('(mesh) frames:%5d  name: %s', len(anim), key_name)
         return vmd_morph_anim
@@ -299,7 +327,7 @@ class VMDExporter:
 
         for frame_number, x, y, z, rx, ry, rz, fov, persp, distance in self.__allFrameKeys(cam_curves):
             key = vmd.CameraKeyFrameKey()
-            key.frame_number = frame_number + self.__frame_offset
+            key.frame_number = frame_number - self.__frame_start
             key.location = [x[0]*self.__scale, z[0]*self.__scale, y[0]*self.__scale]
             key.rotation = [rx[0], rz[0], ry[0]] # euler
             key.angle = int(0.5 + math.degrees(fov[0]))
@@ -344,6 +372,10 @@ class VMDExporter:
 
         if model_scale:
             self.__scale = 1.0/model_scale
+
+        if args.get('use_frame_range', False):
+            self.__frame_start = bpy.context.scene.frame_start
+            self.__frame_end = bpy.context.scene.frame_end
 
         if armature or mesh:
             vmdFile = vmd.File()

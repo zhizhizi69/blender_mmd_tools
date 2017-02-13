@@ -173,6 +173,12 @@ class VMDImporter:
                         self.__setInterpolation(interp, prev_kp, kp)
                 prev_kps = curr_kps
 
+        for c in action.fcurves:
+            kp0 = c.keyframe_points[0]
+            kp0.handle_left = kp0.co + mathutils.Vector((-1, 0))
+            kp = c.keyframe_points[-1]
+            kp.handle_right = kp.co + mathutils.Vector((1, 0))
+
     def __assignToMesh(self, meshObj, action_name=None):
         if meshObj.data.shape_keys is None:
             logging.warning('WARNING: mesh object %s does not have any shape key', meshObj.name)

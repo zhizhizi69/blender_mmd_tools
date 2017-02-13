@@ -725,7 +725,7 @@ class Model:
                         'mmd_bonetrack',
                         None)
                     bpy.context.scene.objects.link(empty)
-                    empty.location = target_bone.tail
+                    empty.matrix_world = target_bone.matrix
                     empty.empty_draw_size = 0.1
                     empty.empty_draw_type = 'ARROWS'
                     empty.mmd_type = 'TRACK_TARGET'
@@ -737,7 +737,8 @@ class Model:
 
                     self.__empty_parent_map[empty] = rigid_obj
 
-                    const = target_bone.constraints.new('DAMPED_TRACK')
+                    const_type = ('COPY_TRANSFORMS', 'COPY_ROTATION')[rigid_type-1]
+                    const = target_bone.constraints.new(const_type)
                     const.mute = True
                     const.name='mmd_tools_rigid_track'
                     const.target = empty
