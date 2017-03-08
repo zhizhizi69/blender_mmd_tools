@@ -14,7 +14,7 @@ from mmd_tools.core.material import FnMaterial
 from mmd_tools import utils
 from mmd_tools import translations
 from mmd_tools import bpyutils
-from mmd_tools.core.vmd.importer import VMDImporter
+from mmd_tools.core.vmd.importer import BoneConverter
 
 
 class PMXImporter:
@@ -623,9 +623,9 @@ class PMXImporter:
                 data = bone_morph.data.add()
                 bl_bone = self.__boneTable[morph_data.index]
                 data.bone = bl_bone.name
-                mat = VMDImporter.makeVMDBoneLocationToBlenderMatrix(bl_bone)
-                data.location = mat * mathutils.Vector(morph_data.location_offset) * self.__scale
-                data.rotation = VMDImporter.convertVMDBoneRotationToBlender(bl_bone, morph_data.rotation_offset)
+                converter = BoneConverter(bl_bone, self.__scale)
+                data.location = converter.convert_location(morph_data.location_offset)
+                data.rotation = converter.convert_rotation(morph_data.rotation_offset)
 
     def __importUVMorphs(self):
         mmd_root = self.__rig.rootObject().mmd_root

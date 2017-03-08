@@ -13,7 +13,7 @@ from collections import OrderedDict
 from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
-from mmd_tools.core.vmd.exporter import VMDExporter
+from mmd_tools.core.vmd.importer import BoneConverter
 from mmd_tools import bpyutils
 from mmd_tools.utils import saferelpath
 
@@ -681,9 +681,10 @@ class __PmxExporter:
                 if blender_bone is None:
                     logging.warning('Bone Morph (%s): Bone %s was not found.', morph.name, data.bone)
                     continue
-                mat = VMDExporter.makeVMDBoneLocationMatrix(blender_bone)
-                morph_data.location_offset = mat * mathutils.Vector(data.location) * self.__scale
-                rw, rx, ry, rz = VMDExporter.convertToVMDBoneRotation(blender_bone, data.rotation)
+                converter = BoneConverter(blender_bone, self.__scale, invert=True)
+                morph_data.location_offset = converter.convert_location(data.location)
+                rw, rx, ry, rz = data.rotation
+                rw, rx, ry, rz = converter.convert_rotation([rx, ry, rz, rw])
                 morph_data.rotation_offset = (rx, ry, rz, rw)
                 bone_morph.offsets.append(morph_data)
             self.__model.morphs.append(bone_morph)

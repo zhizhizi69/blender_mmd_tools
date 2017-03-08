@@ -33,47 +33,72 @@ class RenamedBoneMapper:
         return self.__pose_bones.get(bl_bone_name, default)
 
 
+class BoneConverter:
+    def __init__(self, pose_bone, scale, invert=False):
+        mat = pose_bone.bone.matrix_local.to_3x3().transposed()
+        mat2 = mathutils.Matrix([[1,0,0], [0,0,1], [0,1,0]])
+        self.__mat = mat * mat2
+        self.__scale = scale
+        if invert:
+            self.__mat.invert()
+
+    def convert_location(self, location):
+        return self.__mat * mathutils.Vector(location) * self.__scale
+
+    def convert_rotation(self, rotation_xyzw):
+        rot = mathutils.Quaternion()
+        rot.x, rot.y, rot.z, rot.w = rotation_xyzw
+        return mathutils.Quaternion(self.__mat * rot.axis * -1, rot.angle).normalized()
+
+class BoneConverterPoseMode:
+    def __init__(self, pose_bone, scale, invert=False):
+        mat = pose_bone.matrix.to_3x3().transposed()
+        mat2 = mathutils.Matrix([[1,0,0], [0,0,1], [0,1,0]])
+        self.__mat = mat * mat2
+        self.__scale = scale
+        self.__mat_rot = pose_bone.matrix_basis.to_3x3()
+        self.__mat_loc = self.__mat_rot * mat * mat2
+        self.__offset = pose_bone.location.copy()
+        self.convert_location = self._convert_location
+        self.convert_rotation = self._convert_rotation
+        if invert:
+            self.__mat.invert()
+            self.__mat_rot.invert()
+            self.__mat_loc.invert()
+            self.convert_location = self._convert_location_inverted
+            self.convert_rotation = self._convert_rotation_inverted
+
+    def _convert_location(self, location):
+        return self.__offset + self.__mat_loc * mathutils.Vector(location) * self.__scale
+
+    def _convert_rotation(self, rotation_xyzw):
+        rot = mathutils.Quaternion()
+        rot.x, rot.y, rot.z, rot.w = rotation_xyzw
+        rot = mathutils.Quaternion(self.__mat * rot.axis * -1, rot.angle)
+        return (self.__mat_rot * rot.to_matrix()).to_quaternion()
+
+    def _convert_location_inverted(self, location):
+        return self.__mat_loc * (mathutils.Vector(location) - self.__offset) * self.__scale
+
+    def _convert_rotation_inverted(self, rotation_xyzw):
+        rot = mathutils.Quaternion()
+        rot.x, rot.y, rot.z, rot.w = rotation_xyzw
+        rot = (self.__mat_rot * rot.to_matrix()).to_quaternion()
+        return mathutils.Quaternion(self.__mat * rot.axis * -1, rot.angle).normalized()
+
+
 class VMDImporter:
-    def __init__(self, filepath, scale=1.0, bone_mapper=None, convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
+    def __init__(self, filepath, scale=1.0, bone_mapper=None, use_pose_mode=False,
+            convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
         self.__scale = scale
         self.__convert_mmd_camera = convert_mmd_camera
         self.__convert_mmd_lamp = convert_mmd_lamp
         self.__bone_mapper = bone_mapper
+        self.__bone_util_cls = BoneConverterPoseMode if use_pose_mode else BoneConverter
         self.__frame_margin = frame_margin + 1
 
-
-    @staticmethod
-    def makeVMDBoneLocationToBlenderMatrix(blender_bone):
-        #mat = mathutils.Matrix([
-        #        [blender_bone.x_axis.x, blender_bone.x_axis.y, blender_bone.x_axis.z, 0.0],
-        #        [blender_bone.y_axis.x, blender_bone.y_axis.y, blender_bone.y_axis.z, 0.0],
-        #        [blender_bone.z_axis.x, blender_bone.z_axis.y, blender_bone.z_axis.z, 0.0],
-        #        [0.0, 0.0, 0.0, 1.0]
-        #        ])
-        mat = blender_bone.bone.matrix_local.to_3x3().transposed().to_4x4()
-        mat2 = mathutils.Matrix([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0]])
-        return mat * mat2
-
-    @staticmethod
-    def convertVMDBoneRotationToBlender(blender_bone, rotation):
-        if not isinstance(rotation, mathutils.Quaternion):
-            rot = mathutils.Quaternion()
-            rot.x, rot.y, rot.z, rot.w = rotation
-            rotation = rot
-        #mat = mathutils.Matrix()
-        #mat[0][0], mat[1][0], mat[2][0] = blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x
-        #mat[0][1], mat[1][1], mat[2][1] = blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y
-        #mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
-        mat = blender_bone.bone.matrix_local.to_3x3().transposed().to_4x4()
-        (vec, angle) = rotation.to_axis_angle()
-        v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
-        return mathutils.Quaternion(mat*v, angle).normalized()
 
     @staticmethod
     def __minRotationDiff(prev_q, curr_q):
@@ -146,14 +171,14 @@ class VMDImporter:
                     kp.interpolation = 'LINEAR'
                 fcurves[i] = kp_iter
 
-            mat = self.makeVMDBoneLocationToBlenderMatrix(bone)
+            converter = self.__bone_util_cls(bone, self.__scale)
             prev_rot = None
             prev_kps = None
             vmd_frames = sorted(keyFrames, key=lambda x:x.frame_number)
             for k, x, y, z, rw, rx, ry, rz in zip(vmd_frames, *fcurves):
                 frame = k.frame_number + self.__frame_margin
-                loc = mat * mathutils.Vector(k.location) * self.__scale
-                curr_rot = self.convertVMDBoneRotationToBlender(bone, k.rotation)
+                loc = converter.convert_location(k.location)
+                curr_rot = converter.convert_rotation(k.rotation)
                 if prev_rot is not None:
                     curr_rot = self.__minRotationDiff(prev_rot, curr_rot)
                 prev_rot = curr_rot

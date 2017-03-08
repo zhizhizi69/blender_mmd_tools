@@ -233,6 +233,12 @@ class ImportVmd(Operator, ImportHelper):
         description='Translate bone names from Japanese to English',
         default=False,
         )
+    use_pose_mode = bpy.props.BoolProperty(
+        name='Treat Current Pose as Rest Pose',
+        description='You can pose the model to fit the original pose of a motion data, such as T-Pose or A-Pose',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
     update_scene_settings = bpy.props.BoolProperty(
         name='Update scene settings',
         description='Update frame range and frame rate (30 fps)',
@@ -253,6 +259,7 @@ class ImportVmd(Operator, ImportHelper):
             layout.prop(self, 'rename_bones')
             layout.prop(self, 'use_underscore')
             layout.prop(self, 'translate_to_english')
+        layout.prop(self, 'use_pose_mode')
 
         layout.prop(self, 'update_scene_settings')
 
@@ -289,6 +296,7 @@ class ImportVmd(Operator, ImportHelper):
             filepath=self.filepath,
             scale=self.scale,
             bone_mapper=bone_mapper,
+            use_pose_mode=self.use_pose_mode,
             frame_margin=self.margin,
             )
 
@@ -459,6 +467,12 @@ class ExportVmd(Operator, ExportHelper):
         description='Scaling factor of the model',
         default=0.2,
         )
+    use_pose_mode = bpy.props.BoolProperty(
+        name='Treat Current Pose as Rest Pose',
+        description='You can pose the model to export a motion data to different pose base, such as T-Pose or A-Pose',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
     use_frame_range = bpy.props.BoolProperty(
         name='Use Frame Range',
         description = 'Export frames only in the frame range of context scene',
@@ -485,6 +499,7 @@ class ExportVmd(Operator, ExportHelper):
         params = {
             'filepath':self.filepath,
             'scale':self.scale,
+            'use_pose_mode':self.use_pose_mode,
             'use_frame_range':self.use_frame_range,
             }
 

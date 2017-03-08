@@ -91,34 +91,7 @@ class VMDExporter:
         self.__scale = 1
         self.__frame_start = 1
         self.__frame_end = float('inf')
-
-    @staticmethod
-    def makeVMDBoneLocationMatrix(blender_bone):
-        #mat = mathutils.Matrix([
-        #        [blender_bone.x_axis.x, blender_bone.x_axis.y, blender_bone.x_axis.z, 0.0],
-        #        [blender_bone.y_axis.x, blender_bone.y_axis.y, blender_bone.y_axis.z, 0.0],
-        #        [blender_bone.z_axis.x, blender_bone.z_axis.y, blender_bone.z_axis.z, 0.0],
-        #        [0.0, 0.0, 0.0, 1.0]
-        #        ])
-        mat = blender_bone.bone.matrix_local.to_3x3().transposed().to_4x4()
-        mat2 = mathutils.Matrix([
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 1.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0]])
-        return mat2 * mat.inverted()
-
-    @staticmethod
-    def convertToVMDBoneRotation(blender_bone, rotation):
-        #mat = mathutils.Matrix()
-        #mat[0][0], mat[1][0], mat[2][0] = blender_bone.x_axis.x, blender_bone.y_axis.x, blender_bone.z_axis.x
-        #mat[0][1], mat[1][1], mat[2][1] = blender_bone.x_axis.y, blender_bone.y_axis.y, blender_bone.z_axis.y
-        #mat[0][2], mat[1][2], mat[2][2] = blender_bone.x_axis.z, blender_bone.y_axis.z, blender_bone.z_axis.z
-        mat = blender_bone.bone.matrix_local.to_3x3().transposed().to_4x4()
-        (vec, angle) = rotation.to_axis_angle()
-        vec = mat.inverted() * vec
-        v = mathutils.Vector((-vec.x, -vec.z, -vec.y))
-        return mathutils.Quaternion(v, angle).normalized()
+        self.__bone_converter_cls = vmd.importer.BoneConverter
 
     def __allFrameKeys(self, curves):
         all_frames = set()
@@ -228,14 +201,13 @@ class VMDExporter:
             assert(key_name not in vmd_bone_anim) # VMD bone name collision
             frame_keys = vmd_bone_anim[key_name]
 
-            mat = self.makeVMDBoneLocationMatrix(bone)
+            converter = self.__bone_converter_cls(bone, self.__scale, invert=True)
             prev_rot = None
             for frame_number, x, y, z, rw, rx, ry, rz in self.__allFrameKeys(bone_curves):
                 key = vmd.BoneFrameKey()
                 key.frame_number = frame_number - self.__frame_start
-                key.location = mat * mathutils.Vector([x[0], y[0], z[0]]) * self.__scale
-                curr_rot = mathutils.Quaternion([rw[0], rx[0], ry[0], rz[0]])
-                curr_rot = self.convertToVMDBoneRotation(bone, curr_rot)
+                key.location = converter.convert_location([x[0], y[0], z[0]])
+                curr_rot = converter.convert_rotation([rx[0], ry[0], rz[0], rw[0]])
                 if prev_rot is not None:
                     curr_rot = self.__minRotationDiff(prev_rot, curr_rot)
                 prev_rot = curr_rot
@@ -376,6 +348,9 @@ class VMDExporter:
         if args.get('use_frame_range', False):
             self.__frame_start = bpy.context.scene.frame_start
             self.__frame_end = bpy.context.scene.frame_end
+
+        if args.get('use_pose_mode', False):
+            self.__bone_converter_cls = vmd.importer.BoneConverterPoseMode
 
         if armature or mesh:
             vmdFile = vmd.File()
