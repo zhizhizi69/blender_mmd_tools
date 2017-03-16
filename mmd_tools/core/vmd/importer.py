@@ -57,7 +57,7 @@ class BoneConverterPoseMode:
         self.__mat = mat * mat2
         self.__scale = scale
         self.__mat_rot = pose_bone.matrix_basis.to_3x3()
-        self.__mat_loc = self.__mat_rot * mat * mat2
+        self.__mat_loc = self.__mat_rot * self.__mat
         self.__offset = pose_bone.location.copy()
         self.convert_location = self._convert_location
         self.convert_rotation = self._convert_rotation
@@ -152,15 +152,13 @@ class VMDImporter:
             bone_name_table[bone.name] = name
 
             fcurves = [None]*7 # x, y, z, rw, rx, ry, rz
-            default_values = [0]*7
+            default_values = list(bone.location) + list(bone.rotation_quaternion)
             data_path = 'pose.bones["%s"].location'%bone.name
             for axis_i in range(3):
                 fcurves[axis_i] = action.fcurves.new(data_path=data_path, index=axis_i, action_group=bone.name)
-                default_values[axis_i] = bone.location[axis_i]
             data_path = 'pose.bones["%s"].rotation_quaternion'%bone.name
             for axis_i in range(4):
                 fcurves[3+axis_i] = action.fcurves.new(data_path=data_path, index=axis_i, action_group=bone.name)
-                default_values[3+axis_i] = bone.rotation_quaternion[axis_i]
 
             for i, c in enumerate(fcurves):
                 c.keyframe_points.add(extra_frame+num_frame)
@@ -172,7 +170,7 @@ class VMDImporter:
                 fcurves[i] = kp_iter
 
             converter = self.__bone_util_cls(bone, self.__scale)
-            prev_rot = None
+            prev_rot = bone.rotation_quaternion if extra_frame else None
             prev_kps = None
             vmd_frames = sorted(keyFrames, key=lambda x:x.frame_number)
             for k, x, y, z, rw, rx, ry, rz in zip(vmd_frames, *fcurves):

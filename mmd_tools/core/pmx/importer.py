@@ -265,11 +265,8 @@ class PMXImporter:
         return r
 
     @staticmethod
-    def __convertIKLimitAngles(min_angle, max_angle, pose_bone):
-        mat = mathutils.Matrix([
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 1.0, 0.0]])
+    def convertIKLimitAngles(min_angle, max_angle, pose_bone, invert=False):
+        mat = mathutils.Matrix([[1,0,0], [0,0,1], [0,1,0]])
 
         def __align_rotation(rad):
             from math import pi
@@ -281,6 +278,14 @@ class PMXImporter:
         rot.y = __align_rotation(rot.y)
         rot.z = __align_rotation(rot.z)
         m = rot.to_matrix().transposed() * mat * -1
+        if invert:
+            m.invert()
+
+        # fix precision issue
+        for i in range(3):
+            for j in range(3):
+                val = m[i][j]
+                m[i][j] = int(val-0.5) if val < 0 else int(val+0.5)
 
         new_min_angle = m * mathutils.Vector(min_angle)
         new_max_angle = m * mathutils.Vector(max_angle)
@@ -342,7 +347,7 @@ class PMXImporter:
                 ikConst.chain_count -= 1
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]
-                minimum, maximum = self.__convertIKLimitAngles(i.minimumAngle, i.maximumAngle, bone)
+                minimum, maximum = self.convertIKLimitAngles(i.minimumAngle, i.maximumAngle, bone)
 
                 bone.use_ik_limit_x = True
                 bone.use_ik_limit_y = True

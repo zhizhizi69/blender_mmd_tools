@@ -411,31 +411,6 @@ class __PmxExporter:
             self.__model.bones = pmx_bones
         return r
 
-    @staticmethod
-    def __convertIKLimitAngles(min_angle, max_angle, pose_bone):
-        mat = mathutils.Matrix([
-            [1.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 1.0, 0.0]])
-
-        def __align_rotation(rad):
-            from math import pi
-            base_rad = -pi/2 if rad < 0 else pi/2
-            return int(0.5 + rad/base_rad) * base_rad
-
-        rot = pose_bone.bone.matrix_local.to_euler()
-        rot.x = __align_rotation(rot.x)
-        rot.y = __align_rotation(rot.y)
-        rot.z = __align_rotation(rot.z)
-        m = mat * rot.to_matrix().transposed().inverted() * -1
-
-        new_min_angle = m * mathutils.Vector(min_angle)
-        new_max_angle = m * mathutils.Vector(max_angle)
-        for i in range(3):
-            if new_min_angle[i] > new_max_angle[i]:
-                new_min_angle[i], new_max_angle[i] = new_max_angle[i], new_min_angle[i]
-        return new_min_angle, new_max_angle
-
     def __exportIKLinks(self, pose_bone, pmx_bones, bone_map, ik_links, count):
         if count <= 0:
             return ik_links
@@ -479,7 +454,8 @@ class __PmxExporter:
                     minimum[2] = ik_limit_override.min_z
                     maximum[2] = ik_limit_override.max_z
 
-            minimum, maximum = self.__convertIKLimitAngles(minimum, maximum, pose_bone)
+            convertIKLimitAngles = pmx.importer.PMXImporter.convertIKLimitAngles
+            minimum, maximum = convertIKLimitAngles(minimum, maximum, pose_bone, invert=True)
             ik_link.minimumAngle = list(minimum)
             ik_link.maximumAngle = list(maximum)
 
@@ -791,7 +767,7 @@ class __PmxExporter:
             p_rigid.mode = int(mmd_rigid.type)
 
             rigid_shape = mmd_rigid.shape
-            shape_size = mathutils.Vector(mmd_rigid.size)
+            shape_size = mathutils.Vector(mmd_rigid.size) * (sum(s) / 3)
             if rigid_shape == 'SPHERE':
                 p_rigid.type = 0
                 p_rigid.size = shape_size * self.__scale
@@ -1023,7 +999,6 @@ class __PmxExporter:
             meshObj.active_shape_key_index = i
             mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
             mesh.transform(pmx_matrix)
-            mesh.update(calc_tessface=True)
             if shape_key_name in {'mmd_sdef_c', 'mmd_sdef_r0', 'mmd_sdef_r1'}:
                 if shape_key_name == 'mmd_sdef_c':
                     for v in mesh.vertices:

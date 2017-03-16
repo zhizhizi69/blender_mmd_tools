@@ -334,9 +334,9 @@ class TestPmxExporter(unittest.TestCase):
 
             self.assertEqual(rigid0.type, rigid1.type, msg)
             if rigid0.type == 0: # SHAPE_SPHERE
-                self.assertEqual(rigid0.size[0], rigid1.size[0], msg)
+                self.assertLess(abs(rigid0.size[0]-rigid1.size[0]), 1e-6, msg)
             elif rigid0.type == 1: # SHAPE_BOX
-                self.assertEqual(rigid0.size, rigid1.size, msg)
+                self.assertLess(self.__vector_error(rigid0.size, rigid1.size), 1e-6, msg)
             elif rigid0.type == 2: # SHAPE_CAPSULE
                 self.assertLess(self.__vector_error(rigid0.size[0:2], rigid1.size[0:2]), 1e-6, msg)
 

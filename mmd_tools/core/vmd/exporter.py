@@ -61,6 +61,7 @@ class _FCurve:
         for kp in sorted(fcurve.keyframe_points, key=lambda x: x.co[0]):
             i = int(kp.co[0]+0.5)
             if i == prev_i:
+                prev_kp = kp
                 continue
             prev_i = i
             frames = []
