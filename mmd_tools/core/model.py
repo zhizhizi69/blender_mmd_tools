@@ -94,6 +94,7 @@ class Model:
     def initialDisplayFrames(self):
         frames = self.__root.mmd_root.display_item_frames
         if len(frames) > 0:
+            self.__root.mmd_root.active_display_item_frame = 0
             frames.clear()
         frame_root = frames.add()
         frame_root.name = 'Root'
@@ -101,7 +102,7 @@ class Model:
         frame_root.is_special = True
         frame_facial = frames.add()
         frame_facial.name = u'表情'
-        frame_facial.name_e = 'Exp'
+        frame_facial.name_e = 'Facial'
         frame_facial.is_special = True
 
     def createRigidBodyPool(self, counts):

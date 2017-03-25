@@ -15,6 +15,7 @@ from mmd_tools import utils
 from mmd_tools import translations
 from mmd_tools import bpyutils
 from mmd_tools.core.vmd.importer import BoneConverter
+from mmd_tools.operators.display_item import DisplayItemQuickSetup
 
 
 class PMXImporter:
@@ -689,6 +690,8 @@ class PMXImporter:
                     item.morph_type = morph_types[morph.type_index()]
                 else:
                     raise Exception('Unknown display item type.')
+
+        DisplayItemQuickSetup.apply_bone_groups(root.mmd_root, self.__armObj)
 
     def __addArmatureModifier(self, meshObj, armObj):
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')

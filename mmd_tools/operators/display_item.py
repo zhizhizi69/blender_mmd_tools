@@ -3,12 +3,14 @@
 import bpy
 from bpy.types import Operator
 
+from collections import OrderedDict
 from mmd_tools import utils
+from mmd_tools.utils import ItemOp, ItemMoveOp
 import mmd_tools.core.model as mmd_model
 
 
 class AddDisplayItemFrame(Operator):
-    bl_idname = 'mmd_tools.add_display_item_frame'
+    bl_idname = 'mmd_tools.display_item_frame_add'
     bl_label = 'Add Display Item Frame'
     bl_description = 'Add a display item frame to the list'
     bl_options = {'PRESET'}
@@ -17,13 +19,16 @@ class AddDisplayItemFrame(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        item = mmd_root.display_item_frames.add()
+
+        frames = mmd_root.display_item_frames
+        index = ItemOp.add_after(frames, max(1, mmd_root.active_display_item_frame))
+        item = frames[index]
         item.name = 'Display Frame'
-        mmd_root.active_display_item_frame = len(mmd_root.display_item_frames)-1
+        mmd_root.active_display_item_frame = index
         return {'FINISHED'}
 
 class RemoveDisplayItemFrame(Operator):
-    bl_idname = 'mmd_tools.remove_display_item_frame'
+    bl_idname = 'mmd_tools.display_item_frame_remove'
     bl_label = 'Remove Display Item Frame'
     bl_description = 'Remove active display item frame from the list'
     bl_options = {'PRESET'}
@@ -32,48 +37,40 @@ class RemoveDisplayItemFrame(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        # Let's prevent the accidental deletion of the special frames
-        if not mmd_root.display_item_frames[mmd_root.active_display_item_frame].is_special:
-            mmd_root.display_item_frames.remove(mmd_root.active_display_item_frame)
-            mmd_root.active_display_item_frame = max(0, mmd_root.active_display_item_frame-1)
+
+        index = mmd_root.active_display_item_frame
+        frames = mmd_root.display_item_frames
+        frame = ItemOp.get_by_index(frames, index)
+        if frame and frame.is_special:
+            frame.items.clear()
+            frame.active_item = 0
+        else:
+            frames.remove(index)
+            mmd_root.active_display_item_frame = min(len(frames)-1, max(2, index-1))
         return {'FINISHED'}
 
-class MoveUpDisplayItemFrame(Operator):
-    bl_idname = 'mmd_tools.move_up_display_item_frame'
-    bl_label = 'Move Up Display Item Frame'
-    bl_description = 'Move active display item frame up in the list'
+class MoveDisplayItemFrame(Operator, ItemMoveOp):
+    bl_idname = 'mmd_tools.display_item_frame_move'
+    bl_label = 'Move Display Item Frame'
+    bl_description = 'Move active display item frame up/down in the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        if mmd_root.active_display_item_frame <= 0:
-            return {'FINISHED'}
 
-        mmd_root.display_item_frames.move(mmd_root.active_display_item_frame, mmd_root.active_display_item_frame-1)
-        mmd_root.active_display_item_frame -= 1
-        return {'FINISHED'}
-
-class MoveDownDisplayItemFrame(Operator):
-    bl_idname = 'mmd_tools.move_down_display_item_frame'
-    bl_label = 'Move Down Display Item Frame'
-    bl_description = 'Move active display item frame down in the list'
-    bl_options = {'PRESET'}
-
-    def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
-        mmd_root = root.mmd_root
-        if len( mmd_root.display_item_frames)-1 <= mmd_root.active_display_item_frame:
-            return {'FINISHED'}
-
-        mmd_root.display_item_frames.move(mmd_root.active_display_item_frame, mmd_root.active_display_item_frame+1)
-        mmd_root.active_display_item_frame += 1
+        index = mmd_root.active_display_item_frame
+        frames = mmd_root.display_item_frames
+        frame = ItemOp.get_by_index(frames, index)
+        if frame and frame.is_special:
+            pass
+        else:
+            mmd_root.active_display_item_frame = self.move(frames, index, self.type, index_min=2)
         return {'FINISHED'}
 
 class AddDisplayItem(Operator):
-    bl_idname = 'mmd_tools.add_display_item'
+    bl_idname = 'mmd_tools.display_item_add'
     bl_label = 'Add Display Item'
     bl_description = 'Add a display item to the list'
     bl_options = {'PRESET'}
@@ -82,15 +79,31 @@ class AddDisplayItem(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
-        item = frame.items.add()
-        item.type = 'MORPH' if frame.name == u'表情' else 'BONE'
-        item.name = 'Display Item'
-        frame.active_item = len(frame.items)-1
+        frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
+        if frame is None:
+            return {'CANCELLED'}
+
+        if frame.name == u'表情':
+            morph = ItemOp.get_by_index(getattr(mmd_root, mmd_root.active_morph_type), mmd_root.active_morph)
+            morph_name = morph.name if morph else 'Morph Item'
+            self._add_item(frame, 'MORPH', morph_name, mmd_root.active_morph_type)
+        else:
+            bone_name = context.active_bone.name if context.active_bone else 'Bone Item'
+            self._add_item(frame, 'BONE', bone_name)
         return {'FINISHED'}
 
+    def _add_item(self, frame, item_type, item_name, morph_type=None):
+        items = frame.items
+        index = ItemOp.add_after(items, frame.active_item)
+        item = items[index]
+        item.type = item_type
+        item.name = item_name
+        if morph_type:
+            item.morph_type = morph_type
+        frame.active_item = index
+
 class RemoveDisplayItem(Operator):
-    bl_idname = 'mmd_tools.remove_display_item'
+    bl_idname = 'mmd_tools.display_item_remove'
     bl_label = 'Remove Display Item'
     bl_description = 'Remove active display item from the list'
     bl_options = {'PRESET'}
@@ -99,60 +112,221 @@ class RemoveDisplayItem(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
+        frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
+        if frame is None:
+            return {'CANCELLED'}
         frame.items.remove(frame.active_item)
         frame.active_item = max(0, frame.active_item-1)
         return {'FINISHED'}
 
-class MoveUpDisplayItem(Operator):
-    bl_idname = 'mmd_tools.move_up_display_item'
-    bl_label = 'Move Up Display Item'
-    bl_description = 'Move active display item up in the list'
+class MoveDisplayItem(Operator, ItemMoveOp):
+    bl_idname = 'mmd_tools.display_item_move'
+    bl_label = 'Move Display Item'
+    bl_description = 'Move active display item up/dowm in the list'
     bl_options = {'PRESET'}
 
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
-        if frame.active_item <= 0:
-            return {'FINISHED'}
-
-        frame.items.move(frame.active_item, frame.active_item-1)
-        frame.active_item -= 1
+        frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
+        if frame is None:
+            return {'CANCELLED'}
+        frame.active_item = self.move(frame.items, frame.active_item, self.type)
         return {'FINISHED'}
 
-class MoveDownDisplayItem(Operator):
-    bl_idname = 'mmd_tools.move_down_display_item'
-    bl_label = 'Move Down Display Item'
-    bl_description = 'Move active display item down in the list'
+class FindDisplayItem(Operator):
+    bl_idname = 'mmd_tools.display_item_find'
+    bl_label = 'Find Display Item'
+    bl_description = 'Find the display item of active bone or morph'
     bl_options = {'PRESET'}
+
+    type = bpy.props.EnumProperty(
+        name='Type',
+        description='Find type',
+        items = [
+            ('BONE', 'Find Bone Item', 'Find active bone in Display Panel', 0),
+            ('MORPH', 'Find Morph Item', 'Find active morph of Morph Tools Panel in Display Panel', 1),
+            ],
+        default = 'BONE',
+        )
 
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
-        if len(frame.items)-1 <= frame.active_item:
-            return {'FINISHED'}
+        if self.type == 'MORPH':
+            morph_type = mmd_root.active_morph_type
+            morph = ItemOp.get_by_index(getattr(mmd_root, morph_type), mmd_root.active_morph)
+            if morph is None:
+                return {'CANCELLED'}
 
-        frame.items.move(frame.active_item, frame.active_item+1)
-        frame.active_item += 1
+            morph_name = morph.name
+            def __check(item):
+                return item.type == 'MORPH' and item.name == morph_name and item.morph_type == morph_type
+            self._find_display_item(mmd_root, __check)
+        else:
+            if context.active_bone is None:
+                return {'CANCELLED'}
+
+            bone_name = context.active_bone.name
+            def __check(item):
+                return item.type == 'BONE' and item.name == bone_name
+            self._find_display_item(mmd_root, __check)
         return {'FINISHED'}
+
+    def _find_display_item(self, mmd_root, check_func=None):
+        for i, frame in enumerate(mmd_root.display_item_frames):
+            for j, item in enumerate(frame.items):
+                if check_func(item):
+                    mmd_root.active_display_item_frame = i
+                    frame.active_item = j
+                    return
 
 class SelectCurrentDisplayItem(Operator):
-    bl_idname = 'mmd_tools.select_current_display_item'
+    bl_idname = 'mmd_tools.display_item_select_current'
     bl_label = 'Select Current Display Item'
-    bl_description = 'Select the bone assigned to the display item in the armature'
+    bl_description = 'Select the bone or morph assigned to the display item'
     bl_options = {'PRESET'}
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        mmd_root = root.mmd_root
+        frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
+        if frame is None:
+            return {'CANCELLED'}
+        item = ItemOp.get_by_index(frame.items, frame.active_item)
+        if item is None:
+            return {'CANCELLED'}
+
+        if item.type == 'MORPH':
+            morphs = getattr(mmd_root, item.morph_type)
+            index = morphs.find(item.name)
+            if index >= 0:
+                mmd_root.active_morph_type = item.morph_type
+                mmd_root.active_morph = index
+        else:
+            utils.selectSingleBone(context, mmd_model.Model(root).armature(), item.name)
+        return {'FINISHED'}
+
+class DisplayItemQuickSetup(Operator):
+    bl_idname = 'mmd_tools.display_item_quick_setup'
+    bl_label = 'Display Item Quick Setup'
+    bl_description = 'Quick setup display items'
+    bl_options = {'PRESET'}
+
+    type = bpy.props.EnumProperty(
+        name='Type',
+        description='Select type',
+        items = [
+            ('RESET', 'Reset', 'Clear all items and frames, reset to default', 'X', 0),
+            ('FACIAL', 'Load Facial Items', 'Load all morphs to faical frame', 'SHAPEKEY_DATA', 1),
+            ('GROUP_LOAD', 'Load Bone Groups', "Load armature's bone groups to display item frames", 'GROUP_BONE', 2),
+            ('GROUP_APPLY', 'Apply Bone Groups', "Apply display item frames to armature's bone groups", 'GROUP_BONE', 3),
+            ],
+        default='FACIAL',
+        )
 
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
-        mmd_root = root.mmd_root
-        arm = rig.armature()
-        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
-        item = frame.items[frame.active_item]
-        utils.selectSingleBone(context, arm, item.name)
+        if self.type == 'RESET':
+            rig.initialDisplayFrames()
+        elif self.type == 'FACIAL':
+            self.load_facial_items(root.mmd_root)
+        elif self.type == 'GROUP_LOAD':
+            self.load_bone_groups(root.mmd_root, rig.armature())
+        elif self.type == 'GROUP_APPLY':
+            self.apply_bone_groups(root.mmd_root, rig.armature())
         return {'FINISHED'}
+
+    @staticmethod
+    def load_facial_items(mmd_root):
+        item_list = []
+        item_list.extend(('vertex_morphs', i.name) for i in mmd_root.vertex_morphs)
+        item_list.extend(('bone_morphs', i.name) for i in mmd_root.bone_morphs)
+        item_list.extend(('material_morphs', i.name) for i in mmd_root.material_morphs)
+        item_list.extend(('uv_morphs', i.name) for i in mmd_root.uv_morphs)
+        item_list.extend(('group_morphs', i.name) for i in mmd_root.group_morphs)
+
+        frame = mmd_root.display_item_frames[u'表情']
+        facial_items = frame.items
+
+        # keep original item order
+        old = tuple((i.morph_type, i.name) for i in facial_items)
+        item_list.sort(key=lambda x: old.index(x) if x in old else len(old))
+
+        ItemOp.resize(facial_items, len(item_list))
+        for item, data in zip(facial_items, item_list):
+            item.type = 'MORPH'
+            item.morph_type, item.name = data
+        frame.active_item = min(frame.active_item, len(facial_items)-1)
+
+    @staticmethod
+    def load_bone_groups(mmd_root, armature):
+        bone_groups = OrderedDict((i.name, []) for i in armature.pose.bone_groups)
+        for b in armature.pose.bones:
+            if b.bone_group:
+                bone_groups[b.bone_group.name].append(b.name)
+
+        frames = mmd_root.display_item_frames
+        used_index = set()
+        for group_name, bone_names in bone_groups.items():
+            if len(bone_names) < 1: # skip empty group
+                continue
+
+            frame = frames.get(group_name)
+            if frame is None:
+                frame = frames.add()
+                frame.name = group_name
+                frame.name_e = group_name
+            used_index.add(frames.find(group_name))
+
+            items = frame.items
+            ItemOp.resize(items, len(bone_names))
+            for item, name in zip(items, bone_names):
+                item.type = 'BONE'
+                item.name = name
+            frame.active_item = min(frame.active_item, len(items)-1)
+
+        # remove unused frames
+        for i in reversed(range(len(frames))):
+            if i not in used_index:
+                frame = frames[i]
+                if frame.is_special:
+                    if frame.name != u'表情':
+                        frame.items.clear()
+                else:
+                    frames.remove(i)
+        mmd_root.active_display_item_frame = min(mmd_root.active_display_item_frame, len(frames)-1)
+
+    @staticmethod
+    def apply_bone_groups(mmd_root, armature):
+        if bpy.app.version < (2, 72, 0):
+            return
+
+        arm_bone_groups = armature.pose.bone_groups
+        pose_bones = armature.pose.bones
+        used_groups = set()
+        unassigned_bones = {b.name for b in pose_bones}
+        for frame in mmd_root.display_item_frames:
+            for item in frame.items:
+                if item.type == 'BONE' and item.name in unassigned_bones:
+                    unassigned_bones.remove(item.name)
+                    group_name = frame.name
+                    used_groups.add(group_name)
+                    group = arm_bone_groups.get(group_name)
+                    if group is None:
+                        group = arm_bone_groups.new(name=group_name)
+                    pose_bones[item.name].bone_group = group
+
+        for name in unassigned_bones:
+            pose_bones[name].bone_group = None
+
+        # remove unused bone groups
+        for group in arm_bone_groups:
+            if group.name not in used_groups:
+                arm_bone_groups.remove(group)
+

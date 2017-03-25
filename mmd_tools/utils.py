@@ -127,7 +127,6 @@ def clearUnusedMeshes():
 
     for mesh in meshes_to_delete:
         bpy.data.meshes.remove(mesh)
-    
 
 
 ## Boneのカスタムプロパティにname_jが存在する場合、name_jの値を
@@ -200,3 +199,73 @@ def saferelpath(path, start, strategy='inside'):
     else:
         result = os.path.relpath(path, start)
     return result
+
+
+class ItemOp:
+    @staticmethod
+    def get_by_index(items, index):
+        if 0 <= index < len(items):
+            return items[index]
+        return None
+
+    @staticmethod
+    def resize(items, length):
+        count = length - len(items)
+        if count > 0:
+            for i in range(count):
+                items.add()
+        elif count < 0:
+            for i in range(-count):
+                items.remove(length)
+
+    @staticmethod
+    def add_after(items, index):
+        index_end = len(items)
+        index = min(index_end, index+1)
+        item = items.add()
+        items.move(index_end, index)
+        return index
+
+class ItemMoveOp:
+    import bpy
+    type = bpy.props.EnumProperty(
+        name='Type',
+        description='Move type',
+        items = [
+            ('UP', 'Up', '', 0),
+            ('DOWN', 'Down', '', 1),
+            ('TOP', 'Top', '', 2),
+            ('BOTTOM', 'Bottom', '', 3),
+            ],
+        default='UP',
+        )
+
+    @staticmethod
+    def move(items, index, move_type, index_min=0, index_max=None):
+        if index_max is None:
+            index_max = len(items)-1
+        else:
+            index_max = min(index_max, len(items)-1)
+        index_min = min(index_min, index_max)
+
+        if index < index_min:
+            items.move(index, index_min)
+            return index_min
+        elif index > index_max:
+            items.move(index, index_max)
+            return index_max
+
+        index_new = index
+        if move_type == 'UP':
+            index_new = max(index_min, index-1)
+        elif move_type == 'DOWN':
+            index_new = min(index+1, index_max)
+        elif move_type == 'TOP':
+            index_new = index_min
+        elif move_type == 'BOTTOM':
+            index_new = index_max
+
+        if index_new != index:
+            items.move(index, index_new)
+        return index_new
+

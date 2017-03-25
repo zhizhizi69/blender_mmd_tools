@@ -4,7 +4,15 @@ import bpy
 from bpy.types import Panel, Menu, UIList
 
 from mmd_tools import operators
+from mmd_tools.utils import ItemOp
 import mmd_tools.core.model as mmd_model
+
+
+TRIA_UP_BAR = 'TRIA_UP_BAR'
+TRIA_DOWN_BAR = 'TRIA_DOWN_BAR'
+if bpy.app.version < (2, 73, 0):
+    TRIA_UP_BAR = 'TRIA_UP'
+    TRIA_DOWN_BAR = 'TRIA_DOWN'
 
 
 class _PanelBase(object):
@@ -46,7 +54,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
             col = row.column(align=True)
             col.active = context.scene.rigidbody_world is not None and context.scene.rigidbody_world.enabled
             sub_row = col.row(align=True)
-            sub_row.label('Rigidbody:', icon='PHYSICS')
+            sub_row.label('Physics:', icon='PHYSICS')
             if not root.mmd_root.is_built:
                 sub_row.label(icon='ERROR')
             col.operator('mmd_tools.build_rig', text='Build')
@@ -67,9 +75,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
 
 class MMD_ROOT_UL_display_item_frames(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        mmd_root = data
         frame = item
-
         if self.layout_type in {'DEFAULT'}:
             row = layout.split(percentage=0.5, align=True)
             if frame.is_special:
@@ -117,8 +123,6 @@ class MMD_ROOT_UL_display_items(UIList):
             row.label(icon='ERROR')
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        mmd_root = data
-
         if self.layout_type in {'DEFAULT'}:
             if item.type == 'BONE':
                 layout.prop(item, 'name', text='', emboss=False, icon='BONE_DATA')
@@ -158,6 +162,26 @@ class MMD_ROOT_UL_display_items(UIList):
         row.prop(self, 'morph_filter', expand=True)
 
 
+class MMDDisplayItemFrameMenu(Menu):
+    bl_idname = 'OBJECT_MT_mmd_tools_display_item_frame_menu'
+    bl_label = 'Display Item Frame Menu'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_enum('mmd_tools.display_item_quick_setup', 'type')
+        layout.separator()
+        layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
+        layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+
+class MMDDisplayItemMenu(Menu):
+    bl_idname = 'OBJECT_MT_mmd_tools_display_item_menu'
+    bl_label = 'Display Item Menu'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('mmd_tools.display_item_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
+        layout.operator('mmd_tools.display_item_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+
 class MMDDisplayItemsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
     bl_label = 'Display Panel'
@@ -165,21 +189,16 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
 
     def draw(self, context):
         active_obj = context.active_object
-        root = None
-        if active_obj:
-            root = mmd_model.Model.findRoot(active_obj)
+        root = mmd_model.Model.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
 
         rig = mmd_model.Model(root)
-        root = rig.rootObject()
         mmd_root = root.mmd_root
         col = self.layout.column()
-        c = col.column(align=True)
-        c.label('Frames')
-        row = c.row()
+        row = col.row()
         row.template_list(
             "MMD_ROOT_UL_display_item_frames",
             "",
@@ -188,15 +207,17 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.display_item.AddDisplayItemFrame.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.display_item.RemoveDisplayItemFrame.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.display_item_frame_add', text='', icon='ZOOMIN')
+        tb1.operator('mmd_tools.display_item_frame_remove', text='', icon='ZOOMOUT')
+        tb1.menu('OBJECT_MT_mmd_tools_display_item_frame_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.display_item.MoveUpDisplayItemFrame.bl_idname, text='', icon='TRIA_UP')
-        tb1.operator(operators.display_item.MoveDownDisplayItemFrame.bl_idname, text='', icon='TRIA_DOWN')
-        if len(mmd_root.display_item_frames)==0:
+        tb1.operator('mmd_tools.display_item_frame_move', text='', icon='TRIA_UP').type = 'UP'
+        tb1.operator('mmd_tools.display_item_frame_move', text='', icon='TRIA_DOWN').type = 'DOWN'
+
+        frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
+        if frame is None:
             return
-        frame = mmd_root.display_item_frames[mmd_root.active_display_item_frame]
 
         c = col.column(align=True)
         row = c.row()
@@ -208,28 +229,19 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.display_item.AddDisplayItem.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.display_item.RemoveDisplayItem.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.display_item_add', text='', icon='ZOOMIN')
+        tb1.operator('mmd_tools.display_item_remove', text='', icon='ZOOMOUT')
+        tb1.menu('OBJECT_MT_mmd_tools_display_item_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.display_item.MoveUpDisplayItem.bl_idname, text='', icon='TRIA_UP')
-        tb1.operator(operators.display_item.MoveDownDisplayItem.bl_idname, text='', icon='TRIA_DOWN')
-        if len(frame.items) == 0:
-            return # If the list is empty we should stop drawing the panel here
-        item = frame.items[frame.active_item]
-        row = col.row(align=True)
-        if item.type == 'BONE':
-            armature = rig.armature()
-            if armature is None:
-                row.label('Armature not found', icon='ERROR')
-                return
-            row = row.split(percentage=0.67, align=True)
-            row.prop_search(item, 'name', armature.pose, 'bones', icon='BONE_DATA', text='')
-            row.operator(operators.display_item.SelectCurrentDisplayItem.bl_idname, text='Select')
-        elif item.type == 'MORPH':
-            row = row.split(percentage=0.67, align=True)
-            row.prop_search(item, 'name', mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
-            row.prop(item, 'morph_type', text='')
+        tb1.operator('mmd_tools.display_item_move', text='', icon='TRIA_UP').type = 'UP'
+        tb1.operator('mmd_tools.display_item_move', text='', icon='TRIA_DOWN').type = 'DOWN'
+
+        row = col.row()
+        r = row.row(align=True)
+        r.operator('mmd_tools.display_item_find', text='Bone', icon='VIEWZOOM').type = 'BONE'
+        r.operator('mmd_tools.display_item_find', text='Morph', icon='VIEWZOOM').type = 'MORPH'
+        row.operator('mmd_tools.display_item_select_current', text='Select')
 
 
 class UL_Morphs(UIList):

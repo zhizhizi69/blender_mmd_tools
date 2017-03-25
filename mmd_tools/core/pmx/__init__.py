@@ -349,7 +349,7 @@ class Model:
         dsp_face = Display()
         dsp_face.isSpecial = True
         dsp_face.name = '表情'
-        dsp_face.name_e = 'Exp'
+        dsp_face.name_e = 'Facial'
         self.display.append(dsp_face)
 
         self.rigids = []
