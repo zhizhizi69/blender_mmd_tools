@@ -6,9 +6,10 @@ from mathutils import Vector, Quaternion
 
 import mmd_tools.core.model as mmd_model
 from mmd_tools import bpyutils
+from mmd_tools import utils
+from mmd_tools.utils import ItemOp, ItemMoveOp
 from mmd_tools.core.material import FnMaterial
 from mmd_tools.core.exceptions import MaterialNotFoundError, DivisionError
-from mmd_tools import utils
 
 #Util functions
 def divide_vector_components(vec1, vec2):
@@ -94,38 +95,22 @@ class _AddMorphBase(object):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
-class MoveUpMorph(Operator):
-    bl_idname = 'mmd_tools.move_up_morph'
-    bl_label = 'Move Up Morph'
-    bl_description = 'Move active morph item up in the list'
-    bl_options = {'PRESET'}
-    
+class MoveMorph(Operator, ItemMoveOp):
+    bl_idname = 'mmd_tools.morph_move'
+    bl_label = 'Move Morph'
+    bl_description = 'Move active morph item up/down in the list'
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        if mmd_root.active_morph > 0:
-            getattr(mmd_root, mmd_root.active_morph_type).move(mmd_root.active_morph, mmd_root.active_morph-1)
-            mmd_root.active_morph -= 1
-            
+        mmd_root.active_morph = self.move(
+            getattr(mmd_root, mmd_root.active_morph_type),
+            mmd_root.active_morph,
+            self.type,
+            )
         return {'FINISHED'}
-    
-class MoveDownMorph(Operator):
-    bl_idname = 'mmd_tools.move_down_morph'
-    bl_label = 'Move Down Morph'
-    bl_description = 'Move active morph item down in the list'
-    bl_options = {'PRESET'}
-    
-    def execute(self, context):
-        obj = context.active_object
-        root = mmd_model.Model.findRoot(obj)
-        mmd_root = root.mmd_root
-        items = getattr(mmd_root, mmd_root.active_morph_type)
-        if mmd_root.active_morph+1 < len(items):             
-            items.move(mmd_root.active_morph, mmd_root.active_morph+1)
-            mmd_root.active_morph += 1
-            
-        return {'FINISHED'}
+
 
 class AddVertexMorph(Operator, _AddMorphBase):
     bl_idname = 'mmd_tools.add_vertex_morph'
@@ -192,10 +177,6 @@ class AddMaterialOffset(Operator):
     bl_description = 'Add a material offset item to the list'
     bl_options = {'PRESET'}
 
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
-
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -233,10 +214,6 @@ class RemoveMaterialOffset(Operator):
     bl_label = 'Remove Material Offset'
     bl_description = 'Remove active material offset item from the list'
     bl_options = {'PRESET'}
-
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -280,10 +257,6 @@ class ApplyMaterialOffset(Operator):
     bl_label = 'Apply Material Offset'
     bl_description = 'Calculates the offsets and apply them, then the temporary material is removed'
     bl_options = {'PRESET'}
-
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -351,10 +324,6 @@ class CreateWorkMaterial(Operator):
     bl_description = 'Creates a temporary material to edit this offset'
     bl_options = {'PRESET'}
 
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
-
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -409,10 +378,6 @@ class ClearTempMaterials(Operator):
     bl_label = 'Clear Temp Materials'
     bl_description = 'Clears all the temporary materials'
     bl_options = {'PRESET'}
-
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object
@@ -689,17 +654,12 @@ class ViewUVMorph(Operator):
                 return { 'CANCELLED' }
 
             if len(morph.data) > 0:
-                uv_id_map = dict([(i, []) for i in range(len(mesh.vertices))])
-                #uv_id = 0
-                #for f in mesh.polygons:
-                #    for vertex_id in f.vertices:
-                #        uv_id_map[vertex_id].append(uv_id)
-                #        uv_id += 1
-                for uv_id, l in enumerate(mesh.loops):
-                    uv_id_map[l.vertex_index].append(uv_id)
-
                 base_uv_data = mesh.uv_layers.active.data
                 temp_uv_data = mesh.uv_layers[uv_tex.name].data
+
+                uv_id_map = {}
+                for uv_idx, l in enumerate(mesh.loops):
+                    uv_id_map.setdefault(l.vertex_index, []).append(uv_idx)
 
                 if self.with_animation:
                     morph_name = '__uv.%s'%morph.name
@@ -866,25 +826,21 @@ class ApplyUVMorph(Operator):
             base_uv_data = base_uv_layers[morph.uv_index].data
             temp_uv_data = mesh.uv_layers.active.data
 
-            #uv_vertices = []
-            #for f in mesh.polygons:
-            #    uv_vertices.extend(f.vertices)
-            uv_vertices = [l.vertex_index for l in mesh.loops]
+            uv_id_map = {}
+            for uv_idx, l in enumerate(mesh.loops):
+                uv_id_map.setdefault(l.vertex_index, []).append(uv_idx)
 
             for bv in mesh.vertices:
                 if not bv.select:
                     continue
-                # uv_idx = uv_vertices.index(bv.index) #XXX only get the first one
-                # uv_indexes = [i for i, v in enumerate(uv_vertices) if v == bv.index]
-                for uv_idx, v in enumerate(uv_vertices):
-                    # Find the first valid offset
-                    if v == bv.index:
-                        dx, dy = temp_uv_data[uv_idx].uv - base_uv_data[uv_idx].uv
-                        if abs(dx) > 0.0001 or abs(dy) > 0.0001:
-                            data = morph.data.add()
-                            data.index = bv.index
-                            data.offset = (dx, dy, 0, 0)
-                            break
+
+                for uv_idx in uv_id_map.get(bv.index, []):
+                    dx, dy = temp_uv_data[uv_idx].uv - base_uv_data[uv_idx].uv
+                    if abs(dx) > 0.0001 or abs(dy) > 0.0001:
+                        data = morph.data.add()
+                        data.index = bv.index
+                        data.offset = (dx, dy, 0, 0)
+                        break
 
         meshObj.select = selected
         # Can't call view_uv_morph here if we want to track the number of editing morphs
@@ -920,7 +876,9 @@ class AddGroupMorphOffset(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        morph = mmd_root.group_morphs[mmd_root.active_morph]
+        morph = ItemOp.get_by_index(mmd_root.group_morphs, mmd_root.active_morph)
+        if morph is None:
+            return {'CANCELLED'}
         data = morph.data.add()
         morph.active_group_data = len(morph.data)-1
         return { 'FINISHED' }
@@ -935,9 +893,9 @@ class RemoveGroupMorphOffset(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         mmd_root = root.mmd_root
-        morph = mmd_root.group_morphs[mmd_root.active_morph]
-        if len(morph.data) == 0:
-            return { 'FINISHED' }
+        morph = ItemOp.get_by_index(mmd_root.group_morphs, mmd_root.active_morph)
+        if morph is None:
+            return {'CANCELLED'}
         morph.data.remove(morph.active_group_data)
         morph.active_group_data = max(0, morph.active_group_data-1)
         return { 'FINISHED' }

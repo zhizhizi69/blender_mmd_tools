@@ -221,10 +221,10 @@ class ItemOp:
     @staticmethod
     def add_after(items, index):
         index_end = len(items)
-        index = min(index_end, index+1)
-        item = items.add()
+        index = max(0, min(index_end, index+1))
+        items.add()
         items.move(index_end, index)
-        return index
+        return items[index], index
 
 class ItemMoveOp:
     import bpy

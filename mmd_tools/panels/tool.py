@@ -32,7 +32,6 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         layout = self.layout
 
         col = layout.column(align=True)
-        col.label('Edit:')
         row = col.row(align=True)
         row.operator('mmd_tools.create_mmd_model_root_object', text='Create Model', icon='OUTLINER_OB_ARMATURE')
 
@@ -246,21 +245,26 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
 
 class UL_Morphs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT'}:            
+        mmd_root = data
+        if self.layout_type in {'DEFAULT'}:
             row = layout.split(percentage=0.4, align=True)
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.split(percentage=0.6, align=True)
             row.prop(item, 'name_e', text='', emboss=True, icon_value=icon)
             row = row.row(align=True)
             row.prop(item, 'category', text='', emboss=False, icon_value=icon)
-            if item.name not in item.id_data.mmd_root.display_item_frames[u'表情'].items:
+            frame_facial = mmd_root.display_item_frames.get(u'表情')
+            morph_item = frame_facial.items.get(item.name) if frame_facial else None
+            if morph_item is None:
                 row.label(icon='INFO')
+            elif morph_item.morph_type != mmd_root.active_morph_type:
+                row.label(icon='SHAPEKEY_DATA')
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
-            
+
 class UL_MaterialMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
@@ -272,7 +276,7 @@ class UL_MaterialMorphOffsets(UIList):
             pass
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon) 
+            layout.label(text="", icon_value=icon)
 
 class UL_UVMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -294,7 +298,7 @@ class UL_BoneMorphOffsets(UIList):
             pass
         elif self.layout_type in {'GRID'}:
             layout.alignment = 'CENTER'
-            layout.label(text="", icon_value=icon)    
+            layout.label(text="", icon_value=icon)
 
 class UL_GroupMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -313,23 +317,29 @@ class UL_GroupMorphOffsets(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+class MMDMorphMenu(Menu):
+    bl_idname = 'OBJECT_MT_mmd_tools_morph_menu'
+    bl_label = 'Morph Menu'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('mmd_tools.morph_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
+        layout.operator('mmd_tools.morph_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+
 class MMDMorphToolsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_morph_tools'
     bl_label = 'Morph Tools'
-    bl_options = {'DEFAULT_CLOSED'}            
-    
+    bl_options = {'DEFAULT_CLOSED'}
+
     def draw(self, context):
         active_obj = context.active_object
-        root = None
-        if active_obj:
-            root = mmd_model.Model.findRoot(active_obj)
+        root = mmd_model.Model.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
         rig = mmd_model.Model(root)
-        root = rig.rootObject()
-        mmd_root = root.mmd_root        
+        mmd_root = root.mmd_root
         col = self.layout.column()
         row = col.row()
         row.prop(mmd_root, 'active_morph_type', expand=True)
@@ -344,11 +354,12 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         tb1 = tb.column(align=True)
         tb1.operator('mmd_tools.add_%s'%mmd_root.active_morph_type[:-1], text='', icon='ZOOMIN')
         tb1.operator(operators.morph.RemoveMorph.bl_idname, text='', icon='ZOOMOUT')
+        tb1.menu('OBJECT_MT_mmd_tools_morph_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.morph.MoveUpMorph.bl_idname, text='', icon='TRIA_UP')
-        tb1.operator(operators.morph.MoveDownMorph.bl_idname, text='', icon='TRIA_DOWN')
-        
+        tb1.operator('mmd_tools.morph_move', text='', icon='TRIA_UP').type = 'UP'
+        tb1.operator('mmd_tools.morph_move', text='', icon='TRIA_DOWN').type = 'DOWN'
+
         items = getattr(mmd_root, mmd_root.active_morph_type)
         if len(items) > 0:
             morph = items[mmd_root.active_morph]

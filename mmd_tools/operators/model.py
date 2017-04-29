@@ -39,10 +39,6 @@ class CleanAdditionalTransformConstraints(Operator):
     bl_description = 'Delete shadow bones of selected object and revert bones to default MMD state'
     bl_options = {'PRESET'}
 
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
-
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -56,10 +52,6 @@ class ApplyAdditionalTransformConstraints(Operator):
     bl_label = 'Apply Additional Transform'
     bl_description = 'Translate appended bones of selected object for Blender'
     bl_options = {'PRESET'}
-
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
 
     def execute(self, context):
         obj = context.active_object

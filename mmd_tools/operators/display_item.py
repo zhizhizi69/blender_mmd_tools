@@ -21,8 +21,7 @@ class AddDisplayItemFrame(Operator):
         mmd_root = root.mmd_root
 
         frames = mmd_root.display_item_frames
-        index = ItemOp.add_after(frames, max(1, mmd_root.active_display_item_frame))
-        item = frames[index]
+        item, index = ItemOp.add_after(frames, max(1, mmd_root.active_display_item_frame))
         item.name = 'Display Frame'
         mmd_root.active_display_item_frame = index
         return {'FINISHED'}
@@ -94,8 +93,7 @@ class AddDisplayItem(Operator):
 
     def _add_item(self, frame, item_type, item_name, morph_type=None):
         items = frame.items
-        index = ItemOp.add_after(items, frame.active_item)
-        item = items[index]
+        item, index = ItemOp.add_after(items, frame.active_item)
         item.type = item_type
         item.name = item_name
         if morph_type:
@@ -251,8 +249,10 @@ class DisplayItemQuickSetup(Operator):
         item_list.extend(('uv_morphs', i.name) for i in mmd_root.uv_morphs)
         item_list.extend(('group_morphs', i.name) for i in mmd_root.group_morphs)
 
-        frame = mmd_root.display_item_frames[u'表情']
+        frames = mmd_root.display_item_frames
+        frame = frames[u'表情']
         facial_items = frame.items
+        mmd_root.active_display_item_frame = frames.find(frame.name)
 
         # keep original item order
         old = tuple((i.morph_type, i.name) for i in facial_items)
