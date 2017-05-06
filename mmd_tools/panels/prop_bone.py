@@ -11,16 +11,13 @@ class MMDBonePanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.mode == 'EDIT_ARMATURE' and context.active_bone is not None or context.mode == 'POSE' and context.active_pose_bone is not None
+        return context.active_bone
 
     def draw(self, context):
-        if context.mode == 'EDIT_ARMATURE':
-            edit_bone = context.active_bone
-            pose_bone = context.active_object.pose.bones.get(edit_bone.name, None)
-            if pose_bone is None:
-                return
-        else:
-            pose_bone = context.active_pose_bone
+        pose_bone = context.active_pose_bone or \
+                    context.active_object.pose.bones.get(context.active_bone.name, None)
+        if pose_bone is None:
+            return
 
         layout = self.layout
         if pose_bone.is_mmd_shadow_bone:
@@ -74,16 +71,13 @@ class MMDBoneATPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.mode == 'EDIT_ARMATURE' and context.active_bone is not None or context.mode == 'POSE' and context.active_pose_bone is not None
+        return context.active_bone
 
     def draw(self, context):
-        if context.mode == 'EDIT_ARMATURE':
-            edit_bone = context.active_bone
-            pose_bone = context.active_object.pose.bones.get(edit_bone.name, None)
-            if pose_bone is None:
-                return
-        else:
-            pose_bone = context.active_pose_bone
+        pose_bone = context.active_pose_bone or \
+                    context.active_object.pose.bones.get(context.active_bone.name, None)
+        if pose_bone is None:
+            return
 
         layout = self.layout
         if pose_bone.is_mmd_shadow_bone:

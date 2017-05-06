@@ -86,9 +86,7 @@ class SeparateByMaterials(Operator):
         root = mmd_model.Model.findRoot(obj)
         if root:
             bpy.ops.mmd_tools.clear_temp_materials()
-            bpy.ops.mmd_tools.clear_uv_morph_view()        
-            self.report({ 'WARNING' }, "Active editing morphs were cleared")
-            # return { 'CANCELLED' }
+            bpy.ops.mmd_tools.clear_uv_morph_view()
         if root:
             # Store the current material names
             rig = mmd_model.Model(root)
@@ -139,8 +137,7 @@ class JoinMeshes(Operator):
 
         if root:
             bpy.ops.mmd_tools.clear_temp_materials()
-            bpy.ops.mmd_tools.clear_uv_morph_view()        
-            self.report({ 'WARNING' }, "Active editing morphs were cleared")
+            bpy.ops.mmd_tools.clear_uv_morph_view()
 
         # Find all the meshes in mmd_root
         rig = mmd_model.Model(root)
@@ -205,7 +202,9 @@ class AttachMeshesToMMD(Operator):
             if mmd_model.Model.findRoot(mesh) is not None:
                 # Do not attach meshes from other models
                 continue
+            m = mesh.matrix_world
             mesh.parent = armObj
+            mesh.matrix_world = m
         return { 'FINISHED' }
 
 def _normalize_mesh_names(meshes):

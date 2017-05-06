@@ -17,6 +17,12 @@ def _updateCollisionGroup(prop, context):
     else:
         obj.material_slots[0].material = rigid_body.RigidBodyMaterial.getMaterial(prop.collision_group_number)
 
+def _updateType(prop, context):
+    obj = prop.id_data
+    rb = obj.rigid_body
+    if rb:
+        rb.kinematic = (int(prop.type) == rigid_body.MODE_STATIC)
+
 def _updateShape(prop, context):
     obj = prop.id_data
 
@@ -175,6 +181,7 @@ class MMDRigidBody(PropertyGroup):
             (str(rigid_body.MODE_DYNAMIC_BONE), 'Physics + Bone',
                 "Bone determined by combination of parent and attached rigid body", 3),
             ],
+        update=_updateType,
         )
 
     shape = EnumProperty(

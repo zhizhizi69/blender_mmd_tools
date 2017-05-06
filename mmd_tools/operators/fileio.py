@@ -182,11 +182,6 @@ class ImportPmx(Operator, ImportHelper):
 
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
 
 class ImportVmd(Operator, ImportHelper):
     bl_idname = 'mmd_tools.import_vmd'
@@ -316,11 +311,6 @@ class ImportVmd(Operator, ImportHelper):
         context.scene.objects.active = active_object
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {'RUNNING_MODAL'}
-
 
 class ExportPmx(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_pmx'
@@ -405,13 +395,9 @@ class ExportPmx(Operator, ExportHelper):
             logger.addHandler(handler)
 
         if root:
-            # We have two options here: 
-            # 1- report it to the user
-            # 2- clear the active morphs (user will loose any changes to temp materials and UV) 
             bpy.ops.mmd_tools.clear_temp_materials()
-            bpy.ops.mmd_tools.clear_uv_morph_view()        
-            self.report({ 'WARNING' }, "Active editing morphs were cleared")
-            # return { 'CANCELLED' }
+            bpy.ops.mmd_tools.clear_uv_morph_view()
+
         rig = mmd_model.Model(root)
         arm = rig.armature()
         orig_pose_position = None
@@ -448,10 +434,6 @@ class ExportPmx(Operator, ExportHelper):
 
         return {'FINISHED'}
 
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 
 class ExportVmd(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_vmd'
@@ -531,9 +513,4 @@ class ExportVmd(Operator, ExportHelper):
             self.report({'ERROR'}, err_msg)
 
         return {'FINISHED'}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {'RUNNING_MODAL'}
 

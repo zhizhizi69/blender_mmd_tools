@@ -13,13 +13,10 @@ class MMDMaterialPanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        material = context.active_object.active_material
-        return material and material.mmd_material
+        obj = context.active_object
+        return obj.active_material and obj.mmd_type == 'NONE'
 
     def draw(self, context):
-        if context.active_object.mmd_type != 'NONE':
-            self.layout.label('MMD Material is Ignored!', icon='INFO')
-            return
         material = context.active_object.active_material
         mmd_material = material.mmd_material
 
@@ -78,13 +75,10 @@ class MMDTexturePanel(Panel):
 
     @classmethod
     def poll(cls, context):
-        material = context.active_object.active_material
-        return material and material.mmd_material
+        obj = context.active_object
+        return obj.active_material and obj.mmd_type == 'NONE'
 
     def draw(self, context):
-        if context.active_object.mmd_type != 'NONE':
-            self.layout.label('MMD Material is Ignored!', icon='INFO')
-            return
         material = context.active_object.active_material
         mmd_material = material.mmd_material
 

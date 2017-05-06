@@ -14,15 +14,7 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        if obj is None:
-            return False
-
-        root = mmd_model.Model.findRoot(obj)
-        if root is None:
-            return False
-
-        return True
+        return mmd_model.Model.findRoot(context.active_object)
 
     def draw(self, context):
         layout = self.layout

@@ -76,6 +76,7 @@ class Model:
         armObj = bpy.data.objects.new(name=obj_name+'_arm', object_data=arm)
         armObj.lock_rotation = armObj.lock_location = armObj.lock_scale = [True, True, True]
         armObj.show_x_ray = True
+        armObj.draw_type = 'WIRE'
         armObj.parent = root
 
         scene.objects.link(root)
