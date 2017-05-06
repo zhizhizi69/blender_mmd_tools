@@ -84,7 +84,7 @@ class SeparateByMaterials(Operator):
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
-        if root and root.mmd_root.editing_morphs > 0:    
+        if root:
             bpy.ops.mmd_tools.clear_temp_materials()
             bpy.ops.mmd_tools.clear_uv_morph_view()        
             self.report({ 'WARNING' }, "Active editing morphs were cleared")
@@ -137,7 +137,7 @@ class JoinMeshes(Operator):
             self.report({ 'ERROR' }, 'Select a MMD model') 
             return { 'CANCELLED' }
 
-        if root.mmd_root.editing_morphs > 0:            
+        if root:
             bpy.ops.mmd_tools.clear_temp_materials()
             bpy.ops.mmd_tools.clear_uv_morph_view()        
             self.report({ 'WARNING' }, "Active editing morphs were cleared")

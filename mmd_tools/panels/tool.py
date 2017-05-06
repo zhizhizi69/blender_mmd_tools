@@ -338,34 +338,49 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
+
         rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         col = self.layout.column()
         row = col.row()
         row.prop(mmd_root, 'active_morph_type', expand=True)
+        morph_type = mmd_root.active_morph_type
+
         c = col.column(align=True)
         row = c.row()
         row.template_list(
             "UL_Morphs", "",
-            mmd_root, mmd_root.active_morph_type,
+            mmd_root, morph_type,
             mmd_root, "active_morph"
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator('mmd_tools.add_%s'%mmd_root.active_morph_type[:-1], text='', icon='ZOOMIN')
-        tb1.operator(operators.morph.RemoveMorph.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.morph_add', text='', icon='ZOOMIN')
+        tb1.operator('mmd_tools.morph_remove', text='', icon='ZOOMOUT')
         tb1.menu('OBJECT_MT_mmd_tools_morph_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
         tb1.operator('mmd_tools.morph_move', text='', icon='TRIA_UP').type = 'UP'
         tb1.operator('mmd_tools.morph_move', text='', icon='TRIA_DOWN').type = 'DOWN'
 
-        items = getattr(mmd_root, mmd_root.active_morph_type)
-        if len(items) > 0:
-            morph = items[mmd_root.active_morph]
-            draw_func = getattr(self, '_draw_%s_data'%mmd_root.active_morph_type[:-7], None)
+        morph = ItemOp.get_by_index(getattr(mmd_root, morph_type), mmd_root.active_morph)
+        if morph:
+            draw_func = getattr(self, '_draw_%s_data'%morph_type[:-7], None)
             if draw_func:
                 draw_func(context, rig, col, morph)
+
+    def _template_morph_offset_list(self, layout, morph, list_type_name):
+        row = layout.row()
+        row.template_list(
+            list_type_name, '',
+            morph, 'data',
+            morph, 'active_data',
+            )
+        tb = row.column()
+        tb1 = tb.column(align=True)
+        tb1.operator('mmd_tools.morph_offset_add', text='', icon='ZOOMIN')
+        tb1.operator('mmd_tools.morph_offset_remove', text='', icon='ZOOMOUT')
+        return ItemOp.get_by_index(morph.data, morph.active_data)
 
     def _draw_vertex_data(self, context, rig, col, morph):
         for i in rig.meshes():
@@ -381,44 +396,26 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
     def _draw_material_data(self, context, rig, col, morph):
         c = col.column(align=True)
         c.label('Material Offsets (%d)'%len(morph.data))
-        row = c.row()
-        row.template_list(
-            "UL_MaterialMorphOffsets", "",
-            morph, "data",
-            morph, "active_material_data"
-            )   
-        tb = row.column()
-        tb1 = tb.column(align=True)  
-        tb1.operator(operators.morph.AddMaterialOffset.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.morph.RemoveMaterialOffset.bl_idname, text='', icon='ZOOMOUT')
-        # tb.separator()
-        # tb1 = tb.column(align=True)
-        # tb1.operator(operators.morph.MoveUpMorph.bl_idname, text='', icon='TRIA_UP')
-        # tb1.operator(operators.morph.MoveDownMorph.bl_idname, text='', icon='TRIA_DOWN')  
-        if len(morph.data) == 0:
-            return # If the list is empty we should stop drawing the panel here
-        data = morph.data[morph.active_material_data]
-        c_mat = col.column(align=True)
-        # if mmd_root.advanced_mode:
-        c_mat.prop_search(data, 'related_mesh', bpy.data, 'meshes')
-        # Switch to the related mesh here if found
-        relMesh = rig.findMesh(data.related_mesh)
-        meshObj = relMesh or rig.firstMesh()
-        if meshObj is None:
-            c = col.column(align=True)
-            c.label("The model mesh can't be found", icon='ERROR')
+
+        data = self._template_morph_offset_list(c, morph, 'UL_MaterialMorphOffsets')
+        if data is None:
             return
 
-        c_mat.prop_search(data, 'material', meshObj.data, 'materials')
+        c_mat = col.column(align=True)
+        c_mat.prop_search(data, 'related_mesh', bpy.data, 'meshes')
+
+        related_mesh = bpy.data.meshes.get(data.related_mesh, None)
+        c_mat.prop_search(data, 'material', related_mesh or bpy.data, 'materials')
 
         base_mat_name = data.material
-        if "_temp" in base_mat_name or (base_mat_name != '' and base_mat_name not in meshObj.data.materials):
+        if '_temp' in base_mat_name:
             c = col.column(align=True)
             c.label('This is not a valid base material', icon='ERROR')
             return
 
-        work_mat = meshObj.data.materials.get(base_mat_name + "_temp", None) # Temporary material to edit this offset (and see a live preview)
-        if work_mat is None:
+        work_mat = bpy.data.materials.get(base_mat_name + '_temp', None)
+        use_work_mat = work_mat and related_mesh and work_mat.name in related_mesh.materials
+        if not use_work_mat:
             c = col.column(align=True)
             row = c.row(align=True)
             if base_mat_name == '':
@@ -481,26 +478,18 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         c = col.column(align=True)
         row = c.row(align=True)
         row.operator(operators.morph.ViewBoneMorph.bl_idname, text='View')
+        row.operator('mmd_tools.apply_bone_morph', text='Apply')
         row.operator('pose.transforms_clear', text='Clear')
 
         c = col.column(align=True)
         c.label('Bone Offsets (%d)'%len(morph.data))
-        row = c.row()
-        row.template_list(
-            "UL_BoneMorphOffsets", "",
-            morph, "data",
-            morph, "active_bone_data"
-            )
-        tb = row.column()
-        tb1 = tb.column(align=True)  
-        tb1.operator(operators.morph.AddBoneMorphOffset.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.morph.RemoveBoneMorphOffset.bl_idname, text='', icon='ZOOMOUT')
-        if len(morph.data) == 0:
-            return # If the list is empty we should stop drawing the panel here
-        data = morph.data[morph.active_bone_data]
-        row = c.split(percentage=0.67, align=True)
+
+        data = self._template_morph_offset_list(c, morph, 'UL_BoneMorphOffsets')
+        if data is None:
+            return
+
+        row = c.row(align=True)
         row.prop_search(data, 'bone', armature.pose, 'bones')
-        row.operator(operators.morph.AssignBoneToOffset.bl_idname, text='Assign')
         if data.bone in armature.pose.bones.keys():
             c = col.column(align=True)
             row = c.row(align=True)
@@ -513,12 +502,9 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
                 row.enabled = False
 
         c = col.column(align=True)
-        c.enabled = False # remove this line to allow user to edit directly
         row = c.row()
-        c1 = row.column(align=True)
-        c1.prop(data, 'location')
-        c1 = row.column(align=True)
-        c1.prop(data, 'rotation')
+        row.column(align=True).prop(data, 'location')
+        row.column(align=True).prop(data, 'rotation')
 
     def _draw_uv_data(self, context, rig, col, morph):
         c = col.column(align=True)
@@ -529,35 +515,22 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         row.operator(operators.morph.EditUVMorph.bl_idname, text='Edit')
         row.operator(operators.morph.ApplyUVMorph.bl_idname, text='Apply')
 
-        c = col.column(align=True)
-        row = c.row(align=True)
+        c = col.column()
+        row = c.row()
         row.label('UV Offsets (%d)'%len(morph.data))
         row.prop(morph, 'uv_index')
-        return
-        row = c.row()
-        row.template_list(
-            "UL_UVMorphOffsets", "",
-            morph, "data",
-            morph, "active_uv_data",
-            )
+        if 0:
+            self._template_morph_offset_list(c, morph, 'UL_UVMorphOffsets')
 
     def _draw_group_data(self, context, rig, col, morph):
         c = col.column(align=True)
         c.label('Group Offsets (%d)'%len(morph.data))
-        row = c.row()
-        row.template_list(
-            "UL_GroupMorphOffsets", "",
-            morph, "data",
-            morph, "active_group_data"
-            )
-        tb = row.column()
-        tb1 = tb.column(align=True)
-        tb1.operator(operators.morph.AddGroupMorphOffset.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.morph.RemoveGroupMorphOffset.bl_idname, text='', icon='ZOOMOUT')
-        if len(morph.data) == 0:
+
+        item = self._template_morph_offset_list(c, morph, 'UL_GroupMorphOffsets')
+        if item is None:
             return
+
         c = col.column(align=True)
-        item = morph.data[morph.active_group_data]
         row = c.split(percentage=0.67, align=True)
         row.prop_search(item, 'name', morph.id_data.mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
         row.prop(item, 'morph_type', text='')
@@ -716,10 +689,10 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
         rig = mmd_model.Model(root)
         root = rig.rootObject()
         mmd_root = root.mmd_root
-        
+
         col = self.layout.column()
         c = col.column(align=True)
-        
+
         row = c.row()
         row.template_list(
             "UL_joints",

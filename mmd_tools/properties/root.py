@@ -138,7 +138,7 @@ def _setActiveMeshObject(prop, v):
         obj.hide = False
         utils.selectAObject(obj)
     prop['active_mesh_index'] = v
-    
+
 def _getActiveMeshObject(prop):
     objects = bpy.context.scene.objects
     active_obj = objects.active
@@ -374,13 +374,6 @@ class MMDRoot(PropertyGroup):
         name='Active Morph',
         min=0,
         default=0
-        )
-    editing_morphs = IntProperty(
-        name='Editing Morph',
-        description=('Internal property used to indicate that a morph is being viewed or edited. ' +
-                     'This is used as safety check to prevent some operations.'),
-        default=0, 
-        min=0,
         )
     active_mesh_index = IntProperty(
         name='Active Mesh',

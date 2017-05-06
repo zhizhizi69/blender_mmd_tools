@@ -404,7 +404,7 @@ class ExportPmx(Operator, ExportHelper):
             handler = log_handler(self.log_level, filepath=self.filepath + '.mmd_tools.export.log')
             logger.addHandler(handler)
 
-        if root.mmd_root.editing_morphs > 0:
+        if root:
             # We have two options here: 
             # 1- report it to the user
             # 2- clear the active morphs (user will loose any changes to temp materials and UV) 

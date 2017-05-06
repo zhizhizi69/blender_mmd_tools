@@ -107,7 +107,7 @@ def _set_bone(prop, value):
     pose_bone = arm.pose.bones[value]
     fnBone = FnBone(pose_bone)
     prop['bone_id'] = fnBone.bone_id
-    
+
 class BoneMorphData(PropertyGroup):
     """
     """
@@ -145,7 +145,7 @@ class BoneMorph(_MorphBase, PropertyGroup):
         name='Morph Data',
         type=BoneMorphData,
         )
-    active_bone_data = IntProperty(
+    active_data = IntProperty(
         name='Active Bone Data',
         min=0,
         default=0,
@@ -167,15 +167,17 @@ def _set_material(prop, value):
     mat = bpy.data.materials[value]
     fnMat = FnMaterial(mat)
     prop['material_id'] = fnMat.material_id
-    
+
 def _set_related_mesh(prop, value):
     rig = FnModel(prop.id_data)
     if rig.findMesh(value):
         prop['related_mesh'] = value
-        
+    else:
+        prop['related_mesh'] = ''
+
 def _get_related_mesh(prop):
     return prop.get('related_mesh', '')
-    
+
 class MaterialMorphData(PropertyGroup):
     """
     """
@@ -315,7 +317,7 @@ class MaterialMorph(_MorphBase, PropertyGroup):
         name='Morph Data',
         type=MaterialMorphData,
         )
-    active_material_data = IntProperty(
+    active_data = IntProperty(
         name='Active Material Data',
         min=0,
         default=0,
@@ -355,7 +357,7 @@ class UVMorph(_MorphBase, PropertyGroup):
         name='Morph Data',
         type=UVMorphOffset,
         )
-    active_uv_data = IntProperty(
+    active_data = IntProperty(
         name='Active UV Data',
         min=0,
         default=0,
@@ -393,7 +395,7 @@ class GroupMorph(_MorphBase, PropertyGroup):
         name='Morph Data',
         type=GroupMorphOffset,
         )
-    active_group_data = IntProperty(
+    active_data = IntProperty(
         name='Active Group Data',
         min=0,
         default=0,
