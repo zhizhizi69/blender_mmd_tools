@@ -189,7 +189,10 @@ class Bone:
         if self.tail_bone == 0xffff:
             self.tail_bone = -1
         self.type = fs.readByte()
-        self.ik_bone = fs.readUnsignedShort()
+        if self.type == 9:
+            self.ik_bone = fs.readShort()
+        else:
+            self.ik_bone = fs.readUnsignedShort()
         self.position = fs.readVector(3)
 
 class IK:
