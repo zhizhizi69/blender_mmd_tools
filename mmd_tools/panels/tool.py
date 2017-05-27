@@ -71,6 +71,11 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         col.operator('mmd_tools.import_vmd', text='Import')
         col.operator('mmd_tools.export_vmd', text='Export')
 
+        col = row.column(align=True)
+        col.label('Pose:', icon='POSE_HLT')
+        col.operator('mmd_tools.import_vpd', text='Import')
+        col.operator('mmd_tools.export_vpd', text='Export')
+
 
 class MMD_ROOT_UL_display_item_frames(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):

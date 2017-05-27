@@ -21,6 +21,8 @@ import mmd_tools.core.pmx.importer as pmx_importer
 import mmd_tools.core.pmx.exporter as pmx_exporter
 import mmd_tools.core.vmd.importer as vmd_importer
 import mmd_tools.core.vmd.exporter as vmd_exporter
+import mmd_tools.core.vpd.importer as vpd_importer
+import mmd_tools.core.vpd.exporter as vpd_exporter
 import mmd_tools.core.model as mmd_model
 
 
@@ -312,6 +314,105 @@ class ImportVmd(Operator, ImportHelper):
         return {'FINISHED'}
 
 
+class ImportVpd(Operator, ImportHelper):
+    bl_idname = 'mmd_tools.import_vpd'
+    bl_label = 'Import VPD file (.vpd)'
+    bl_description = "Import VPD file(s) to selected rig's pose library (.vpd)"
+    bl_options = {'PRESET'}
+
+    files = bpy.props.CollectionProperty(type=OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
+    directory = bpy.props.StringProperty(maxlen=1024, subtype='FILE_PATH', options={'HIDDEN', 'SKIP_SAVE'})
+
+    filename_ext = '.vpd'
+    filter_glob = bpy.props.StringProperty(default='*.vpd', options={'HIDDEN'})
+
+    scale = bpy.props.FloatProperty(
+        name='Scale',
+        description='Scaling factor of the model',
+        default=0.2,
+        )
+    bone_mapper = bpy.props.EnumProperty(
+        name='Bone Mapper',
+        description='Select bone mapper',
+        items=[
+            ('BLENDER', 'Blender', 'Use blender bone name', 0),
+            ('PMX', 'PMX', 'Use japanese name of MMD bone', 1),
+            ('RENAMED_BONES', 'Renamed bones', 'Rename the bone of pose data to be blender suitable', 2),
+            ],
+        default='PMX',
+        )
+    rename_bones = bpy.props.BoolProperty(
+        name='Rename Bones - L / R Suffix',
+        description='Use Blender naming conventions for Left / Right paired bones',
+        default=True,
+        )
+    use_underscore = bpy.props.BoolProperty(
+        name="Rename Bones - Use Underscore",
+        description='Will not use dot, e.g. if renaming bones, will use _R instead of .R',
+        default=False,
+        )
+    translate_to_english = bpy.props.BoolProperty(
+        name="Rename Bones To English",
+        description='Translate bone names from Japanese to English',
+        default=False,
+        )
+    use_pose_mode = bpy.props.BoolProperty(
+        name='Treat Current Pose as Rest Pose',
+        description='You can pose the model to fit the original pose of a pose data, such as T-Pose or A-Pose',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'scale')
+
+        layout.prop(self, 'bone_mapper')
+        if self.bone_mapper == 'RENAMED_BONES':
+            layout.prop(self, 'rename_bones')
+            layout.prop(self, 'use_underscore')
+            layout.prop(self, 'translate_to_english')
+        layout.prop(self, 'use_pose_mode')
+
+    def execute(self, context):
+        selected_objects = list(context.selected_objects)
+        for i in selected_objects:
+            root = mmd_model.Model.findRoot(i)
+            if root == i:
+                rig = mmd_model.Model(root)
+                arm = rig.armature()
+                if arm not in selected_objects:
+                    selected_objects.append(arm)
+                for m in rig.meshes():
+                    if m not in selected_objects:
+                        selected_objects.append(m)
+
+        bone_mapper = None
+        if self.bone_mapper == 'PMX':
+            bone_mapper = makePmxBoneMap
+        elif self.bone_mapper == 'RENAMED_BONES':
+            bone_mapper = vmd_importer.RenamedBoneMapper(
+                rename_LR_bones=self.rename_bones,
+                use_underscore=self.use_underscore,
+                translate_to_english=self.translate_to_english,
+                ).init
+
+        for f in self.files:
+            importer = vpd_importer.VPDImporter(
+                filepath=os.path.join(self.directory, f.name),
+                scale=self.scale,
+                bone_mapper=bone_mapper,
+                use_pose_mode=self.use_pose_mode,
+                )
+            for i in selected_objects:
+                importer.assign(i)
+        return {'FINISHED'}
+
+
 class ExportPmx(Operator, ExportHelper):
     bl_idname = 'mmd_tools.export_pmx'
     bl_label = 'Export PMX file (.pmx)'
@@ -512,5 +613,87 @@ class ExportVmd(Operator, ExportHelper):
             logging.error(err_msg)
             self.report({'ERROR'}, err_msg)
 
+        return {'FINISHED'}
+
+
+class ExportVpd(Operator, ExportHelper):
+    bl_idname = 'mmd_tools.export_vpd'
+    bl_label = 'Export VPD file (.vpd)'
+    bl_description = 'Export to VPD file(s) (.vpd)'
+    bl_description = "Export active rig's pose library to VPD file(s) (.vpd)"
+    bl_options = {'PRESET'}
+
+    filename_ext = '.vpd'
+    filter_glob = bpy.props.StringProperty(default='*.vpd', options={'HIDDEN'})
+
+    scale = bpy.props.FloatProperty(
+        name='Scale',
+        description='Scaling factor of the model',
+        default=0.2,
+        )
+    pose_type = bpy.props.EnumProperty(
+        name='Pose Type',
+        description='Choose the pose type to export',
+        items=[
+            ('CURRENT', 'Current Pose', 'Current pose of the rig', 0),
+            ('ACTIVE', 'Active Pose', "Active pose of the rig's pose library", 1),
+            ('ALL', 'All Poses', "All poses of the rig's pose library (the pose name will be the file name)", 2),
+            ],
+        default='ACTIVE',
+        )
+    use_pose_mode = bpy.props.BoolProperty(
+        name='Treat Current Pose as Rest Pose',
+        description='You can pose the model to export a pose data to different pose base, such as T-Pose or A-Pose',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+
+        if obj.mmd_type == 'ROOT':
+            return True
+        if obj.mmd_type == 'NONE' and obj.type in {'MESH', 'ARMATURE'}:
+            return True
+
+        return False
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, 'scale')
+        layout.prop(self, 'pose_type', expand=True)
+        if self.pose_type != 'CURRENT':
+            layout.prop(self, 'use_pose_mode')
+
+    def execute(self, context):
+        params = {
+            'filepath':self.filepath,
+            'scale':self.scale,
+            'pose_type':self.pose_type,
+            'use_pose_mode':self.use_pose_mode,
+            }
+
+        obj = context.active_object
+        if obj.mmd_type == 'ROOT':
+            rig = mmd_model.Model(obj)
+            params['mesh'] = rig.firstMesh()
+            params['armature'] = rig.armature()
+            params['model_name'] = obj.mmd_root.name or obj.name
+        elif obj.type == 'MESH':
+            params['mesh'] = obj
+            params['model_name'] = obj.name
+        elif obj.type == 'ARMATURE':
+            params['armature'] = obj
+            params['model_name'] = obj.name
+
+        try:
+            vpd_exporter.VPDExporter().export(**params)
+        except Exception as e:
+            err_msg = traceback.format_exc()
+            logging.error(err_msg)
+            self.report({'ERROR'}, err_msg)
         return {'FINISHED'}
 
