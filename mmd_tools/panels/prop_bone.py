@@ -41,7 +41,6 @@ class MMDBonePanel(Panel):
         row.prop(mmd_bone, 'is_controllable')
         row = c.row()
         row.prop(mmd_bone, 'is_tip')
-        #row.prop(mmd_bone, 'use_tail_location')
 
         c = layout.column(align=True)
         row = c.row()

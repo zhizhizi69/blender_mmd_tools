@@ -261,22 +261,17 @@ class ImportVmd(Operator, ImportHelper):
         layout.prop(self, 'update_scene_settings')
 
     def execute(self, context):
-        active_object = context.active_object
-        hidden_obj = []
-        for i in context.selected_objects:
+        selected_objects = list(context.selected_objects)
+        for i in selected_objects:
             root = mmd_model.Model.findRoot(i)
             if root == i:
                 rig = mmd_model.Model(root)
                 arm = rig.armature()
-                if arm.hide:
-                    arm.hide = False
-                    hidden_obj.append(arm)
-                arm.select = True
+                if arm not in selected_objects:
+                    selected_objects.append(arm)
                 for m in rig.meshes():
-                    if m.hide:
-                        m.hide = False
-                        hidden_obj.append(m)
-                    m.select = True
+                    if m not in selected_objects:
+                        selected_objects.append(m)
 
         bone_mapper = None
         if self.bone_mapper == 'PMX':
@@ -297,7 +292,7 @@ class ImportVmd(Operator, ImportHelper):
             frame_margin=self.margin,
             )
 
-        for i in context.selected_objects:
+        for i in selected_objects:
             importer.assign(i)
         logging.info(' Finished importing motion in %f seconds.', time.time() - start_time)
 
@@ -305,12 +300,6 @@ class ImportVmd(Operator, ImportHelper):
             auto_scene_setup.setupFrameRanges()
             auto_scene_setup.setupFps()
 
-        for i in hidden_obj:
-            i.select = False
-            i.hide = True
-
-        active_object.select = True
-        context.scene.objects.active = active_object
         return {'FINISHED'}
 
 
@@ -446,7 +435,7 @@ class ExportPmx(Operator, ExportHelper):
         description='Choose the method to sort vertices',
         items=[
             ('NONE', 'None', 'No sorting', 0),
-            ('BLENDER', 'Blender', 'Use blender\'s internal vertex order', 1),
+            ('BLENDER', 'Blender', "Use blender's internal vertex order", 1),
             ('CUSTOM', 'Custom', 'Use custom vertex weight of vertex group "mmd_vertex_order"', 2),
             ],
         default='NONE',
@@ -578,7 +567,6 @@ class ExportVmd(Operator, ExportHelper):
         return False
 
     def execute(self, context):
-        obj = context.active_object
         params = {
             'filepath':self.filepath,
             'scale':self.scale,
@@ -586,11 +574,12 @@ class ExportVmd(Operator, ExportHelper):
             'use_frame_range':self.use_frame_range,
             }
 
+        obj = context.active_object
         if obj.mmd_type == 'ROOT':
             rig = mmd_model.Model(obj)
             params['mesh'] = rig.firstMesh()
             params['armature'] = rig.armature()
-            params['model_name'] = obj.mmd_root.name
+            params['model_name'] = obj.mmd_root.name or obj.name
         elif obj.type == 'MESH':
             params['mesh'] = obj
             params['model_name'] = obj.name

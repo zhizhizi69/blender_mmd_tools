@@ -46,13 +46,8 @@ def selectSingleBone(context, armature, bone_name, reset_pose=False):
     armature.layers[context.scene.active_layer] = True
     context.scene.objects.active = armature
     if reset_pose:
-        def_loc = Vector((0,0,0))
-        def_rot = Quaternion((1,0,0,0))
-        def_scale = Vector((1,1,1))
         for p_bone in armature.pose.bones:
-            p_bone.location = def_loc
-            p_bone.rotation_quaternion = def_rot
-            p_bone.scale = def_scale
+            p_bone.matrix_basis.identity()
     bpy.ops.object.mode_set(mode='POSE')
     armature_bones = armature.data.bones
     for i in armature_bones:

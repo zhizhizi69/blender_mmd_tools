@@ -70,7 +70,7 @@ def menu_func_import(self, context):
     self.layout.operator(operators.fileio.ImportVpd.bl_idname, text="Vocaloid Pose Data (.vpd)")
 
 def menu_func_export(self, context):
-    self.layout.operator(operators.fileio.ExportPmx.bl_idname, text="MikuMikuDance model (.pmx)")
+    self.layout.operator(operators.fileio.ExportPmx.bl_idname, text="MikuMikuDance Model (.pmx)")
     self.layout.operator(operators.fileio.ExportVmd.bl_idname, text="MikuMikuDance Motion (.vmd)")
     self.layout.operator(operators.fileio.ExportVpd.bl_idname, text="Vocaloid Pose Data (.vpd)")
 

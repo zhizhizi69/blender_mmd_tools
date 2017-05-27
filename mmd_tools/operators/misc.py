@@ -321,18 +321,18 @@ class ChangeMMDIKLoopFactor(Operator):
 
         if '_RNA_UI' not in arm:
             arm['_RNA_UI'] = {}
-        rna_ui = arm['_RNA_UI']
-        if 'mmd_ik_loop_factor' not in rna_ui:
-            rna_ui['mmd_ik_loop_factor'] = {}
-        prop = rna_ui['mmd_ik_loop_factor']
+        prop = {}
         prop['min'] = 1
         prop['soft_min'] = 1
         prop['soft_max'] = 10
         prop['max'] = 100
         prop['description'] = 'Scaling factor of MMD IK loop'
+        arm['_RNA_UI']['mmd_ik_loop_factor'] = prop
 
         old_factor = max(arm.get('mmd_ik_loop_factor', 1), 1)
         new_factor = arm['mmd_ik_loop_factor'] = self.mmd_ik_loop_factor
+        if new_factor == old_factor:
+            return { 'FINISHED' }
         for b in arm.pose.bones:
             for c in b.constraints:
                 if c.type != 'IK':

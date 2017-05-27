@@ -47,7 +47,7 @@ class FnMaterial(object):
             raise MaterialNotFoundError()
         mat1_idx = meshObj.data.materials.find(mat1.name)
         mat2_idx = meshObj.data.materials.find(mat2.name)
-        with select_object(meshObj):
+        if 1: #with select_object(meshObj):
             # Swap polygons
             for poly in meshObj.data.polygons:
                 if poly.material_index == mat1_idx:

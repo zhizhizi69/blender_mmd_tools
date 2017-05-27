@@ -34,8 +34,11 @@ class __SelectObjects:
         self.__selected_objects = [active_object]+selected_objects
 
         self.__hides = []
+        active_layer = bpy.context.scene.active_layer
         for i in self.__selected_objects:
             self.__hides.append(i.hide)
+            i.layers[active_layer] = True
+            i.hide_select = False
             i.hide = False
             i.select = True
         bpy.context.scene.objects.active = active_object

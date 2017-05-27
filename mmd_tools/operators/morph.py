@@ -428,6 +428,7 @@ class ViewUVMorph(Operator):
         name='With Animation',
         description='View the effect using Timeline window from frame 0 to frame 100 if enabled',
         default=False,
+        options={'SKIP_SAVE'},
         )
 
     def invoke(self, context, event):
@@ -566,8 +567,6 @@ class EditUVMorph(Operator):
             self.report({ 'ERROR' }, "The model mesh can't be found")
             return { 'CANCELLED' }
 
-        #bpy.ops.mmd_tools.view_uv_morph()
-
         selected = meshObj.select
         with bpyutils.select_object(meshObj) as data:
             bpy.ops.object.mode_set(mode='EDIT')
@@ -590,16 +589,6 @@ class ApplyUVMorph(Operator):
     bl_label = 'Apply UV Morph'
     bl_description = 'Calculate the UV offsets of selected vertices and apply to active UV morph'
     bl_options = {'PRESET'}
-
-    #with_animation = bpy.props.BoolProperty(
-    #    name='With Animation',
-    #    description='View the effect using Timeline window from frame 0 to frame 100 if enabled',
-    #    default=False,
-    #    )
-
-    #def invoke(self, context, event):
-    #    vm = context.window_manager
-    #    return vm.invoke_props_dialog(self)
 
     @classmethod
     def poll(cls, context):
@@ -649,6 +638,5 @@ class ApplyUVMorph(Operator):
                         break
 
         meshObj.select = selected
-        # bpy.ops.mmd_tools.view_uv_morph(with_animation=self.with_animation)
         return { 'FINISHED' }
 

@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import re
 
 import bpy
 import math
 import mathutils
 
-from collections import OrderedDict
 from mmd_tools.core import vmd
 from mmd_tools.core.camera import MMDCamera
 from mmd_tools.core.lamp import MMDLamp
@@ -183,6 +181,8 @@ class VMDExporter:
             bone = armObj.pose.bones.get(m.group(1), None)
             if bone is None:
                 logging.warning(' * Bone not found: %s', m.group(1))
+                continue
+            if bone.is_mmd_shadow_bone:
                 continue
             prop_name = m.group(2)
             if prop_name not in {'location', 'rotation_quaternion'}:
