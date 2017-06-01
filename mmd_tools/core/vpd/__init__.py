@@ -89,7 +89,7 @@ class File:
         path = args.get('filepath', self.filepath)
 
         encoding = 'shift_jis'
-        with open(path, 'wt', encoding=encoding) as fout:
+        with open(path, 'wt', encoding=encoding, newline='') as fout:
             self.filepath = path
             fout.write('Vocaloid Pose Data file\r\n')
 
