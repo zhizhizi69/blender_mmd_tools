@@ -260,7 +260,7 @@ class AddJoint(Operator):
             else:
                 yield obj_seq
 
-    def __add_joint(self, rig, mmd_root, rigid_pair, bone_map):
+    def __add_joint(self, rig, rigid_pair, bone_map):
         loc, rot = None, [0, 0, 0]
         rigid_a, rigid_b = rigid_pair
         bone_a = bone_map[rigid_a]
@@ -284,7 +284,6 @@ class AddJoint(Operator):
                 name_e = name_e,
                 location = loc,
                 rotation = rot,
-                size = 0.5 * mmd_root.scale,
                 rigid_a = rigid_a,
                 rigid_b = rigid_b,
                 maximum_location = [0, 0, 0],
@@ -299,7 +298,6 @@ class AddJoint(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
-        mmd_root = rig.rootObject().mmd_root
 
         arm = rig.armature()
         bone_map = {}
@@ -317,7 +315,7 @@ class AddJoint(Operator):
             bpy.ops.rigidbody.world_add()
 
         for pair in self.__enumerate_rigid_pair(bone_map):
-            joint = self.__add_joint(rig, mmd_root, pair, bone_map)
+            joint = self.__add_joint(rig, pair, bone_map)
             joint.select = True
 
         return { 'FINISHED' }

@@ -67,6 +67,7 @@ class Model:
         root.mmd_root.name = name
         root.mmd_root.name_e = name_e
         root.mmd_root.scale = scale
+        root.empty_draw_size = scale / 0.2
         #root.lock_location = [True, True, True]
         #root.lock_rotation = [True, True, True]
         root.lock_scale = [True, True, True]
@@ -92,7 +93,7 @@ class Model:
             return cls.findRoot(obj.parent)
         return None
 
-    def initialDisplayFrames(self):
+    def initialDisplayFrames(self, root_bone_name=None):
         frames = self.__root.mmd_root.display_item_frames
         if len(frames) > 0:
             self.__root.mmd_root.active_display_item_frame = 0
@@ -101,6 +102,10 @@ class Model:
         frame_root.name = 'Root'
         frame_root.name_e = 'Root'
         frame_root.is_special = True
+        if root_bone_name:
+            item = frame_root.items.add()
+            item.type = 'BONE'
+            item.name = root_bone_name
         frame_facial = frames.add()
         frame_facial.name = u'表情'
         frame_facial.name_e = 'Facial'
@@ -207,7 +212,7 @@ class Model:
         obj.mmd_type = 'JOINT'
         obj.rotation_mode = 'YXZ'
         obj.empty_draw_type = 'ARROWS'
-        obj.empty_draw_size = 0.5 * self.__root.mmd_root.scale
+        obj.empty_draw_size = 0.1 * self.__root.empty_draw_size
         obj.hide_render = True
 
         bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
@@ -728,7 +733,7 @@ class Model:
                         None)
                     bpy.context.scene.objects.link(empty)
                     empty.matrix_world = target_bone.matrix
-                    empty.empty_draw_size = 0.1
+                    empty.empty_draw_size = 0.1 * self.__root.empty_draw_size
                     empty.empty_draw_type = 'ARROWS'
                     empty.mmd_type = 'TRACK_TARGET'
                     empty.hide = True
@@ -761,13 +766,6 @@ class Model:
                         logging.debug('        * Bone (%s): track target [%s]',
                             target_bone.name, ori_rigid_obj.name)
 
-        if rigid_obj.scale != mathutils.Vector((1,1,1)):
-            t = rigid_obj.hide
-            with bpyutils.select_object(rigid_obj):
-                logging.debug('          - apply scale: %s %s', rigid_obj.name, str(rigid_obj.scale[:]))
-                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-            rigid_obj.hide = t
-
         rb.collision_shape = rigid.shape
 
     def __getRigidRange(self, obj):
@@ -784,7 +782,7 @@ class Model:
 
         ncc_obj = bpyutils.createObject(name='ncc', object_data=None)
         ncc_obj.location = [0, 0, 0]
-        ncc_obj.empty_draw_size = 0.5
+        ncc_obj.empty_draw_size = 0.5 * self.__root.empty_draw_size
         ncc_obj.empty_draw_type = 'ARROWS'
         ncc_obj.mmd_type = 'NON_COLLISION_CONSTRAINT'
         ncc_obj.hide_render = True

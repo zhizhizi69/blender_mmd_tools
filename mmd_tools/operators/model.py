@@ -89,17 +89,14 @@ class CreateMMDModelRoot(Operator):
         with bpyutils.edit_object(arm) as data:
             bone = data.edit_bones.new(name=u'全ての親')
             bone.head = [0.0, 0.0, 0.0]
-            bone.tail = [0.0, 0.0, 1.0]
+            bone.tail = [0.0, 0.0, 5.0*self.scale]
         arm.pose.bones[u'全ての親'].mmd_bone.name_j = u'全ての親'
         arm.pose.bones[u'全ての親'].mmd_bone.name_e = 'Root'
 
-        rig.initialDisplayFrames()
-        mmd_root = rig.rootObject().mmd_root
-        frame_root = mmd_root.display_item_frames['Root']
-        item = frame_root.items.add()
-        item.type = 'BONE'
-        item.name = arm.data.bones[0].name
-
+        rig.initialDisplayFrames(root_bone_name=arm.data.bones[0].name)
+        root = rig.rootObject()
+        context.scene.objects.active = root
+        root.select = True
         return {'FINISHED'}
 
     def invoke(self, context, event):

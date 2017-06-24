@@ -77,10 +77,6 @@ class SeparateByMaterials(Operator):
         obj = context.active_object
         return obj and obj.type == 'MESH'
 
-    def invoke(self, context, event):
-        vm = context.window_manager
-        return vm.invoke_props_dialog(self)
-
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -109,7 +105,7 @@ class SeparateByMaterials(Operator):
                         mesh.name = prefix + ma.group('name')
                     else:
                         mesh.name = prefix + mesh.name
-                        
+
         if root and len(root.mmd_root.material_morphs) > 0:
             for morph in root.mmd_root.material_morphs:
                 mo = FnMorph(morph, mmd_model.Model(root))

@@ -540,7 +540,6 @@ class ClearUVMorphView(Operator):
         for act in bpy.data.actions:
             if act.name.startswith('__uv.') and act.users < 1:
                 bpy.data.actions.remove(act)
-        bpy.ops.screen.frame_jump(end=False)
         return { 'FINISHED' }
 
 class EditUVMorph(Operator):

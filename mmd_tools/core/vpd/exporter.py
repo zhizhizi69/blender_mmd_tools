@@ -121,7 +121,7 @@ class VPDExporter:
         if model_scale:
             self.__scale = 1.0/model_scale
 
-        pose_type = args.get('pose_type', 'ACTIVE')
+        pose_type = args.get('pose_type', 'CURRENT')
         if pose_type == 'CURRENT':
             vpd_bones = self.__exportBones(armature)
             vpd_morphs = self.__exportMorphs(mesh)

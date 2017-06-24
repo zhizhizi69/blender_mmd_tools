@@ -168,7 +168,7 @@ class VMDExporter:
         animation_data = armObj.animation_data
         if animation_data is None or animation_data.action is None:
             logging.warning('[WARNING] armature "%s" has no animation data', armObj.name)
-            return
+            return None
 
         vmd_bone_anim = vmd.BoneAnimation()
 

@@ -628,7 +628,7 @@ class ExportVpd(Operator, ExportHelper):
             ('ACTIVE', 'Active Pose', "Active pose of the rig's pose library", 1),
             ('ALL', 'All Poses', "All poses of the rig's pose library (the pose name will be the file name)", 2),
             ],
-        default='ACTIVE',
+        default='CURRENT',
         )
     use_pose_mode = bpy.props.BoolProperty(
         name='Treat Current Pose as Rest Pose',

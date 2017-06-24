@@ -352,7 +352,7 @@ class VMDImporter:
         elif obj.type == 'ARMATURE':
             self.__assignToArmature(obj, action_name+'_bone')
         elif obj.type == 'CAMERA' and self.__convert_mmd_camera:
-            obj = mmd_camera.MMDCamera.convertToMMDCamera(obj)
+            obj = mmd_camera.MMDCamera.convertToMMDCamera(obj, scale=self.__scale)
             self.__assignToCamera(obj.object(), action_name+'_camera')
         elif obj.type == 'LAMP' and self.__convert_mmd_lamp:
             obj = mmd_lamp.MMDLamp.convertToMMDLamp(obj)

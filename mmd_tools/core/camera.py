@@ -1,5 +1,4 @@
 import bpy
-import mathutils
 import math
 
 class MMDCamera:
@@ -23,9 +22,7 @@ class MMDCamera:
         return obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA'
 
     @staticmethod
-    def convertToMMDCamera(cameraObj):
-        import bpy
-        import mathutils
+    def convertToMMDCamera(cameraObj, scale=0.2):
         if MMDCamera.isMMDCamera(cameraObj):
             return MMDCamera(cameraObj)
 
@@ -35,17 +32,18 @@ class MMDCamera:
         cameraObj.parent = empty
         cameraObj.data.dof_object = empty
         cameraObj.data.sensor_fit = 'VERTICAL'
-        cameraObj.location = mathutils.Vector((0,0,0))
+        cameraObj.data.clip_end = 500*scale
+        cameraObj.location = (0, -45*scale, 0)
         cameraObj.rotation_mode = 'XYZ'
-        cameraObj.rotation_euler = mathutils.Vector((math.radians(90.0),0,0))
+        cameraObj.rotation_euler = (math.radians(90), 0, 0)
         cameraObj.lock_location = (True, False, True)
         cameraObj.lock_rotation = (True, True, True)
         cameraObj.lock_scale = (True, True, True)
 
+        empty.location = (0, 0, 10*scale)
         empty.rotation_mode = 'YXZ'
         empty.mmd_type = 'CAMERA'
-        empty.mmd_camera.distance = 0.0
-        empty.mmd_camera.angle = math.radians(45)
+        empty.mmd_camera.angle = math.radians(30)
         empty.mmd_camera.persp = True
         return MMDCamera(empty)
 

@@ -8,6 +8,7 @@ class __EditMode:
             raise ValueError
         self.__prevMode = obj.mode
         self.__obj = obj
+        self.__obj_select = obj.select
         with select_object(obj) as act_obj:
             if obj.mode != 'EDIT':
                 bpy.ops.object.mode_set(mode='EDIT')
@@ -17,6 +18,7 @@ class __EditMode:
 
     def __exit__(self, type, value, traceback):
         bpy.ops.object.mode_set(mode=self.__prevMode)
+        self.__obj.select = self.__obj_select
 
 class __SelectObjects:
     def __init__(self, active_object, selected_objects=[]):

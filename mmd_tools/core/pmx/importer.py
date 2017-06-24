@@ -85,6 +85,7 @@ class PMXImporter:
         self.__rig = mmd_model.Model.create(pmxModel.name, pmxModel.name_e, self.__scale, obj_name)
         root = self.__rig.rootObject()
         mmd_root = root.mmd_root
+        self.__root = root
 
         root['import_folder'] = os.path.dirname(pmxModel.filepath)
 
@@ -99,12 +100,13 @@ class PMXImporter:
 
         self.__armObj = self.__rig.armature()
         self.__armObj.hide = True
+        self.__armObj.select = False
 
         # Temporarily set the root object as active to let property function hooks access it.
         self.__targetScene.objects.active = root
 
     def __createMeshObject(self):
-        model_name = self.__rig.rootObject().name
+        model_name = self.__root.name
         self.__meshObj = bpy.data.objects.new(name=model_name+'_mesh', object_data=bpy.data.meshes.new(name=model_name))
         self.__meshObj.parent = self.__armObj
         self.__targetScene.objects.link(self.__meshObj)
@@ -114,7 +116,7 @@ class PMXImporter:
             assert(len(self.__meshObj.data.vertices) > 0)
             assert(len(self.__meshObj.data.shape_keys.key_blocks) > 1)
             return
-        utils.selectAObject(self.__meshObj)
+        self.__targetScene.objects.active = self.__meshObj
         bpy.ops.object.shape_key_add()
 
     def __importVertexGroup(self):
@@ -577,7 +579,7 @@ class PMXImporter:
 
     def __importVertexMorphs(self):
         pmxModel = self.__model
-        mmd_root = self.__rig.rootObject().mmd_root
+        mmd_root = self.__root.mmd_root
         self.__createBasisShapeKey()
         categories = self.CATEGORIES
         for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
@@ -592,7 +594,7 @@ class PMXImporter:
                 shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
 
     def __importMaterialMorphs(self):
-        mmd_root = self.__rig.rootObject().mmd_root
+        mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.MaterialMorph)]:
             mat_morph = mmd_root.material_morphs.add()
@@ -616,7 +618,7 @@ class PMXImporter:
                 data.toon_texture_factor = morph_data.toon_texture_factor
 
     def __importBoneMorphs(self):
-        mmd_root = self.__rig.rootObject().mmd_root
+        mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.BoneMorph)]:
             bone_morph = mmd_root.bone_morphs.add()
@@ -634,7 +636,7 @@ class PMXImporter:
                 data.rotation = converter.convert_rotation(morph_data.rotation_offset)
 
     def __importUVMorphs(self):
-        mmd_root = self.__rig.rootObject().mmd_root
+        mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
         for morph in [x for x in self.__model.morphs if isinstance(x, pmx.UVMorph)]:
             uv_morph = mmd_root.uv_morphs.add()
@@ -650,7 +652,7 @@ class PMXImporter:
                 data.offset = (dx, -dy, dz, dw) # dz, dw are not used
 
     def __importGroupMorphs(self):
-        mmd_root = self.__rig.rootObject().mmd_root
+        mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
         morph_types = self.MORPH_TYPES
         pmx_morphs = self.__model.morphs
@@ -670,7 +672,7 @@ class PMXImporter:
 
     def __importDisplayFrames(self):
         pmxModel = self.__model
-        root = self.__rig.rootObject()
+        root = self.__root
         morph_types = self.MORPH_TYPES
 
         for i in pmxModel.display:
@@ -717,7 +719,7 @@ class PMXImporter:
                 continue
             self.__rig.renameBone(i.name, utils.convertNameToLR(i.name, use_underscore))
             # self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
-            
+
     def __translateBoneNames(self):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
@@ -802,10 +804,10 @@ class PMXImporter:
             self.__addArmatureModifier(self.__meshObj, self.__armObj)
 
         #bpy.context.scene.gravity[2] = -9.81 * 10 * self.__scale
-        root = self.__rig.rootObject()
-        if 'MESH' not in types:
+        root = self.__root
+        if 'ARMATURE' in types:
             root.mmd_root.show_armature = True
-        else:
+        if 'MESH' in types:
             root.mmd_root.show_meshes = True
         self.__targetScene.objects.active = root
         root.select = True
