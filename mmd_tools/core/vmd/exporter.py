@@ -341,10 +341,8 @@ class VMDExporter:
         camera = args.get('camera', None)
         lamp = args.get('lamp', None)
         filepath = args.get('filepath', '')
-        model_scale = args.get('scale', None)
 
-        if model_scale:
-            self.__scale = 1.0/model_scale
+        self.__scale = args.get('scale', 1.0)
 
         if args.get('use_frame_range', False):
             self.__frame_start = bpy.context.scene.frame_start

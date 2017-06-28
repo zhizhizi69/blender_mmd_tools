@@ -22,7 +22,7 @@ class MMDCamera:
         return obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA'
 
     @staticmethod
-    def convertToMMDCamera(cameraObj, scale=0.2):
+    def convertToMMDCamera(cameraObj, scale=1.0):
         if MMDCamera.isMMDCamera(cameraObj):
             return MMDCamera(cameraObj)
 

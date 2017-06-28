@@ -295,13 +295,6 @@ class MMDRoot(PropertyGroup):
         default=True,
         )
 
-    scale = FloatProperty(
-        name='Scale',
-        description='Imported scale factor to reverse on export',
-        min=0.1,
-        default=1,
-        )
-
     is_built = BoolProperty(
         name='Is Built',
         )

@@ -88,7 +88,7 @@ class ImportPmx(Operator, ImportHelper):
     scale = bpy.props.FloatProperty(
         name='Scale',
         description='Scaling factor for importing the model',
-        default=0.2,
+        default=1.0,
         )
     clean_model = bpy.props.BoolProperty(
         name='Clean Model',
@@ -197,7 +197,7 @@ class ImportVmd(Operator, ImportHelper):
     scale = bpy.props.FloatProperty(
         name='Scale',
         description='Scaling factor for importing the motion',
-        default=0.2,
+        default=1.0,
         )
     margin = bpy.props.IntProperty(
         name='Margin',
@@ -317,8 +317,8 @@ class ImportVpd(Operator, ImportHelper):
 
     scale = bpy.props.FloatProperty(
         name='Scale',
-        description='Scaling factor of the model',
-        default=0.2,
+        description='Scaling factor for importing the pose',
+        default=1.0,
         )
     bone_mapper = bpy.props.EnumProperty(
         name='Bone Mapper',
@@ -411,6 +411,11 @@ class ExportPmx(Operator, ExportHelper):
     filename_ext = '.pmx'
     filter_glob = bpy.props.StringProperty(default='*.pmx', options={'HIDDEN'})
 
+    scale = bpy.props.FloatProperty(
+        name='Scale',
+        description='Scaling factor for exporting the model',
+        default=1.0,
+        )
     copy_textures = bpy.props.BoolProperty(
         name='Copy textures',
         description='Copy textures',
@@ -500,7 +505,7 @@ class ExportPmx(Operator, ExportHelper):
         try:
             pmx_exporter.export(
                 filepath=self.filepath,
-                scale=root.mmd_root.scale,
+                scale=self.scale,
                 root=rig.rootObject(),
                 armature=rig.armature(),
                 meshes=rig.meshes(),
@@ -536,8 +541,8 @@ class ExportVmd(Operator, ExportHelper):
 
     scale = bpy.props.FloatProperty(
         name='Scale',
-        description='Scaling factor of the model',
-        default=0.2,
+        description='Scaling factor for exporting the motion',
+        default=1.0,
         )
     use_pose_mode = bpy.props.BoolProperty(
         name='Treat Current Pose as Rest Pose',
@@ -617,8 +622,8 @@ class ExportVpd(Operator, ExportHelper):
 
     scale = bpy.props.FloatProperty(
         name='Scale',
-        description='Scaling factor of the model',
-        default=0.2,
+        description='Scaling factor for exporting the pose',
+        default=1.0,
         )
     pose_type = bpy.props.EnumProperty(
         name='Pose Type',

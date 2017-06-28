@@ -13,7 +13,7 @@ class ConvertToMMDCamera(Operator):
     scale = FloatProperty(
         name='Scale',
         description='Scaling factor for initializing the camera',
-        default=0.2,
+        default=1.0,
         )
 
     def invoke(self, context, event):

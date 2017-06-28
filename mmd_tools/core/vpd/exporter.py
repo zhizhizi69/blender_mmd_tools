@@ -115,11 +115,8 @@ class VPDExporter:
         armature = args.get('armature', None)
         mesh = args.get('mesh', None)
         filepath = args.get('filepath', '')
-        model_scale = args.get('scale', None)
+        self.__scale = args.get('scale', 1.0)
         self.__osm_name = '%s.osm'%args.get('model_name', None)
-
-        if model_scale:
-            self.__scale = 1.0/model_scale
 
         pose_type = args.get('pose_type', 'CURRENT')
         if pose_type == 'CURRENT':

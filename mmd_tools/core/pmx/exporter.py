@@ -1120,7 +1120,7 @@ class __PmxExporter:
         self.__copyTextures = args.get('copy_textures', False)
         self.__filepath = filepath
 
-        self.__scale = 1.0/float(args.get('scale', 0.2))
+        self.__scale = args.get('scale', 1.0)
         sort_materials = args.get('sort_materials', False)
         sort_vertices = args.get('sort_vertices', 'NONE')
         if sort_vertices != 'NONE':

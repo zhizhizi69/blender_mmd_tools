@@ -66,7 +66,6 @@ class Model:
         root.mmd_type = 'ROOT'
         root.mmd_root.name = name
         root.mmd_root.name_e = name_e
-        root.mmd_root.scale = scale
         root.empty_draw_size = scale / 0.2
         #root.lock_location = [True, True, True]
         #root.lock_rotation = [True, True, True]
