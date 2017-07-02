@@ -59,6 +59,9 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
             col.operator('mmd_tools.build_rig', text='Build')
             col.operator('mmd_tools.clean_rig', text='Clean')
 
+            row = layout.row(align=True)
+            row.operator('mmd_tools.translate_mmd_model', text='Translate', icon='ERROR')
+
         row = layout.row()
 
         col = row.column(align=True)

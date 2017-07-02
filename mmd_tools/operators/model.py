@@ -3,6 +3,7 @@
 import bpy
 from bpy.types import Operator
 
+from mmd_tools import translations
 from mmd_tools import bpyutils
 import mmd_tools.core.model as mmd_model
 
@@ -102,3 +103,69 @@ class CreateMMDModelRoot(Operator):
     def invoke(self, context, event):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
+
+class TranslateMMDModel(Operator):
+    bl_idname = 'mmd_tools.translate_mmd_model'
+    bl_label = 'Translate a MMD Model'
+    bl_description = 'Translate Japanese names of a MMD model (Under development)'
+
+    types = bpy.props.EnumProperty(
+        name='Types',
+        description='Select which parts will be translated',
+        options={'ENUM_FLAG'},
+        items = [
+            ('BONE', 'Bones', 'Bones', 1),
+            ('MORPH', 'Morphs', 'Morphs', 2),
+            ('MATERIAL', 'Materials', 'Materials', 4),
+            ('DISPLAY', 'Display', 'Display frames', 8),
+            ('PHYSICS', 'Physics', 'Rigidbodies and joints', 16),
+            ],
+        default={'BONE', 'MORPH', 'MATERIAL', 'DISPLAY', 'PHYSICS',},
+        )
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(obj)
+        rig = mmd_model.Model(root)
+        for i in self.types:
+            getattr(self, 'translate_%s'%i.lower())(rig)
+        return {'FINISHED'}
+
+    def translate(self, name_j, name_e):
+        if 0: # maybe an option for keeping name_e
+            return name_e
+        return translations.translateFromJp(name_j)
+
+    def translate_bone(self, rig):
+        bones = rig.armature().pose.bones
+        for b in bones:
+            b.mmd_bone.name_e = self.translate(b.mmd_bone.name_j, b.mmd_bone.name_e)
+
+    def translate_morph(self, rig):
+        mmd_root = rig.rootObject().mmd_root
+        for attr in {'group', 'vertex', 'bone', 'uv', 'material'}:
+            for m in getattr(mmd_root, attr+'_morphs', []):
+                m.name_e = self.translate(m.name, m.name_e)
+
+    def translate_material(self, rig):
+        for m in rig.materials():
+            if m is None:
+                continue
+            m.mmd_material.name_e = self.translate(m.mmd_material.name_j, m.mmd_material.name_e)
+
+    def translate_display(self, rig):
+        mmd_root = rig.rootObject().mmd_root
+        for f in mmd_root.display_item_frames:
+            f.name_e = self.translate(f.name, f.name_e)
+
+    def translate_physics(self, rig):
+        for i in rig.rigidBodies():
+            i.mmd_rigid.name_e = self.translate(i.mmd_rigid.name_j, i.mmd_rigid.name_e)
+
+        for i in rig.joints():
+            i.mmd_joint.name_e = self.translate(i.mmd_joint.name_j, i.mmd_joint.name_e)
+
