@@ -109,6 +109,11 @@ class TranslateMMDModel(Operator):
     bl_label = 'Translate a MMD Model'
     bl_description = 'Translate Japanese names of a MMD model (Under development)'
 
+    dictionary = bpy.props.StringProperty(
+        name='Dictionary',
+        description='Select a dictionary text, leave it unset to try loading default csv file',
+        default='',
+        )
     types = bpy.props.EnumProperty(
         name='Types',
         description='Select which parts will be translated',
@@ -122,23 +127,46 @@ class TranslateMMDModel(Operator):
             ],
         default={'BONE', 'MORPH', 'MATERIAL', 'DISPLAY', 'PHYSICS',},
         )
+    overwrite = bpy.props.BoolProperty(
+        name='Overwrite',
+        description='Overwrite a translated English name',
+        default=False,
+        )
 
     def invoke(self, context, event):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
+    def draw(self, context):
+        layout = self.layout
+        layout.prop_search(self, 'dictionary', search_data=bpy.data, search_property='texts')
+        layout.prop(self, 'types')
+        layout.prop(self, 'overwrite')
+
     def execute(self, context):
+        try:
+            self.__translator = translations.getTranslator(self.dictionary)
+        except Exception as e:
+            self.report({'ERROR'}, 'Failed to load dictionary: %s'%e)
+            return {'CANCELLED'}
+
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         for i in self.types:
             getattr(self, 'translate_%s'%i.lower())(rig)
+
+        translator = self.__translator
+        txt = translator.save_fails()
+        if translator.fails:
+            self.report({'WARNING'}, "Failed to translate %d names, see '%s' in text editor"%(len(translator.fails), txt.name))
         return {'FINISHED'}
 
     def translate(self, name_j, name_e):
-        if 0: # maybe an option for keeping name_e
+        if not self.overwrite and name_e and self.__translator.is_translated(name_e):
             return name_e
-        return translations.translateFromJp(name_j)
+        name_e_new = self.__translator.translate(name_j)
+        return name_e_new if name_e_new else name_e
 
     def translate_bone(self, rig):
         bones = rig.armature().pose.bones

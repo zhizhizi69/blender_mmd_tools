@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+import bpy
+import csv
+
 jp_to_en_tuples = [
   ('全ての親', 'ParentNode'),
   ('操作中心', 'ControlNode'),               
@@ -134,3 +139,94 @@ def translateFromJp(name):
         if tuple[0] in name:
             name = name.replace(tuple[0], tuple[1])
     return name
+
+
+def getTranslator(text_name_or_filepath):
+    translator = MMDTranslator()
+    if text_name_or_filepath in bpy.data.texts:
+        translator.load_from_stream(bpy.data.texts[text_name_or_filepath])
+    else:
+        translator.load(text_name_or_filepath)
+    return translator
+
+class MMDTranslator:
+
+    def __init__(self):
+        self.__csv_tuples = []
+        self.__fails = set()
+
+    @staticmethod
+    def default_csv_filepath():
+        return __file__[:-3]+'.csv'
+
+    @staticmethod
+    def get_csv_text(text_name=None):
+        text_name = text_name or bpy.path.basename(MMDTranslator.default_csv_filepath())
+        csv_text = bpy.data.texts.get(text_name, None)
+        if csv_text is None:
+            csv_text = bpy.data.texts.new(text_name)
+        return csv_text
+
+    @property
+    def csv_tuples(self):
+        return self.__csv_tuples
+
+    @property
+    def fails(self):
+        return self.__fails
+
+    def is_translated(self, name):
+        try:
+            name.encode('ascii', errors='strict')
+        except UnicodeEncodeError:
+            return False
+        return True
+
+    def translate(self, name):
+        name_orig = name
+        for pair in self.__csv_tuples:
+            if pair[0] in name:
+                name = name.replace(pair[0], pair[1])
+        if not self.is_translated(name):
+            self.__fails.add((name_orig, name))
+            return None
+        return name
+
+    def save_fails(self, text_name=None):
+        text_name = text_name or (__name__+'.fails')
+        txt = self.get_csv_text(text_name)
+        txt.from_string('\n'.join('%s,%s'%x for x in self.__fails))
+        return txt
+
+    def load_from_stream(self, csvfile=None):
+        csvfile = csvfile or self.get_csv_text()
+        if isinstance(csvfile, bpy.types.Text):
+            csvfile = map(lambda x: x.body, csvfile.lines)
+        spamreader = csv.reader(csvfile, delimiter=',')
+        csv_tuples = [tuple(row) for row in spamreader if len(row) >= 2]
+        csv_tuples.sort(key=lambda row: (-len(row[0]), row))
+        self.__csv_tuples = csv_tuples
+        print(' - load items:', len(self.__csv_tuples))
+
+    def save_to_stream(self, csvfile=None):
+        csvfile = csvfile or self.get_csv_text()
+        lineterminator = '\r\n'
+        if isinstance(csvfile, bpy.types.Text):
+            csvfile.clear()
+            lineterminator = '\n'
+        spamwriter = csv.writer(csvfile, delimiter=',', lineterminator=lineterminator)
+        spamwriter.writerows(self.__csv_tuples)
+        print(' - save items:', len(self.__csv_tuples))
+
+    def load(self, filepath=None):
+        filepath = filepath or self.default_csv_filepath()
+        print('Loading csv file:', filepath)
+        with open(filepath, 'rt', encoding='utf-8', newline='') as csvfile:
+            self.load_from_stream(csvfile)
+
+    def save(self, filepath=None):
+        filepath = filepath or self.default_csv_filepath()
+        print('Saving csv file:', filepath)
+        with open(filepath, 'wt', encoding='utf-8', newline='') as csvfile:
+            self.save_to_stream(csvfile)
+

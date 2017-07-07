@@ -115,12 +115,14 @@ class MMD_ROOT_UL_display_items(UIList):
         )
 
     @staticmethod
-    def draw_bone_special(layout, armature, bone_name):
+    def draw_bone_special(layout, armature, bone_name, show_name_e=False):
         if armature is None:
             return
         row = layout.row(align=True)
         p_bone = armature.pose.bones.get(bone_name, None)
         if p_bone:
+            if show_name_e:
+                row.prop(p_bone.mmd_bone, 'name_e', text='', emboss=True)
             bone = p_bone.bone
             ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
             row.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
@@ -132,8 +134,9 @@ class MMD_ROOT_UL_display_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
             if item.type == 'BONE':
-                layout.prop(item, 'name', text='', emboss=False, icon='BONE_DATA')
-                MMD_ROOT_UL_display_items.draw_bone_special(layout, mmd_model.Model(item.id_data).armature(), item.name)
+                row = layout.split(percentage=0.5, align=True)
+                row.prop(item, 'name', text='', emboss=False, icon='BONE_DATA')
+                self.draw_bone_special(row, mmd_model.Model(item.id_data).armature(), item.name, True)
             else:
                 row = layout.split(percentage=0.6, align=True)
                 row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
