@@ -70,6 +70,7 @@ class SeparateByMaterials(Operator):
         name='Clean Shape Keys',
         description='Remove unused shape keys of separated objects',
         default=True,
+        options={'SKIP_SAVE'},
         )
 
     @classmethod

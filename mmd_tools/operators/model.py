@@ -165,12 +165,13 @@ class TranslateMMDModel(Operator):
     def translate(self, name_j, name_e):
         if not self.overwrite and name_e and self.__translator.is_translated(name_e):
             return name_e
-        name_e_new = self.__translator.translate(name_j)
-        return name_e_new if name_e_new else name_e
+        return self.__translator.translate(name_j, name_e)
 
     def translate_bone(self, rig):
         bones = rig.armature().pose.bones
         for b in bones:
+            if b.is_mmd_shadow_bone:
+                continue
             b.mmd_bone.name_e = self.translate(b.mmd_bone.name_j, b.mmd_bone.name_e)
 
     def translate_morph(self, rig):

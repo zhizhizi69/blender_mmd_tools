@@ -595,7 +595,7 @@ class ExportVmd(Operator, ExportHelper):
             for i in context.selected_objects:
                 if MMDCamera.isMMDCamera(i):
                     params['camera'] = i
-                elif MMDCamera.isMMDLamp(i):
+                elif MMDLamp.isMMDLamp(i):
                     params['lamp'] = i
 
         try:

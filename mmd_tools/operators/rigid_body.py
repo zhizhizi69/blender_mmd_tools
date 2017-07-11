@@ -154,6 +154,8 @@ class AddRigidBody(Operator):
                 size.z *= 0.8
             elif self.rigid_shape == 'CAPSULE':
                 size.x /= 3
+        else:
+            size *= rig.rootObject().empty_draw_size
 
         return rig.createRigidBody(
                 name = name_j,

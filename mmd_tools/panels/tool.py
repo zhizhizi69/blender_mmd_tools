@@ -86,13 +86,13 @@ class MMD_ROOT_UL_display_item_frames(UIList):
         if self.layout_type in {'DEFAULT'}:
             row = layout.split(percentage=0.5, align=True)
             if frame.is_special:
-                row.label(text=frame.name, translate=False, icon_value=icon)
+                row.label(text=frame.name, translate=False)
                 row = row.row(align=True)
-                row.label(text=frame.name_e, translate=False, icon_value=icon)
+                row.label(text=frame.name_e, translate=False)
                 row.label(text='', icon='LOCKED')
             else:
-                row.prop(frame, 'name', text='', emboss=False, icon_value=icon)
-                row.prop(frame, 'name_e', text='', emboss=True, icon_value=icon)
+                row.prop(frame, 'name', text='', emboss=False)
+                row.prop(frame, 'name_e', text='', emboss=True)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -103,27 +103,36 @@ class MMD_ROOT_UL_display_items(UIList):
     morph_filter = bpy.props.EnumProperty(
         name="Morph Filter",
         description='Only show items matching this category',
+        options={'ENUM_FLAG'},
         items = [
-            ('SYSTEM', 'Hidden', '', 0),
-            ('EYEBROW', 'Eye Brow', '', 1),
-            ('EYE', 'Eye', '', 2),
-            ('MOUTH', 'Mouth', '', 3),
-            ('OTHER', 'Other', '', 4),
-            ('NONE', 'All', '', 10),
+            ('SYSTEM', 'Hidden', '', 1),
+            ('EYEBROW', 'Eye Brow', '', 2),
+            ('EYE', 'Eye', '', 4),
+            ('MOUTH', 'Mouth', '', 8),
+            ('OTHER', 'Other', '', 16),
             ],
-        default='NONE',
+        default={'SYSTEM', 'EYEBROW', 'EYE', 'MOUTH', 'OTHER',},
+        )
+    mmd_name = bpy.props.EnumProperty(
+        name='MMD Name',
+        description='Show JP or EN name of MMD bone',
+        items = [
+            ('name_j', 'JP', '', 1),
+            ('name_e', 'EN', '', 2),
+            ],
+        default='name_e',
         )
 
     @staticmethod
-    def draw_bone_special(layout, armature, bone_name, show_name_e=False):
+    def draw_bone_special(layout, armature, bone_name, mmd_name=None):
         if armature is None:
             return
         row = layout.row(align=True)
         p_bone = armature.pose.bones.get(bone_name, None)
         if p_bone:
-            if show_name_e:
-                row.prop(p_bone.mmd_bone, 'name_e', text='', emboss=True)
             bone = p_bone.bone
+            if mmd_name:
+                row.prop(p_bone.mmd_bone, mmd_name, text='', emboss=True)
             ic = 'RESTRICT_VIEW_ON' if bone.hide else 'RESTRICT_VIEW_OFF'
             row.prop(bone, 'hide', text='', emboss=p_bone.mmd_bone.is_tip, icon=ic)
             row.active = armature.mode != 'EDIT'
@@ -136,12 +145,12 @@ class MMD_ROOT_UL_display_items(UIList):
             if item.type == 'BONE':
                 row = layout.split(percentage=0.5, align=True)
                 row.prop(item, 'name', text='', emboss=False, icon='BONE_DATA')
-                self.draw_bone_special(row, mmd_model.Model(item.id_data).armature(), item.name, True)
+                self.draw_bone_special(row, mmd_model.Model(item.id_data).armature(), item.name, self.mmd_name)
             else:
                 row = layout.split(percentage=0.6, align=True)
                 row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
                 row = row.row(align=True)
-                row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
+                row.prop(item, 'morph_type', text='', emboss=False)
                 if item.name not in getattr(item.id_data.mmd_root, item.morph_type):
                     row.label(icon='ERROR')
         elif self.layout_type in {'COMPACT'}:
@@ -152,7 +161,7 @@ class MMD_ROOT_UL_display_items(UIList):
 
 
     def filter_items(self, context, data, propname):
-        if self.morph_filter == 'NONE' or data.name != u'表情':
+        if len(self.morph_filter) == 5 or data.name != u'表情':
             return [], []
 
         objects = getattr(data, propname)
@@ -161,7 +170,7 @@ class MMD_ROOT_UL_display_items(UIList):
 
         for i, item in enumerate(objects):
             morph = getattr(item.id_data.mmd_root, item.morph_type).get(item.name, None)
-            if morph and morph.category == self.morph_filter:
+            if morph and morph.category in self.morph_filter:
                 flt_flags[i] = self.bitflag_filter_item
 
         return flt_flags, flt_neworder
@@ -170,6 +179,7 @@ class MMD_ROOT_UL_display_items(UIList):
     def draw_filter(self, context, layout):
         row = layout.row()
         row.prop(self, 'morph_filter', expand=True)
+        row.prop(self, 'mmd_name', expand=True)
 
 
 class MMDDisplayItemFrameMenu(Menu):
@@ -261,9 +271,9 @@ class UL_Morphs(UIList):
             row = layout.split(percentage=0.4, align=True)
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.split(percentage=0.6, align=True)
-            row.prop(item, 'name_e', text='', emboss=True, icon_value=icon)
+            row.prop(item, 'name_e', text='', emboss=True)
             row = row.row(align=True)
-            row.prop(item, 'category', text='', emboss=False, icon_value=icon)
+            row.prop(item, 'category', text='', emboss=False)
             frame_facial = mmd_root.display_item_frames.get(u'表情')
             morph_item = frame_facial.items.get(item.name) if frame_facial else None
             if morph_item is None:
@@ -293,7 +303,7 @@ class UL_UVMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
             layout.label(text=str(item.index), translate=False, icon='MESH_DATA')
-            layout.prop(item, 'offset', text='', emboss=False, icon_value=icon, slider=True)
+            layout.prop(item, 'offset', text='', emboss=False, slider=True)
         elif self.layout_type in {'COMPACT'}:
             pass
         elif self.layout_type in {'GRID'}:
@@ -317,9 +327,9 @@ class UL_GroupMorphOffsets(UIList):
             row = layout.split(percentage=0.5, align=True)
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.row(align=True)
-            row.prop(item, 'morph_type', text='', emboss=False, icon_value=icon)
+            row.prop(item, 'morph_type', text='', emboss=False)
             if item.name in getattr(item.id_data.mmd_root, item.morph_type):
-                row.prop(item, 'factor', text='', emboss=False, icon_value=icon, slider=True)
+                row.prop(item, 'factor', text='', emboss=False, slider=True)
             else:
                 row.label(icon='ERROR')
         elif self.layout_type in {'COMPACT'}:
@@ -583,7 +593,7 @@ class UL_ObjectsMixIn(object):
     def filter_items(self, context, data, propname):
         objects = getattr(data, propname)
         flt_flags = [~self.bitflag_filter_item] * len(objects)
-        flt_neworder = []
+        flt_neworder = list(range(len(objects)))
 
         if self.model_filter == 'ACTIVE':
             active_root = mmd_model.Model.findRoot(context.active_object)
@@ -600,6 +610,9 @@ class UL_ObjectsMixIn(object):
                 if obj.hide and flt_flags[i] == self.bitflag_filter_item:
                     flt_flags[i] = ~self.bitflag_filter_item
 
+        indices = (i for i, x in enumerate(flt_flags) if x == self.bitflag_filter_item)
+        for i_new, i_orig in enumerate(sorted(indices, key=lambda k: objects[k].name)):
+            flt_neworder[i_orig] = i_new
         return flt_flags, flt_neworder
 
 class UL_rigidbodies(UL_ObjectsMixIn, UIList):

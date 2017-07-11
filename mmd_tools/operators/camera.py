@@ -3,7 +3,7 @@
 from bpy.props import FloatProperty
 from bpy.types import Operator
 
-import mmd_tools.core.camera as mmd_camera
+from mmd_tools.core.camera import MMDCamera
 
 class ConvertToMMDCamera(Operator):
     bl_idname = 'mmd_tools.convert_to_mmd_camera'
@@ -21,5 +21,5 @@ class ConvertToMMDCamera(Operator):
         return vm.invoke_props_dialog(self)
 
     def execute(self, context):
-        mmd_camera.MMDCamera.convertToMMDCamera(context.active_object, self.scale)
+        MMDCamera.convertToMMDCamera(context.active_object, self.scale)
         return {'FINISHED'}

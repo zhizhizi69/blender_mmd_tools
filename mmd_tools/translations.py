@@ -141,19 +141,24 @@ def translateFromJp(name):
     return name
 
 
-def getTranslator(text_name_or_filepath):
+def getTranslator(csvfile=''):
     translator = MMDTranslator()
-    if text_name_or_filepath in bpy.data.texts:
-        translator.load_from_stream(bpy.data.texts[text_name_or_filepath])
+    if isinstance(csvfile, bpy.types.Text):
+        translator.load_from_stream(csvfile)
+    elif isinstance(csvfile, dict):
+        translator.csv_tuples.extend(csvfile.items())
+        translator.csv_tuples.sort(key=lambda row: (-len(row[0]), row))
+    elif csvfile in bpy.data.texts:
+        translator.load_from_stream(bpy.data.texts[csvfile])
     else:
-        translator.load(text_name_or_filepath)
+        translator.load(csvfile)
     return translator
 
 class MMDTranslator:
 
     def __init__(self):
         self.__csv_tuples = []
-        self.__fails = set()
+        self.__fails = {}
 
     @staticmethod
     def default_csv_filepath():
@@ -182,26 +187,26 @@ class MMDTranslator:
             return False
         return True
 
-    def translate(self, name):
+    def translate(self, name, default=None):
         name_orig = name
         for pair in self.__csv_tuples:
             if pair[0] in name:
                 name = name.replace(pair[0], pair[1])
         if not self.is_translated(name):
-            self.__fails.add((name_orig, name))
-            return None
+            self.__fails[name_orig] = name
+            return default
         return name
 
     def save_fails(self, text_name=None):
         text_name = text_name or (__name__+'.fails')
         txt = self.get_csv_text(text_name)
-        txt.from_string('\n'.join('%s,%s'%x for x in self.__fails))
+        txt.from_string('\n'.join('%s,%s'%(k, v) for k, v in self.__fails.items()))
         return txt
 
     def load_from_stream(self, csvfile=None):
         csvfile = csvfile or self.get_csv_text()
         if isinstance(csvfile, bpy.types.Text):
-            csvfile = map(lambda x: x.body, csvfile.lines)
+            csvfile = (l.body+'\n' for l in csvfile.lines)
         spamreader = csv.reader(csvfile, delimiter=',')
         csv_tuples = [tuple(row) for row in spamreader if len(row) >= 2]
         csv_tuples.sort(key=lambda row: (-len(row[0]), row))

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import bpy
 import math
 
@@ -32,6 +34,8 @@ class MMDCamera:
         cameraObj.parent = empty
         cameraObj.data.dof_object = empty
         cameraObj.data.sensor_fit = 'VERTICAL'
+        cameraObj.data.lens_unit = 'MILLIMETERS' # MILLIMETERS, FOV
+        cameraObj.data.ortho_scale = 25*scale
         cameraObj.data.clip_end = 500*scale
         cameraObj.location = (0, -45*scale, 0)
         cameraObj.rotation_mode = 'XYZ'
@@ -42,6 +46,8 @@ class MMDCamera:
 
         empty.location = (0, 0, 10*scale)
         empty.rotation_mode = 'YXZ'
+        empty.empty_draw_size = 5*scale
+        empty.lock_scale = (True, True, True)
         empty.mmd_type = 'CAMERA'
         empty.mmd_camera.angle = math.radians(30)
         empty.mmd_camera.persp = True
