@@ -30,6 +30,7 @@ class _Vertex:
         self.uv = None
         self.normal = None
         self.sdef_data = None # (C, R0, R1)
+        self.add_uvs = [None]*4 # UV1~UV4
 
 class _Face:
     def __init__(self, vertices):
@@ -85,6 +86,7 @@ class __PmxExporter:
         self.__default_material = None
         self.__vertex_order_map = None # used for controlling vertex order
         self.__disable_specular = False
+        self.__add_uv_count = 0
 
     @staticmethod
     def flipUV_V(uv):
@@ -149,6 +151,9 @@ class __PmxExporter:
                     pv.normal = v.normal
                     pv.uv = self.flipUV_V(v.uv)
                     pv.edge_scale = v.edge_scale
+                    for _uvzw in v.add_uvs:
+                        if _uvzw:
+                            pv.additional_uvs.append(self.flipUV_V(_uvzw[0])+self.flipUV_V(_uvzw[1]))
 
                     t = len(v.groups)
                     if t == 0:
@@ -859,6 +864,23 @@ class __PmxExporter:
         return n
 
     @staticmethod
+    def __convertAddUV(vert, adduv, addzw, uv_index, vertices, rip_vertices):
+        if vert.add_uvs[uv_index] is None:
+            vert.add_uvs[uv_index] = (adduv, addzw)
+            return vert
+        for i in rip_vertices:
+            uvzw = i.add_uvs[uv_index]
+            if (uvzw[0] - adduv).length < 0.001 and (uvzw[1] - addzw).length < 0.001:
+                return i
+        n = copy.copy(vert)
+        add_uvs = n.add_uvs.copy()
+        add_uvs[uv_index] = (adduv, addzw)
+        n.add_uvs = add_uvs
+        vertices.append(n)
+        rip_vertices.append(n)
+        return n
+
+    @staticmethod
     def __triangulate(mesh, custom_normals):
         bm = bmesh.new()
         bm.from_mesh(mesh)
@@ -1031,14 +1053,16 @@ class __PmxExporter:
             bpy.data.meshes.remove(mesh)
 
         # load face data
+        class _DummyUV:
+            uv1 = uv2 = uv3 = mathutils.Vector((0, 1))
+
         materials = {}
         uv_data = base_mesh.tessface_uv_textures.active
         if uv_data:
             uv_data = uv_data.data
         else:
-            class _DummyUV:
-                uv1 = uv2 = uv3 = mathutils.Vector((0, 0))
             uv_data = iter(lambda: _DummyUV, None)
+        face_seq = []
         for face, uv in zip(base_mesh.tessfaces, uv_data):
             if len(face.vertices) != 3:
                 raise Exception
@@ -1049,6 +1073,7 @@ class __PmxExporter:
             v3 = self.__convertFaceUVToVertexUV(face.vertices[2], uv.uv3, n3, base_vertices)
 
             t = _Face([v1, v2, v3])
+            face_seq.append(t)
             if face.material_index not in materials:
                 materials[face.material_index] = []
             materials[face.material_index].append(t)
@@ -1060,6 +1085,28 @@ class __PmxExporter:
             for i, m in enumerate(base_mesh.materials):
                 if m is None:
                     base_mesh.materials[i] = self.__getDefaultMaterial()
+
+        # export add UV
+        bl_add_uvs = [i for i in base_mesh.tessface_uv_textures[1:] if not i.name.startswith('_')]
+        self.__add_uv_count = max(self.__add_uv_count, len(bl_add_uvs))
+        for uv_n, uv_tex in enumerate(bl_add_uvs):
+            if uv_n > 3:
+                logging.warning(' * extra addUV%d+ are not supported', uv_n+1)
+                break
+            uv_data = uv_tex.data
+            zw_data = base_mesh.tessface_uv_textures.get('_'+uv_tex.name, None)
+            logging.info(' # exporting addUV%d: %s [zw: %s]', uv_n+1, uv_tex.name, zw_data)
+            if zw_data:
+                zw_data = zw_data.data
+            else:
+                zw_data = iter(lambda: _DummyUV, None)
+            rip_vertices_map = {}
+            for f, face, uv, zw in zip(face_seq, base_mesh.tessfaces, uv_data, zw_data):
+                vertices = [base_vertices[x] for x in face.vertices]
+                rip_vertices = [rip_vertices_map.setdefault(x, [x]) for x in f.vertices]
+                f.vertices[0] = self.__convertAddUV(f.vertices[0], uv.uv1, zw.uv1, uv_n, vertices[0], rip_vertices[0])
+                f.vertices[1] = self.__convertAddUV(f.vertices[1], uv.uv2, zw.uv2, uv_n, vertices[1], rip_vertices[1])
+                f.vertices[2] = self.__convertAddUV(f.vertices[2], uv.uv3, zw.uv3, uv_n, vertices[2], rip_vertices[2])
 
         return _Mesh(
             base_mesh,
@@ -1073,6 +1120,8 @@ class __PmxExporter:
         meshObj.show_only_shape_key = True
         active_shape_key_index = meshObj.active_shape_key_index
         meshObj.active_shape_key_index = 0
+        active_uv_texture_index = meshObj.data.uv_textures.active_index
+        meshObj.data.uv_textures.active_index = 0
 
         muted_modifiers = []
         for m in meshObj.modifiers:
@@ -1088,6 +1137,7 @@ class __PmxExporter:
         finally:
             meshObj.show_only_shape_key = show_only_shape_key
             meshObj.active_shape_key_index = active_shape_key_index
+            meshObj.data.uv_textures.active_index = active_uv_texture_index
             for m, show in muted_modifiers:
                 m.show_viewport = show
 
@@ -1154,7 +1204,7 @@ class __PmxExporter:
             base_folder = bpyutils.addon_preferences('base_texture_folder', '')
             self.__copy_textures(output_dir, import_folder or base_folder)
 
-        pmx.save(filepath, self.__model)
+        pmx.save(filepath, self.__model, add_uv_count=self.__add_uv_count)
 
 def export(filepath, **kwargs):
     logging.info('****************************************')

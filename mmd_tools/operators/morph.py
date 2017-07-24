@@ -452,11 +452,13 @@ class ViewUVMorph(Operator):
             morph = mmd_root.uv_morphs[mmd_root.active_morph]
             mesh = meshObj.data
             uv_textures = mesh.uv_textures
-            if morph.uv_index >= len(uv_textures):
+
+            base_uv_layers = [l for l in mesh.uv_layers if not l.name.startswith('_')]
+            if morph.uv_index >= len(base_uv_layers):
                 self.report({ 'ERROR' }, "Invalid uv index: %d"%morph.uv_index)
                 return { 'CANCELLED' }
 
-            uv_textures.active_index = morph.uv_index
+            uv_textures.active = uv_textures[base_uv_layers[morph.uv_index].name]
             uv_tex = uv_textures.new(name='__uv.%s'%uv_textures.active.name)
             if uv_tex is None:
                 self.report({ 'ERROR' }, "Failed to create a temporary uv layer")
@@ -525,6 +527,7 @@ class ClearUVMorphView(Operator):
                     uv_textures.remove(t)
             if len(uv_textures) > 0:
                 uv_textures[0].active_render = True
+                uv_textures.active_index = 0
 
             animation_data = mesh.animation_data
             if animation_data:
@@ -592,7 +595,7 @@ class ApplyUVMorph(Operator):
     @classmethod
     def poll(cls, context):
         obj = context.active_object
-        if obj.type != 'MESH' or obj.mode != 'EDIT':
+        if obj.type != 'MESH':
             return False
         uv_textures = obj.data.uv_textures
         return uv_textures.active and uv_textures.active.name.startswith('__uv.')
@@ -613,7 +616,7 @@ class ApplyUVMorph(Operator):
             morph.data.clear()
             mesh = meshObj.data
 
-            base_uv_layers = [l for l in mesh.uv_layers if not l.name.startswith('__uv.')]
+            base_uv_layers = [l for l in mesh.uv_layers if not l.name.startswith('_')]
             if morph.uv_index >= len(base_uv_layers):
                 self.report({ 'ERROR' }, "Invalid uv index: %d"%morph.uv_index)
                 return { 'CANCELLED' }

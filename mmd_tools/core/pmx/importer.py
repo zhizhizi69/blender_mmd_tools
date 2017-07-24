@@ -577,6 +577,37 @@ class PMXImporter:
             bf.material_index = self.__getMaterialIndexFromFaceIndex(i)
             uv.image = self.__imageTable.get(bf.material_index, None)
 
+        if pmxModel.header and pmxModel.header.additional_uvs:
+            logging.info('Importing %d additional uvs', pmxModel.header.additional_uvs)
+            zw_data_map = collections.OrderedDict()
+            for i in range(pmxModel.header.additional_uvs):
+                add_uv = mesh.tessface_uv_textures.new('UV'+str(i+1))
+                logging.info(' - %s...(uv channels)', add_uv.name)
+                zw_data = []
+                has_zw = False
+                for uv, f in zip(add_uv.data, pmxModel.faces):
+                    uvs = [pmxModel.vertices[x].additional_uvs[i] for x in f]
+                    uv.uv1 = self.flipUV_V(uvs[0][:2])
+                    uv.uv2 = self.flipUV_V(uvs[1][:2])
+                    uv.uv3 = self.flipUV_V(uvs[2][:2])
+                    zws = tuple(x[2:] for x in uvs)
+                    zw_data.append(zws)
+                    has_zw = has_zw or any(any(x) for x in zws)
+                if not has_zw:
+                    logging.info('\t- zw are all zeros: %s', add_uv.name)
+                else:
+                    zw_data_map['_'+add_uv.name] = zw_data
+            for name, zw_seq in zw_data_map.items():
+                logging.info(' - %s...(zw channels of %s)', name, name[1:])
+                add_zw = mesh.tessface_uv_textures.new(name)
+                if add_zw is None:
+                    logging.warning('\t* Lost zw channels')
+                    continue
+                for uv, zws in zip(add_zw.data, zw_seq):
+                    uv.uv1 = self.flipUV_V(zws[0])
+                    uv.uv2 = self.flipUV_V(zws[1])
+                    uv.uv3 = self.flipUV_V(zws[2])
+
     def __importVertexMorphs(self):
         pmxModel = self.__model
         mmd_root = self.__root.mmd_root

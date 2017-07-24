@@ -705,6 +705,8 @@ class Vertex:
         fs.writeVector(self.uv)
         for i in self.additional_uvs:
             fs.writeVector(i)
+        for i in range(fs.header().additional_uvs-len(self.additional_uvs)):
+            fs.writeVector((0,0,0,0))
         self.weight.save(fs)
         fs.writeFloat(self.edge_scale)
 
@@ -1608,9 +1610,10 @@ def load(path):
         logging.info('****************************************')
         return model
 
-def save(path, model):
+def save(path, model, add_uv_count=0):
     with FileWriteStream(path) as fs:
         header = Header(model)
+        header.additional_uvs = max(0, min(4, add_uv_count)) # UV1~UV4
         header.save(fs)
         fs.setHeader(header)
         model.save(fs)
