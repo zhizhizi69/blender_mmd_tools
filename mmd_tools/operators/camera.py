@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from bpy.props import FloatProperty
+from bpy.props import BoolProperty
 from bpy.types import Operator
 
 from mmd_tools.core.camera import MMDCamera
@@ -16,10 +17,28 @@ class ConvertToMMDCamera(Operator):
         default=1.0,
         )
 
+    bake_animation = BoolProperty(
+        name='Bake Animation',
+        description='Bake the animation of active camera (with a selected target) to a new MMD camera rig',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
+
     def invoke(self, context, event):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
     def execute(self, context):
-        MMDCamera.convertToMMDCamera(context.active_object, self.scale)
+        if self.bake_animation:
+            obj = context.active_object
+            target = None
+            if len(context.selected_objects) == 2 and obj in context.selected_objects:
+                target = context.selected_objects[0]
+                if target == obj:
+                    target = context.selected_objects[1]
+            elif len(context.selected_objects) == 1 and obj not in context.selected_objects:
+                target = context.selected_objects[0]
+            MMDCamera.newMMDCameraAnimation(obj, target, self.scale)
+        else:
+            MMDCamera.convertToMMDCamera(context.active_object, self.scale)
         return {'FINISHED'}
