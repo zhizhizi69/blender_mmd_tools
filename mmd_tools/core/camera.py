@@ -92,9 +92,7 @@ class MMDCamera:
         for f in range(frame_start, frame_end):
             scene.frame_set(f)
             cam_matrix_world = cameraObj.matrix_world
-            cam_target_loc = cam_matrix_world.translation
-            if cameraTarget:
-                cam_target_loc = cameraTarget.matrix_world.translation
+            cam_target_loc = cameraTarget.matrix_world.translation
 
             #assert(cameraObj.data.type != 'ORTHO') # TODO 'ORTHO' type animation
             tan_val = cameraObj.data.sensor_height/cameraObj.data.lens/2
