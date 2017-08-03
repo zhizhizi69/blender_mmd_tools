@@ -24,6 +24,11 @@ class ConvertToMMDCamera(Operator):
         options={'SKIP_SAVE'},
         )
 
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == 'CAMERA'
+
     def invoke(self, context, event):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)

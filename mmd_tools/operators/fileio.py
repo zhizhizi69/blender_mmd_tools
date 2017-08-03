@@ -299,7 +299,7 @@ class ImportVmd(Operator, ImportHelper):
         if self.update_scene_settings:
             auto_scene_setup.setupFrameRanges()
             auto_scene_setup.setupFps()
-
+        context.scene.frame_set(context.scene.frame_current)
         return {'FINISHED'}
 
 

@@ -133,6 +133,7 @@ class VMDImporter:
         kp = fcurve.keyframe_points[-1]
         kp.handle_right = kp.co + mathutils.Vector((1, 0))
 
+
     def __assignToArmature(self, armObj, action_name=None):
         action_name = action_name or armObj.name
         action = bpy.data.actions.new(name=action_name)
@@ -177,7 +178,7 @@ class VMDImporter:
 
             converter = self.__bone_util_cls(bone, self.__scale)
             prev_rot = bone.rotation_quaternion if extra_frame else None
-            prev_kps = None
+            prev_kps, indices = None, (0, 32, 16, 48, 48, 48, 48) # x, z, y, rw, rx, ry, rz
             vmd_frames = sorted(keyFrames, key=lambda x:x.frame_number)
             for k, x, y, z, rw, rx, ry, rz in zip(vmd_frames, *fcurves):
                 frame = k.frame_number + self.__frame_margin
@@ -197,9 +198,9 @@ class VMDImporter:
 
                 curr_kps = (x, y, z, rw, rx, ry, rz)
                 if prev_kps is not None:
-                    interps = [k.interp[idx:idx+16:4] for idx in (0, 32, 16, 48, 48, 48, 48)] # x, z, y, rw, rx, ry, rz
-                    for interp, prev_kp, kp in zip(interps, prev_kps, curr_kps):
-                        self.__setInterpolation(interp, prev_kp, kp)
+                    interp = k.interp
+                    for idx, prev_kp, kp in zip(indices, prev_kps, curr_kps):
+                        self.__setInterpolation(interp[idx:idx+16:4], prev_kp, kp)
                 prev_kps = curr_kps
 
         for c in action.fcurves:
@@ -269,6 +270,7 @@ class VMDImporter:
         for c in fcurves:
             c.keyframe_points.add(len(cameraAnim))
 
+        prev_kps, indices = None, (0, 8, 4, 12, 12, 12, 16, 20) # x, z, y, rx, ry, rz, dis, fov
         for k, x, y, z, rx, ry, rz, fov, persp, dis in zip(cameraAnim, *(c.keyframe_points for c in fcurves)):
             frame = k.frame_number + self.__frame_margin
             x.co, z.co, y.co = ((frame, val*self.__scale) for val in k.location)
@@ -277,25 +279,13 @@ class VMDImporter:
             dis.co = (frame, k.distance*self.__scale)
             persp.co = (frame, k.persp)
 
-        paths = ['rotation_euler', 'location', 'mmd_camera.angle']
-        for fcurve in distance_action.fcurves:
-            if fcurve.data_path == 'location' and fcurve.array_index == 1:
-                frames = fcurve.keyframe_points
-                for i in range(1, len(cameraAnim)):
-                    interp = cameraAnim[i].interp
-                    self.__setInterpolation([interp[16 + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
-        for fcurve in parent_action.fcurves:
-            if fcurve.data_path in paths:
-                if fcurve.data_path =='location':
-                    idx = [0, 2, 1][fcurve.array_index] * 4
-                else:
-                    idx = (paths.index(fcurve.data_path) + 3) * 4
-                frames = fcurve.keyframe_points
-                for i in range(1, len(cameraAnim)):
-                    interp = cameraAnim[i].interp
-                    self.__setInterpolation([interp[idx + j] for j in [0, 2, 1, 3]], frames[i - 1], frames[i])
-            else:
-                fcurve.update()
+            persp.interpolation = 'CONSTANT'
+            curr_kps = (x, y, z, rx, ry, rz, dis, fov)
+            if prev_kps is not None:
+                interp = k.interp
+                for idx, prev_kp, kp in zip(indices, prev_kps, curr_kps):
+                    self.__setInterpolation(interp[idx:idx+4:2]+interp[idx+1:idx+4:2], prev_kp, kp)
+            prev_kps = curr_kps
 
         for fcurve in fcurves:
             self.__fixFcurveHandles(fcurve)

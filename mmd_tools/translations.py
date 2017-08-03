@@ -141,17 +141,19 @@ def translateFromJp(name):
     return name
 
 
-def getTranslator(csvfile=''):
+def getTranslator(csvfile='', keep_order=False):
     translator = MMDTranslator()
     if isinstance(csvfile, bpy.types.Text):
         translator.load_from_stream(csvfile)
     elif isinstance(csvfile, dict):
         translator.csv_tuples.extend(csvfile.items())
-        translator.csv_tuples.sort(key=lambda row: (-len(row[0]), row))
     elif csvfile in bpy.data.texts:
         translator.load_from_stream(bpy.data.texts[csvfile])
     else:
         translator.load(csvfile)
+
+    if not keep_order:
+        translator.csv_tuples.sort(key=lambda row: (-len(row[0]), row))
     return translator
 
 class MMDTranslator:
@@ -209,7 +211,6 @@ class MMDTranslator:
             csvfile = (l.body+'\n' for l in csvfile.lines)
         spamreader = csv.reader(csvfile, delimiter=',')
         csv_tuples = [tuple(row) for row in spamreader if len(row) >= 2]
-        csv_tuples.sort(key=lambda row: (-len(row[0]), row))
         self.__csv_tuples = csv_tuples
         print(' - load items:', len(self.__csv_tuples))
 
