@@ -216,7 +216,7 @@ class __PmxExporter:
         filepath = bpy.path.abspath(filepath)
         filepath = os.path.abspath(filepath)
         for i, tex in enumerate(self.__model.textures):
-            if tex.path == filepath:
+            if os.path.normcase(tex.path) == os.path.normcase(filepath):
                 return i
         t = pmx.Texture()
         t.path = filepath
@@ -226,17 +226,20 @@ class __PmxExporter:
         return len(self.__model.textures) - 1
 
     def __copy_textures(self, output_dir, base_folder=''):
-        tex_dir = output_dir
-        tex_dir_fallback = os.path.join(tex_dir, 'textures')
+        tex_dir_fallback = os.path.join(output_dir, 'textures')
         tex_dir_preference = bpyutils.addon_preferences('base_texture_folder', '')
+
+        path_set = set() # to prevent overwriting
+        tex_copy_list = []
         for texture in self.__model.textures:
             path = texture.path
             tex_dir = output_dir  # restart to the default directory at each loop
             if not os.path.isfile(path):
                 logging.warning('*** skipping texture file which does not exist: %s', path)
+                path_set.add(os.path.normcase(path))
                 continue
             dst_name = os.path.basename(path)
-            if base_folder != '':
+            if base_folder:
                 dst_name = saferelpath(path, base_folder, strategy='outside')
                 if dst_name.startswith('..'):
                     # Check if the texture comes from the preferred folder
@@ -251,11 +254,21 @@ class __PmxExporter:
             else:
                 tex_dir = tex_dir_fallback
             dest_path = os.path.join(tex_dir, dst_name)
-            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            if os.path.normcase(path) != os.path.normcase(dest_path): # Only copy if the paths are different
+                tex_copy_list.append((texture, path, dest_path))
+            else:
+                path_set.add(os.path.normcase(path))
 
-            if path != dest_path:  # Only copy if the paths are different                        
-                shutil.copyfile(path, dest_path)
-                logging.info('Copy file %s --> %s', path, dest_path)
+        for texture, path, dest_path in tex_copy_list:
+            counter = 1
+            base, ext = os.path.splitext(dest_path)
+            while os.path.normcase(dest_path) in path_set:
+                dest_path = '%s_%d%s'%(base, counter, ext)
+                counter += 1
+            path_set.add(os.path.normcase(dest_path))
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+            shutil.copyfile(path, dest_path)
+            logging.info('Copy file %s --> %s', path, dest_path)
             texture.path = dest_path
 
     def __exportMaterial(self, material, num_faces):
