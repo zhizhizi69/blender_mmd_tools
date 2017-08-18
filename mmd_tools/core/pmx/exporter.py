@@ -159,7 +159,7 @@ class __PmxExporter:
                     if t == 0:
                         weight = pmx.BoneWeight()
                         weight.type = pmx.BoneWeight.BDEF1
-                        weight.bones = [-1]
+                        weight.bones = [0]
                         pv.weight = weight
                     elif t == 1:
                         weight = pmx.BoneWeight()
@@ -188,7 +188,7 @@ class __PmxExporter:
                     else:
                         weight = pmx.BoneWeight()
                         weight.type = pmx.BoneWeight.BDEF4
-                        weight.bones = [-1, -1, -1, -1]
+                        weight.bones = [0, 0, 0, 0]
                         weight.weights = [0.0, 0.0, 0.0, 0.0]
                         w_all = 0.0
                         for i in range(min(len(v.groups), 4)):
