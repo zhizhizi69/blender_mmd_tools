@@ -124,8 +124,19 @@ class TranslateMMDModel(Operator):
             ('MATERIAL', 'Materials', 'Materials', 4),
             ('DISPLAY', 'Display', 'Display frames', 8),
             ('PHYSICS', 'Physics', 'Rigidbodies and joints', 16),
+            ('INFO', 'Information', 'Model name and comments', 32),
             ],
         default={'BONE', 'MORPH', 'MATERIAL', 'DISPLAY', 'PHYSICS',},
+        )
+    use_full_width = bpy.props.BoolProperty(
+        name='Full-width Katakana',
+        description='Use full-width katakana translation',
+        default=True,
+        )
+    use_morph_prefix = bpy.props.BoolProperty(
+        name='Use Morph Prefix',
+        description='Add/remove prefix to English name of morph',
+        default=False,
         )
     overwrite = bpy.props.BoolProperty(
         name='Overwrite',
@@ -139,9 +150,26 @@ class TranslateMMDModel(Operator):
 
     def draw(self, context):
         layout = self.layout
-        layout.prop_search(self, 'dictionary', search_data=bpy.data, search_property='texts')
-        layout.prop(self, 'types')
-        layout.prop(self, 'overwrite')
+
+        row = layout.split(percentage=0.5)
+        row.column().label('Dictionary')
+        row.column().prop_search(self, 'dictionary', search_data=bpy.data, search_property='texts', text='')
+
+        row = layout.split(percentage=0.5)
+        row.column().label('Types')
+        row.column().prop(self, 'types')
+
+        row = layout.split(percentage=0.5)
+        row.column().label()
+        row.column().prop(self, 'use_full_width')
+
+        row = layout.split(percentage=0.5)
+        row.column().label()
+        row.column().prop(self, 'use_morph_prefix')
+
+        row = layout.split(percentage=0.5)
+        row.column().label()
+        row.column().prop(self, 'overwrite')
 
     def execute(self, context):
         try:
@@ -165,7 +193,19 @@ class TranslateMMDModel(Operator):
     def translate(self, name_j, name_e):
         if not self.overwrite and name_e and self.__translator.is_translated(name_e):
             return name_e
+        if self.use_full_width:
+            name_j = self.__translator.half_to_full(name_j)
         return self.__translator.translate(name_j, name_e)
+
+    def translate_info(self, rig):
+        mmd_root = rig.rootObject().mmd_root
+        mmd_root.name_e = self.translate(mmd_root.name, mmd_root.name_e)
+
+        comment_text = bpy.data.texts.get(mmd_root.comment_text, None)
+        comment_e_text = bpy.data.texts.get(mmd_root.comment_e_text, None)
+        if comment_text and comment_e_text:
+            comment_e = self.translate(comment_text.as_string(), comment_e_text.as_string())
+            comment_e_text.from_string(comment_e)
 
     def translate_bone(self, rig):
         bones = rig.armature().pose.bones
@@ -177,8 +217,14 @@ class TranslateMMDModel(Operator):
     def translate_morph(self, rig):
         mmd_root = rig.rootObject().mmd_root
         for attr in {'group', 'vertex', 'bone', 'uv', 'material'}:
+            prefix = attr[0].upper() + '_'
             for m in getattr(mmd_root, attr+'_morphs', []):
                 m.name_e = self.translate(m.name, m.name_e)
+                if self.use_morph_prefix:
+                    if not m.name_e.startswith(prefix):
+                        m.name_e = prefix + m.name_e
+                elif m.name_e.startswith(prefix):
+                    m.name_e = m.name_e[len(prefix):]
 
     def translate_material(self, rig):
         for m in rig.materials():

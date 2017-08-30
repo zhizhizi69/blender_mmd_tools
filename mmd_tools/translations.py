@@ -3,6 +3,27 @@
 import bpy
 import csv
 
+jp_half_to_full_tuples = (
+    ('ｳﾞ', 'ヴ'), ('ｶﾞ', 'ガ'), ('ｷﾞ', 'ギ'), ('ｸﾞ', 'グ'), ('ｹﾞ', 'ゲ'),
+    ('ｺﾞ', 'ゴ'), ('ｻﾞ', 'ザ'), ('ｼﾞ', 'ジ'), ('ｽﾞ', 'ズ'), ('ｾﾞ', 'ゼ'),
+    ('ｿﾞ', 'ゾ'), ('ﾀﾞ', 'ダ'), ('ﾁﾞ', 'ヂ'), ('ﾂﾞ', 'ヅ'), ('ﾃﾞ', 'デ'),
+    ('ﾄﾞ', 'ド'), ('ﾊﾞ', 'バ'), ('ﾊﾟ', 'パ'), ('ﾋﾞ', 'ビ'), ('ﾋﾟ', 'ピ'),
+    ('ﾌﾞ', 'ブ'), ('ﾌﾟ', 'プ'), ('ﾍﾞ', 'ベ'), ('ﾍﾟ', 'ペ'), ('ﾎﾞ', 'ボ'),
+    ('ﾎﾟ', 'ポ'), ('｡', '。'), ('｢', '「'), ('｣', '」'), ('､', '、'),
+    ('･', '・'), ('ｦ', 'ヲ'), ('ｧ', 'ァ'), ('ｨ', 'ィ'), ('ｩ', 'ゥ'),
+    ('ｪ', 'ェ'), ('ｫ', 'ォ'), ('ｬ', 'ャ'), ('ｭ', 'ュ'), ('ｮ', 'ョ'),
+    ('ｯ', 'ッ'), ('ｰ', 'ー'), ('ｱ', 'ア'), ('ｲ', 'イ'), ('ｳ', 'ウ'),
+    ('ｴ', 'エ'), ('ｵ', 'オ'), ('ｶ', 'カ'), ('ｷ', 'キ'), ('ｸ', 'ク'),
+    ('ｹ', 'ケ'), ('ｺ', 'コ'), ('ｻ', 'サ'), ('ｼ', 'シ'), ('ｽ', 'ス'),
+    ('ｾ', 'セ'), ('ｿ', 'ソ'), ('ﾀ', 'タ'), ('ﾁ', 'チ'), ('ﾂ', 'ツ'),
+    ('ﾃ', 'テ'), ('ﾄ', 'ト'), ('ﾅ', 'ナ'), ('ﾆ', 'ニ'), ('ﾇ', 'ヌ'),
+    ('ﾈ', 'ネ'), ('ﾉ', 'ノ'), ('ﾊ', 'ハ'), ('ﾋ', 'ヒ'), ('ﾌ', 'フ'),
+    ('ﾍ', 'ヘ'), ('ﾎ', 'ホ'), ('ﾏ', 'マ'), ('ﾐ', 'ミ'), ('ﾑ', 'ム'),
+    ('ﾒ', 'メ'), ('ﾓ', 'モ'), ('ﾔ', 'ヤ'), ('ﾕ', 'ユ'), ('ﾖ', 'ヨ'),
+    ('ﾗ', 'ラ'), ('ﾘ', 'リ'), ('ﾙ', 'ル'), ('ﾚ', 'レ'), ('ﾛ', 'ロ'),
+    ('ﾜ', 'ワ'), ('ﾝ', 'ン'),
+    )
+
 jp_to_en_tuples = [
   ('全ての親', 'ParentNode'),
   ('操作中心', 'ControlNode'),               
@@ -153,7 +174,8 @@ def getTranslator(csvfile='', keep_order=False):
         translator.load(csvfile)
 
     if not keep_order:
-        translator.csv_tuples.sort(key=lambda row: (-len(row[0]), row))
+        translator.sort()
+    translator.update()
     return translator
 
 class MMDTranslator:
@@ -174,6 +196,13 @@ class MMDTranslator:
             csv_text = bpy.data.texts.new(text_name)
         return csv_text
 
+    @staticmethod
+    def replace_from_tuples(name, tuples):
+        for pair in tuples:
+            if pair[0] in name:
+                name = name.replace(pair[0], pair[1])
+        return name
+
     @property
     def csv_tuples(self):
         return self.__csv_tuples
@@ -181,6 +210,20 @@ class MMDTranslator:
     @property
     def fails(self):
         return self.__fails
+
+    def sort(self):
+        self.__csv_tuples.sort(key=lambda row: (-len(row[0]), row))
+
+    def update(self):
+        from collections import OrderedDict
+        count_old = len(self.__csv_tuples)
+        tuples_dict = OrderedDict((row[0], row) for row in self.__csv_tuples if len(row) >= 2)
+        self.__csv_tuples.clear()
+        self.__csv_tuples.extend(tuples_dict.values())
+        print(' - removed items:', count_old-len(self.__csv_tuples))
+
+    def half_to_full(self, name):
+        return self.replace_from_tuples(name, jp_half_to_full_tuples)
 
     def is_translated(self, name):
         try:
@@ -191,9 +234,7 @@ class MMDTranslator:
 
     def translate(self, name, default=None):
         name_orig = name
-        for pair in self.__csv_tuples:
-            if pair[0] in name:
-                name = name.replace(pair[0], pair[1])
+        name = self.replace_from_tuples(name, self.__csv_tuples)
         if not self.is_translated(name):
             self.__fails[name_orig] = name
             return default
@@ -202,14 +243,16 @@ class MMDTranslator:
     def save_fails(self, text_name=None):
         text_name = text_name or (__name__+'.fails')
         txt = self.get_csv_text(text_name)
-        txt.from_string('\n'.join('%s,%s'%(k, v) for k, v in self.__fails.items()))
+        fmt = '"%s","%s"'
+        items = sorted(self.__fails.items(), key=lambda row: (-len(row[0]), row))
+        txt.from_string('\n'.join(fmt%(k, v) for k, v in items))
         return txt
 
     def load_from_stream(self, csvfile=None):
         csvfile = csvfile or self.get_csv_text()
         if isinstance(csvfile, bpy.types.Text):
             csvfile = (l.body+'\n' for l in csvfile.lines)
-        spamreader = csv.reader(csvfile, delimiter=',')
+        spamreader = csv.reader(csvfile, delimiter=',', skipinitialspace=True)
         csv_tuples = [tuple(row) for row in spamreader if len(row) >= 2]
         self.__csv_tuples = csv_tuples
         print(' - load items:', len(self.__csv_tuples))
