@@ -159,9 +159,9 @@ class TranslateMMDModel(Operator):
         row.column().label('Types')
         row.column().prop(self, 'types')
 
-        row = layout.split(percentage=0.5)
-        row.column().label()
-        row.column().prop(self, 'use_full_width')
+        #row = layout.split(percentage=0.5)
+        #row.column().label()
+        #row.column().prop(self, 'use_full_width')
 
         row = layout.split(percentage=0.5)
         row.column().label()
@@ -216,10 +216,13 @@ class TranslateMMDModel(Operator):
 
     def translate_morph(self, rig):
         mmd_root = rig.rootObject().mmd_root
-        for attr in {'group', 'vertex', 'bone', 'uv', 'material'}:
-            prefix = attr[0].upper() + '_'
+        attr_list = ('group', 'vertex', 'bone', 'uv', 'material')
+        prefix_list = ('G_', '', 'B_', 'UV_', 'M_')
+        for attr, prefix in zip(attr_list, prefix_list):
             for m in getattr(mmd_root, attr+'_morphs', []):
                 m.name_e = self.translate(m.name, m.name_e)
+                if not prefix:
+                    continue
                 if self.use_morph_prefix:
                     if not m.name_e.startswith(prefix):
                         m.name_e = prefix + m.name_e
