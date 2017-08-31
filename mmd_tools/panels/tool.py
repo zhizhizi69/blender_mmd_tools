@@ -47,8 +47,8 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
 
             col = row.column(align=True)
             col.label('Bone Constraints:', icon='CONSTRAINT_BONE')
-            col.operator('mmd_tools.apply_additioinal_transform', text='Apply')
-            col.operator('mmd_tools.clean_additioinal_transform', text='Clean')
+            col.operator('mmd_tools.apply_additional_transform', text='Apply')
+            col.operator('mmd_tools.clean_additional_transform', text='Clean')
 
             col = row.column(align=True)
             col.active = context.scene.rigidbody_world is not None and context.scene.rigidbody_world.enabled

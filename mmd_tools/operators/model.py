@@ -35,7 +35,7 @@ class BuildRig(Operator):
         return {'FINISHED'}
 
 class CleanAdditionalTransformConstraints(Operator):
-    bl_idname = 'mmd_tools.clean_additioinal_transform'
+    bl_idname = 'mmd_tools.clean_additional_transform'
     bl_label = 'Clean Additional Transform'
     bl_description = 'Delete shadow bones of selected object and revert bones to default MMD state'
     bl_options = {'PRESET'}
@@ -49,7 +49,7 @@ class CleanAdditionalTransformConstraints(Operator):
         return {'FINISHED'}
 
 class ApplyAdditionalTransformConstraints(Operator):
-    bl_idname = 'mmd_tools.apply_additioinal_transform'
+    bl_idname = 'mmd_tools.apply_additional_transform'
     bl_label = 'Apply Additional Transform'
     bl_description = 'Translate appended bones of selected object for Blender'
     bl_options = {'PRESET'}
@@ -132,6 +132,7 @@ class TranslateMMDModel(Operator):
         name='Full-width Katakana',
         description='Use full-width katakana translation',
         default=True,
+        options={'SKIP_SAVE'},
         )
     use_morph_prefix = bpy.props.BoolProperty(
         name='Use Morph Prefix',
