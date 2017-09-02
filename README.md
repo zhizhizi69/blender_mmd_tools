@@ -7,8 +7,8 @@ mmd_tools is a blender import addon for importing MMD (MikuMikuDance) model data
 
 ### Environment
 
-#### Compatible Version
-blender 2.70 or later (blender 2.75+ is recommended)
+#### Compatible Versions
+ - Blender 2.70 or later (Blender 2.75+ is recommended)
 
 Usage
 ---------
@@ -36,7 +36,7 @@ Extract the archive and put the folder mmd_tools into the addon folder of blende
 2. Click the _Import Motion_ button of the mmd_tools panel.
 3. If a rigid body simulation is needed, press the _Build_ button in the same panel.
 
-Turn on "update scene settings" checkbox to automatically update scene settings such as frame range after the motion import.
+Turn on the "update scene settings" checkbox to automatically update scene settings such as frame range after the motion import.
 
 
 Various functions in detail
@@ -79,15 +79,15 @@ Notes
     * If the weight information is SDEF, mmd_tool processes as if it is in BDEF2.
     * mmd_tool only supports vertex morph.
     * mmd_tool treats "Physics + Bone location match" in rigid body setting as "Physics simulation".
-* Use the same scale in case you imports multiple pmx files.
+* Use the same scale in case you import multiple pmx files.
 
 
 Known issues
 ----------
-* None, feel free to report some
+* See https://github.com/powroupi/blender_mmd_tools/issues
     
     
 License
 ----------
-&copy; 2012-2014 sugiany
+&copy; 2012-2014 sugiany, 2015-2017 powroupi.
 Distributed under the MIT License.
