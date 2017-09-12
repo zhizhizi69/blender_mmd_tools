@@ -107,7 +107,7 @@ class CreateMMDModelRoot(Operator):
 class TranslateMMDModel(Operator):
     bl_idname = 'mmd_tools.translate_mmd_model'
     bl_label = 'Translate a MMD Model'
-    bl_description = 'Translate Japanese names of a MMD model (Under development)'
+    bl_description = 'Translate Japanese names of a MMD model'
 
     dictionary = bpy.props.StringProperty(
         name='Dictionary',

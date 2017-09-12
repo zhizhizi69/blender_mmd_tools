@@ -263,7 +263,7 @@ class MMDTranslator:
         if isinstance(csvfile, bpy.types.Text):
             csvfile.clear()
             lineterminator = '\n'
-        spamwriter = csv.writer(csvfile, delimiter=',', lineterminator=lineterminator)
+        spamwriter = csv.writer(csvfile, delimiter=',', lineterminator=lineterminator, quoting=csv.QUOTE_ALL)
         spamwriter.writerows(self.__csv_tuples)
         print(' - save items:', len(self.__csv_tuples))
 

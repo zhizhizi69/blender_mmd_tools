@@ -115,15 +115,10 @@ class SeparateByMaterials(Operator):
         return {'FINISHED'}
 
 class JoinMeshes(Operator):
-    bl_idname = 'mmd_tool.join_meshes'
+    bl_idname = 'mmd_tools.join_meshes'
     bl_label = 'Join Meshes'
     bl_description = 'Join the Model meshes into a single one'
     bl_options = {'PRESET'}
-
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return obj and obj.type == 'MESH'
 
     def execute(self, context):
         obj = context.active_object
@@ -175,18 +170,17 @@ class JoinMeshes(Operator):
         return { 'FINISHED' }
 
 class AttachMeshesToMMD(Operator):
-    bl_idname = 'mmd_tools.attach_meshes_to_mmd'
+    bl_idname = 'mmd_tools.attach_meshes'
     bl_label = 'Attach Meshes to Model'
     bl_description = 'Finds existing meshes and attaches them to the selected MMD model'
     bl_options = {'PRESET'}
-    
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return obj and mmd_model.Model.findRoot(obj)
 
     def execute(self, context):
         root = mmd_model.Model.findRoot(context.active_object)
+        if root is None:
+            self.report({ 'ERROR' }, 'Select a MMD model')
+            return { 'CANCELLED' }
+
         rig = mmd_model.Model(root)
         armObj = rig.armature()
         if armObj is None:

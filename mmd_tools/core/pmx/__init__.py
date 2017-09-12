@@ -264,7 +264,7 @@ class Header:
         logging.info('loading pmx header information...')
         self.sign = fs.readBytes(4)
         logging.debug('File signature is %s', self.sign)
-        if self.sign != self.PMX_SIGN:
+        if self.sign[:3] != self.PMX_SIGN[:3]:
             logging.info('File signature is invalid')
             logging.error('This file is unsupported format, or corrupt file.')
             raise InvalidFileError('File signature is invalid.')
@@ -273,8 +273,8 @@ class Header:
         if self.version != self.VERSION:
             logging.error('PMX version %.1f is unsupported', self.version)
             raise UnsupportedVersionError('unsupported PMX version: %.1f'%self.version)
-        if fs.readByte() != 8:
-            raise InvalidFileError
+        if fs.readByte() != 8 or self.sign[3] != self.PMX_SIGN[3]:
+            logging.warning(' * This file might be corrupted.')
         self.encoding = Encoding(fs.readByte())
         self.additional_uvs = fs.readByte()
         self.vertex_index_size = fs.readByte()

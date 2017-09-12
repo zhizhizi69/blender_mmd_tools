@@ -36,13 +36,15 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         row.operator('mmd_tools.create_mmd_model_root_object', text='Create Model', icon='OUTLINER_OB_ARMATURE')
 
         col = layout.column(align=True)
-        col.operator(operators.material.ConvertMaterialsForCycles.bl_idname, text='Convert Materials For Cycles')
+        col.operator('mmd_tools.convert_materials_for_cycles', text='Convert Materials For Cycles')
         col.operator('mmd_tools.separate_by_materials', text='Separate By Materials')
-        col.operator(operators.misc.JoinMeshes.bl_idname)
-        col.operator(operators.misc.AttachMeshesToMMD.bl_idname)
 
         root = mmd_model.Model.findRoot(active_obj)
         if root:
+            col.operator('mmd_tools.join_meshes')
+            col.operator('mmd_tools.attach_meshes')
+            col.operator('mmd_tools.translate_mmd_model', text='Translate')
+
             row = layout.split(percentage=0.5, align=False)
 
             col = row.column(align=True)
@@ -58,9 +60,6 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
                 sub_row.label(icon='ERROR')
             col.operator('mmd_tools.build_rig', text='Build')
             col.operator('mmd_tools.clean_rig', text='Clean')
-
-            row = layout.row(align=True)
-            row.operator('mmd_tools.translate_mmd_model', text='Translate', icon='ERROR')
 
         row = layout.row()
 
