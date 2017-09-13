@@ -226,6 +226,10 @@ class Model:
         rbc.use_spring_x = True
         rbc.use_spring_y = True
         rbc.use_spring_z = True
+        if hasattr(rbc, 'use_spring_ang_x'):
+            rbc.use_spring_ang_x = True
+            rbc.use_spring_ang_y = True
+            rbc.use_spring_ang_z = True
         if counts == 1:
             return [obj]
         return bpyutils.duplicateObject(obj, counts)

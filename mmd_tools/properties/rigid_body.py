@@ -214,6 +214,24 @@ class MMDRigidBody(PropertyGroup):
         set=_set_size,
         )
 
+
+def _updateSpringLinear(prop, context):
+    obj = prop.id_data
+    rbc = obj.rigid_body_constraint
+    if rbc:
+        rbc.spring_stiffness_x = prop.spring_linear[0]
+        rbc.spring_stiffness_y = prop.spring_linear[1]
+        rbc.spring_stiffness_z = prop.spring_linear[2]
+
+def _updateSpringAngular(prop, context):
+    obj = prop.id_data
+    rbc = obj.rigid_body_constraint
+    if rbc and hasattr(rbc, 'use_spring_ang_x'):
+        rbc.spring_stiffness_ang_x = prop.spring_angular[0]
+        rbc.spring_stiffness_ang_y = prop.spring_angular[1]
+        rbc.spring_stiffness_ang_z = prop.spring_angular[2]
+
+
 class MMDJoint(PropertyGroup):
     name_j = StringProperty(
         name='Name',
@@ -234,6 +252,7 @@ class MMDJoint(PropertyGroup):
         size=3,
         min=0,
         step=0.1,
+        update=_updateSpringLinear,
         )
 
     spring_angular = FloatVectorProperty(
@@ -243,4 +262,5 @@ class MMDJoint(PropertyGroup):
         size=3,
         min=0,
         step=0.1,
+        update=_updateSpringAngular,
         )
