@@ -206,6 +206,7 @@ class VMDImporter:
         for c in action.fcurves:
             self.__fixFcurveHandles(c)
 
+
     def __assignToMesh(self, meshObj, action_name=None):
         if meshObj.data.shape_keys is None:
             logging.warning('WARNING: mesh object %s does not have any shape key', meshObj.name)
@@ -305,37 +306,28 @@ class VMDImporter:
                     f.interpolation = 'CONSTANT'
 
     def __assignToLamp(self, lampObj, action_name=None):
-        mmdLamp = MMDLamp.convertToMMDLamp(lampObj).object()
-        mmdLamp.scale = mathutils.Vector((self.__scale, self.__scale, self.__scale)) * 4.0
-        for obj in mmdLamp.children:
-            if obj.type == 'LAMP':
-                lamp = obj
-            elif obj.type == 'ARMATURE':
-                armature = obj
-                bone = armature.pose.bones[0]
-                bone_data_path = 'pose.bones["' + bone.name + '"].location'
+        mmdLampInstance = MMDLamp.convertToMMDLamp(lampObj, self.__scale)
+        mmdLamp = mmdLampInstance.object()
+        lampObj = mmdLampInstance.lamp()
 
-        if action_name is not None:
-            act = bpy.data.actions.new(name=action_name + '_color')
-            a = lamp.data.animation_data_create()
-            a.action = act
-            act = bpy.data.actions.new(name=action_name + '_location')
-            a = armature.animation_data_create()
-            a.action = act
+        action_name = action_name or mmdLamp.name
+        color_action = bpy.data.actions.new(name=action_name+'_color')
+        location_action = bpy.data.actions.new(name=action_name+'_loc')
+        lampObj.data.animation_data_create().action = color_action
+        lampObj.animation_data_create().action = location_action
 
         lampAnim = self.__vmdFile.lampAnimation
+        logging.info('(lamp) frames:%5d  name: %s', len(lampAnim), mmdLamp.name)
+
         for keyFrame in lampAnim:
-            lamp.data.color = mathutils.Vector(keyFrame.color)
-            bone.location = -(mathutils.Vector((keyFrame.direction[0], keyFrame.direction[2], keyFrame.direction[1])))
-            lamp.data.keyframe_insert(data_path='color',
-                                      frame=keyFrame.frame_number+self.__frame_margin)
-            bone.keyframe_insert(data_path='location',
-                                 frame=keyFrame.frame_number+self.__frame_margin)
+            frame = keyFrame.frame_number + self.__frame_margin
+            lampObj.data.color = mathutils.Vector(keyFrame.color)
+            lampObj.location = mathutils.Vector(keyFrame.direction).xzy * -1
+            lampObj.data.keyframe_insert(data_path='color', frame=frame)
+            lampObj.keyframe_insert(data_path='location', frame=frame)
 
-        for fcurve in armature.animation_data.action.fcurves:
-            if fcurve.data_path == bone_data_path:
-                self.detectLampChange(fcurve)
-
+        for fcurve in lampObj.animation_data.action.fcurves:
+            self.detectLampChange(fcurve)
 
 
     def assign(self, obj, action_name=None):

@@ -327,11 +327,38 @@ class VMDExporter:
     def __exportLampAnimation(self, lampObj):
         if lampObj is None:
             return None
+        if not MMDLamp.isMMDLamp(lampObj):
+            logging.warning('[WARNING] lamp "%s" is not MMDLamp', lampObj.name)
+            return None
+
+        lamp_rig = MMDLamp(lampObj)
+        mmd_lamp = lamp_rig.object()
+        lamp = lamp_rig.lamp()
 
         vmd_lamp_anim = vmd.LampAnimation()
 
-        #TODO
+        data = list(lamp.data.color) + list(lamp.location)
+        lamp_curves = [_FCurve(i) for i in data] # r, g, b, x, y, z
 
+        animation_data = lamp.data.animation_data
+        if animation_data and animation_data.action:
+            for fcurve in animation_data.action.fcurves:
+                if fcurve.data_path == 'color': # r, g, b
+                    lamp_curves[fcurve.array_index].setFCurve(fcurve)
+
+        animation_data = lamp.animation_data
+        if animation_data and animation_data.action:
+            for fcurve in animation_data.action.fcurves:
+                if fcurve.data_path == 'location': # x, y, z
+                    lamp_curves[3+fcurve.array_index].setFCurve(fcurve)
+
+        for frame_number, r, g, b, x, y, z in self.__allFrameKeys(lamp_curves):
+            key = vmd.LampKeyFrameKey()
+            key.frame_number = frame_number - self.__frame_start
+            key.color = [r[0], g[0], b[0]]
+            key.direction = [-x[0], -z[0], -y[0]]
+            vmd_lamp_anim.append(key)
+        logging.info('(lamp) %s frameKeys: %d', mmd_lamp.name, len(vmd_lamp_anim))
         return vmd_lamp_anim
 
 
