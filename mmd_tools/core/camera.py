@@ -5,11 +5,9 @@ import math
 
 class MMDCamera:
     def __init__(self, obj):
-        if obj.type != 'EMPTY':
-            if obj.parent is None or obj.type != 'CAMERA':
-                raise ValueError('%s is not MMDCamera'%str(obj))
+        if obj.type == 'CAMERA':
             obj = obj.parent
-        if obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA':
+        if obj and obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA':
             self.__emptyObj = obj
         else:
             raise ValueError('%s is not MMDCamera'%str(obj))
@@ -17,11 +15,9 @@ class MMDCamera:
 
     @staticmethod
     def isMMDCamera(obj):
-        if obj.type != 'EMPTY':
-            if obj.parent is None or obj.type != 'CAMERA':
-                return False
+        if obj.type == 'CAMERA':
             obj = obj.parent
-        return obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA'
+        return obj and obj.type == 'EMPTY' and obj.mmd_type == 'CAMERA'
 
     @staticmethod
     def addDrivers(cameraObj):
