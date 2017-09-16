@@ -97,6 +97,9 @@ class VMDExporter:
         for i in curves:
             all_frames |= i.frameNumbers()
 
+        if len(all_frames) < 1:
+            return
+
         frame_start = min(all_frames)
         if frame_start < self.__frame_start:
             frame_start = self.__frame_start
@@ -358,7 +361,7 @@ class VMDExporter:
             key.color = [r[0], g[0], b[0]]
             key.direction = [-x[0], -z[0], -y[0]]
             vmd_lamp_anim.append(key)
-        logging.info('(lamp) %s frameKeys: %d', mmd_lamp.name, len(vmd_lamp_anim))
+        logging.info('(lamp) frames:%5d  name: %s', len(vmd_lamp_anim), mmd_lamp.name)
         return vmd_lamp_anim
 
 

@@ -152,7 +152,7 @@ class VMDImporter:
                 continue
             bone = pose_bones.get(name, None)
             if bone is None:
-                logging.warning('WARNING: not found bone %s', name)
+                logging.warning('WARNING: not found bone %s (%d frames)', name, len(keyFrames))
                 continue
             logging.info('(bone) frames:%5d  name: %s', len(keyFrames), name)
             assert(bone_name_table.get(bone.name, name) == name)
@@ -179,8 +179,8 @@ class VMDImporter:
             converter = self.__bone_util_cls(bone, self.__scale)
             prev_rot = bone.rotation_quaternion if extra_frame else None
             prev_kps, indices = None, (0, 32, 16, 48, 48, 48, 48) # x, z, y, rw, rx, ry, rz
-            vmd_frames = sorted(keyFrames, key=lambda x:x.frame_number)
-            for k, x, y, z, rw, rx, ry, rz in zip(vmd_frames, *fcurves):
+            keyFrames.sort(key=lambda x:x.frame_number)
+            for k, x, y, z, rw, rx, ry, rz in zip(keyFrames, *fcurves):
                 frame = k.frame_number + self.__frame_margin
                 loc = converter.convert_location(k.location)
                 curr_rot = converter.convert_rotation(k.rotation)
@@ -224,7 +224,7 @@ class VMDImporter:
 
         for name, keyFrames in shapeKeyAnim.items():
             if name not in shapeKeyDict:
-                logging.warning('WARNING: not found shape key %s', name)
+                logging.warning('WARNING: not found shape key %s (%d frames)', name, len(keyFrames))
                 continue
             logging.info('(mesh) frames:%5d  name: %s', len(keyFrames), name)
             shapeKey = shapeKeyDict[name]
@@ -250,15 +250,16 @@ class VMDImporter:
         mmdCamera = mmdCameraInstance.object()
         cameraObj = mmdCameraInstance.camera()
 
+        cameraAnim = self.__vmdFile.cameraAnimation
+        logging.info('(camera) frames:%5d  name: %s', len(cameraAnim), mmdCamera.name)
+        if len(cameraAnim) < 1:
+            return
+
         action_name = action_name or mmdCamera.name
         parent_action = bpy.data.actions.new(name=action_name)
         distance_action = bpy.data.actions.new(name=action_name+'_dis')
         mmdCamera.animation_data_create().action = parent_action
         cameraObj.animation_data_create().action = distance_action
-
-        cameraAnim = self.__vmdFile.cameraAnimation
-        cameraAnim.sort(key=lambda x:x.frame_number)
-        logging.info('(camera) frames:%5d  name: %s', len(cameraAnim), mmdCamera.name)
 
         fcurves = []
         for i in range(3):
@@ -272,6 +273,7 @@ class VMDImporter:
             c.keyframe_points.add(len(cameraAnim))
 
         prev_kps, indices = None, (0, 8, 4, 12, 12, 12, 16, 20) # x, z, y, rx, ry, rz, dis, fov
+        cameraAnim.sort(key=lambda x:x.frame_number)
         for k, x, y, z, rx, ry, rz, fov, persp, dis in zip(cameraAnim, *(c.keyframe_points for c in fcurves)):
             frame = k.frame_number + self.__frame_margin
             x.co, z.co, y.co = ((frame, val*self.__scale) for val in k.location)
@@ -310,14 +312,16 @@ class VMDImporter:
         mmdLamp = mmdLampInstance.object()
         lampObj = mmdLampInstance.lamp()
 
+        lampAnim = self.__vmdFile.lampAnimation
+        logging.info('(lamp) frames:%5d  name: %s', len(lampAnim), mmdLamp.name)
+        if len(lampAnim) < 1:
+            return
+
         action_name = action_name or mmdLamp.name
         color_action = bpy.data.actions.new(name=action_name+'_color')
         location_action = bpy.data.actions.new(name=action_name+'_loc')
         lampObj.data.animation_data_create().action = color_action
         lampObj.animation_data_create().action = location_action
-
-        lampAnim = self.__vmdFile.lampAnimation
-        logging.info('(lamp) frames:%5d  name: %s', len(lampAnim), mmdLamp.name)
 
         for keyFrame in lampAnim:
             frame = keyFrame.frame_number + self.__frame_margin

@@ -63,6 +63,8 @@ class VPDExporter:
     def __exportPoseLib(self, armObj, pose_type, filepath, use_pose_mode=False):
         if armObj is None:
             return None
+        if armObj.pose_library is None:
+            return None
 
         pose_bones = armObj.pose.bones
         converters = self.__getConverters(pose_bones)
@@ -85,8 +87,8 @@ class VPDExporter:
             with bpyutils.select_object(armObj):
                 bpy.ops.object.mode_set(mode='POSE')
                 if pose_type == 'ACTIVE':
-                    assert(0 <= pose_markers.active_index < len(pose_markers))
-                    __export_index(pose_markers.active_index, filepath)
+                    if 0 <= pose_markers.active_index < len(pose_markers):
+                        __export_index(pose_markers.active_index, filepath)
                 else:
                     folder = os.path.dirname(filepath)
                     for i, m in enumerate(pose_markers):

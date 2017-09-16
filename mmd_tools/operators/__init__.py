@@ -1,3 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from . import animation, camera, display_item, fileio, misc, model, view, material, morph, rigid_body
+from . import (
+    animation,
+    camera,
+    display_item,
+    fileio,
+    lamp,
+    material,
+    misc,
+    model,
+    morph,
+    rigid_body,
+    view,
+    )
+
