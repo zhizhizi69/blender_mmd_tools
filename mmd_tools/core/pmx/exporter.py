@@ -348,6 +348,12 @@ class __PmxExporter:
         pmx_matrix = self.TO_PMX_MATRIX * world_mat * self.__scale
         def __to_pmx_location(loc):
             return pmx_matrix * mathutils.Vector(loc)
+
+        pmx_matrix_rot = pmx_matrix.to_3x3()
+        def __to_pmx_axis(axis, pose_bone):
+            m = (pose_bone.matrix * pose_bone.bone.matrix_local.inverted()).to_3x3()
+            return (pmx_matrix_rot * m * mathutils.Vector(axis).xzy).normalized()
+
         if True: # no need to enter edit mode
             for p_bone in sorted_bones:
                 if p_bone.is_mmd_shadow_bone:
@@ -396,13 +402,13 @@ class __PmxExporter:
                         tail_loc = __to_pmx_location(p_bone.tail)
                         pmx_bone.displayConnection = tail_loc - pmx_bone.location
 
-                #add fixed and local axes
                 if mmd_bone.enabled_fixed_axis:
-                    pmx_bone.axis = mmd_bone.fixed_axis
+                    pmx_bone.axis = __to_pmx_axis(mmd_bone.fixed_axis, p_bone)
 
                 if mmd_bone.enabled_local_axes:
                     pmx_bone.localCoordinate = pmx.Coordinate(
-                        mmd_bone.local_axis_x, mmd_bone.local_axis_z)
+                        __to_pmx_axis(mmd_bone.local_axis_x, p_bone),
+                        __to_pmx_axis(mmd_bone.local_axis_z, p_bone))
 
             for idx, i in enumerate(pmx_bones):
                 if i.parent is not None:
@@ -473,7 +479,8 @@ class __PmxExporter:
                     maximum[2] = ik_limit_override.max_z
 
             convertIKLimitAngles = pmx.importer.PMXImporter.convertIKLimitAngles
-            minimum, maximum = convertIKLimitAngles(minimum, maximum, pose_bone, invert=True)
+            bone_matrix = pose_bone.id_data.matrix_world * pose_bone.matrix
+            minimum, maximum = convertIKLimitAngles(minimum, maximum, bone_matrix, invert=True)
             ik_link.minimumAngle = list(minimum)
             ik_link.maximumAngle = list(maximum)
 

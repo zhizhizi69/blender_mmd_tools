@@ -2,8 +2,8 @@
 
 import bpy
 from bpy.types import PoseBone
-import mathutils
 
+from mathutils import Vector
 from mmd_tools import bpyutils
 
 
@@ -55,6 +55,59 @@ class FnBone(object):
 
     pose_bone = property(__get_pose_bone, __set_pose_bone)
 
+
+    @classmethod
+    def load_bone_local_axes(cls, armature, enable=True):
+        if armature.mode == 'EDIT':
+            with bpyutils.select_object(armature): # update selected bones
+                bpy.ops.object.mode_set(mode='EDIT') # back to edit mode
+
+        for b in armature.pose.bones:
+            bone = b.bone
+            if b.is_mmd_shadow_bone or not bone.select:
+                continue
+            mmd_bone = b.mmd_bone
+            mmd_bone.enabled_local_axes = enable
+            if enable:
+                axes = bone.matrix_local.to_3x3().transposed()
+                mmd_bone.local_axis_x = axes[0].xzy
+                mmd_bone.local_axis_z = axes[2].xzy
+
+    @classmethod
+    def apply_bone_local_axes(cls, armature):
+        bone_map = {}
+        for b in armature.pose.bones:
+            if b.is_mmd_shadow_bone or not b.mmd_bone.enabled_local_axes:
+                continue
+            mmd_bone = b.mmd_bone
+            if mmd_bone.has_additional_rotation or mmd_bone.has_additional_location:
+                mmd_bone.is_additional_transform_dirty = True
+            bone_map[b.name] = (mmd_bone.local_axis_x, mmd_bone.local_axis_z)
+
+        with bpyutils.edit_object(armature) as data:
+            for bone in data.edit_bones:
+                if bone.name not in bone_map:
+                    bone.select = False
+                    continue
+                local_axis_x, local_axis_z = bone_map[bone.name]
+                cls.update_bone_roll(bone, local_axis_x, local_axis_z)
+                bone.select = True
+
+    @classmethod
+    def update_bone_roll(cls, edit_bone, mmd_local_axis_x, mmd_local_axis_z):
+        axes = cls.get_axes(mmd_local_axis_x, mmd_local_axis_z)
+        idx, val = max([(i, edit_bone.vector.dot(v)) for i, v in enumerate(axes)], key=lambda x: abs(x[1]))
+        edit_bone.align_roll(axes[(idx-1)%3 if val < 0 else (idx+1)%3])
+
+    @staticmethod
+    def get_axes(mmd_local_axis_x, mmd_local_axis_z):
+        x_axis = Vector(mmd_local_axis_x).normalized().xzy
+        z_axis = Vector(mmd_local_axis_z).normalized().xzy
+        y_axis = z_axis.cross(x_axis)
+        z_axis = x_axis.cross(y_axis) # correction
+        return (x_axis, y_axis, z_axis)
+
+
     @classmethod
     def clean_additional_transformation(cls, armature):
         # clean shadow bones
@@ -96,14 +149,10 @@ class FnBone(object):
                 shadow_bone_pool.append(sb)
 
         # setup shadow bones
-        need_mode_change = armature.mode == 'EDIT'
         with bpyutils.edit_object(armature) as data:
             edit_bones = data.edit_bones
             for sb in shadow_bone_pool:
                 sb.update_edit_bones(edit_bones)
-
-            if need_mode_change:
-                bpy.ops.object.mode_set(mode='OBJECT')
 
         pose_bones = armature.pose.bones
         for sb in shadow_bone_pool:

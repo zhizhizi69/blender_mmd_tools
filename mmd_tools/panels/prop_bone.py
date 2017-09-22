@@ -54,7 +54,11 @@ class MMDBonePanel(Panel):
         row.column(align=True).prop(mmd_bone, 'fixed_axis', text='')
 
         c = layout.column(align=True)
-        c.prop(mmd_bone, 'enabled_local_axes')
+        row = c.row(align=True)
+        row.prop(mmd_bone, 'enabled_local_axes')
+        row.operator('mmd_tools.bone_local_axes_setup', text='', icon='X').type = 'DISABLE'
+        row.operator('mmd_tools.bone_local_axes_setup', text='Load').type = 'LOAD'
+        row.operator('mmd_tools.bone_local_axes_setup', text='Apply').type = 'APPLY'
         row = c.row()
         row.active = mmd_bone.enabled_local_axes
         row.column(align=True).prop(mmd_bone, 'local_axis_x')

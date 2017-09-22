@@ -5,6 +5,7 @@ from bpy.types import Operator
 
 from mmd_tools import translations
 from mmd_tools import bpyutils
+from mmd_tools.core.bone import FnBone
 import mmd_tools.core.model as mmd_model
 
 
@@ -60,6 +61,36 @@ class ApplyAdditionalTransformConstraints(Operator):
         rig = mmd_model.Model(root)
         rig.applyAdditionalTransformConstraints()
         context.scene.objects.active = obj
+        return {'FINISHED'}
+
+class SetupBoneLocalAxes(Operator):
+    bl_idname = 'mmd_tools.bone_local_axes_setup'
+    bl_label = 'Setup Bone Local Axes'
+    bl_description = 'Setup local axes of each bone'
+    bl_options = {'INTERNAL'}
+
+    type = bpy.props.EnumProperty(
+        name='Type',
+        description='Select type',
+        items = [
+            ('DISABLE', 'Disable', 'Disable MMD local axes of selected bones', 0),
+            ('LOAD', 'Load', 'Load/Enable MMD local axes of selected bones from their bone axes', 1),
+            ('APPLY', 'Apply', 'Align bone axes to MMD local axes of each bone', 2),
+            ],
+        default='LOAD',
+        )
+
+    def execute(self, context):
+        arm = context.active_object
+        if not arm or arm.type != 'ARMATURE':
+            self.report({'ERROR'}, 'Active object is not an armature object')
+            return {'CANCELLED'}
+
+        if self.type == 'APPLY':
+            FnBone.apply_bone_local_axes(arm)
+            #FnBone.apply_additional_transformation(arm)
+        else:
+            FnBone.load_bone_local_axes(arm, enable=(self.type=='LOAD'))
         return {'FINISHED'}
 
 class CreateMMDModelRoot(Operator):

@@ -45,6 +45,9 @@ class TestPmxExporter(unittest.TestCase):
     # Utils
     #********************************************
 
+    def __axis_error(self, axis0, axis1):
+        return (Vector(axis0).normalized() - Vector(axis1).normalized()).length
+
     def __vector_error(self, vec0, vec1):
         return (Vector(vec0) - Vector(vec1)).length
 
@@ -243,10 +246,14 @@ class TestPmxExporter(unittest.TestCase):
             self.assertEqual(bone0.transAfterPhis, bone1.transAfterPhis, msg)
             self.assertEqual(bone0.externalTransKey, bone1.externalTransKey, msg)
 
-            self.assertEqual(bone0.axis, bone1.axis, msg)
+            if bone0.axis and bone1.axis:
+                self.assertLess(self.__axis_error(bone0.axis, bone1.axis), 1e-6, msg)
+            else:
+                self.assertEqual(bone0.axis, bone1.axis, msg)
+
             if bone0.localCoordinate and bone1.localCoordinate:
-                self.assertEqual(bone0.localCoordinate.x_axis, bone1.localCoordinate.x_axis, msg)
-                self.assertEqual(bone0.localCoordinate.z_axis, bone1.localCoordinate.z_axis, msg)
+                self.assertLess(self.__axis_error(bone0.localCoordinate.x_axis, bone1.localCoordinate.x_axis), 1e-6, msg)
+                self.assertLess(self.__axis_error(bone0.localCoordinate.z_axis, bone1.localCoordinate.z_axis), 1e-6, msg)
             else:
                 self.assertEqual(bone0.localCoordinate, bone1.localCoordinate, msg)
 

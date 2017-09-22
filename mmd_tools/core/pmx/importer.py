@@ -10,6 +10,7 @@ import mathutils
 
 import mmd_tools.core.model as mmd_model
 import mmd_tools.core.pmx as pmx
+from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
 from mmd_tools import utils
 from mmd_tools import translations
@@ -259,6 +260,10 @@ class PMXImporter:
                         logging.debug(' * special tip bone %s, display %s', b_bone.name, str(m_bone.displayConnection))
                         specialTipBones.append(b_bone.name)
 
+            for b_bone, m_bone in zip(editBoneTable, pmx_bones):
+                if m_bone.localCoordinate is not None:
+                    FnBone.update_bone_roll(b_bone, m_bone.localCoordinate.x_axis, m_bone.localCoordinate.z_axis)
+
         return nameTable, specialTipBones
 
     def __sortPoseBonesByBoneIndex(self, pose_bones, bone_names):
@@ -268,27 +273,24 @@ class PMXImporter:
         return r
 
     @staticmethod
-    def convertIKLimitAngles(min_angle, max_angle, pose_bone, invert=False):
+    def convertIKLimitAngles(min_angle, max_angle, bone_matrix, invert=False):
         mat = mathutils.Matrix([[1,0,0], [0,0,1], [0,1,0]])
-
-        def __align_rotation(rad):
-            from math import pi
-            base_rad = -pi/2 if rad < 0 else pi/2
-            return int(0.5 + rad/base_rad) * base_rad
-
-        rot = pose_bone.bone.matrix_local.to_euler()
-        rot.x = __align_rotation(rot.x)
-        rot.y = __align_rotation(rot.y)
-        rot.z = __align_rotation(rot.z)
-        m = rot.to_matrix().transposed() * mat * -1
+        mat = bone_matrix.to_3x3().transposed() * mat * -1
         if invert:
-            m.invert()
+            mat.invert()
 
-        # fix precision issue
-        for i in range(3):
-            for j in range(3):
-                val = m[i][j]
-                m[i][j] = int(val-0.5) if val < 0 else int(val+0.5)
+        # align matrix to global axes
+        m = mathutils.Matrix([[0,0,0], [0,0,0], [0,0,0]])
+        i_set, j_set = [0, 1, 2], [0, 1, 2]
+        for _ in range(3):
+            ii, jj = i_set[0], j_set[0]
+            for i in i_set:
+                for j in j_set:
+                    if abs(mat[i][j]) > abs(mat[ii][jj]):
+                        ii, jj = i, j
+            i_set.remove(ii)
+            j_set.remove(jj)
+            m[ii][jj] = -1 if mat[ii][jj] < 0 else 1
 
         new_min_angle = m * mathutils.Vector(min_angle)
         new_max_angle = m * mathutils.Vector(max_angle)
@@ -350,7 +352,7 @@ class PMXImporter:
                 ikConst.chain_count -= 1
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]
-                minimum, maximum = self.convertIKLimitAngles(i.minimumAngle, i.maximumAngle, bone)
+                minimum, maximum = self.convertIKLimitAngles(i.minimumAngle, i.maximumAngle, bone.bone.matrix_local)
 
                 bone.use_ik_limit_x = True
                 bone.use_ik_limit_y = True
@@ -365,7 +367,7 @@ class PMXImporter:
                 c = bone.constraints.new(type='LIMIT_ROTATION')
                 c.mute = not is_valid_ik
                 c.name = 'mmd_ik_limit_override'
-                c.owner_space = 'WORLD' # 'WORLD' / 'LOCAL'
+                c.owner_space = 'POSE' # WORLD/POSE/LOCAL
                 c.max_x = maximum[0]
                 c.max_y = maximum[1]
                 c.max_z = maximum[2]
