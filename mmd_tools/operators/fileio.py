@@ -95,6 +95,16 @@ class ImportPmx(Operator, ImportHelper):
         description='Remove unused vertices and duplicated/invalid faces',
         default=True,
         )
+    remove_doubles = bpy.props.BoolProperty(
+        name='Remove Doubles',
+        description='Merge duplicated vertices and faces',
+        default=False,
+        )
+    fix_IK_links = bpy.props.BoolProperty(
+        name='Fix IK Links',
+        description='Fix IK links to be blender suitable',
+        default=False,
+        )
     rename_bones = bpy.props.BoolProperty(
         name='Rename Bones - L / R Suffix',
         description='Use Blender naming conventions for Left / Right paired bones',
@@ -166,6 +176,8 @@ class ImportPmx(Operator, ImportHelper):
                 types=self.types,
                 scale=self.scale,
                 clean_model=self.clean_model,
+                remove_doubles=self.remove_doubles,
+                fix_IK_links=self.fix_IK_links,
                 rename_LR_bones=self.rename_bones,
                 use_underscore=self.use_underscore,
                 translate_to_english=self.translate_to_english,

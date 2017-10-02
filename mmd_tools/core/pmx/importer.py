@@ -62,6 +62,7 @@ class PMXImporter:
         self.__imageTable = {}
 
         self.__sdefVertices = {} # pmx vertices
+        self.__vertex_map = None
 
         self.__materialFaceCountTable = None
 
@@ -137,8 +138,15 @@ class PMXImporter:
         vg_edge_scale = self.__meshObj.vertex_groups.new(name='mmd_edge_scale')
         vg_vertex_order = self.__meshObj.vertex_groups.new(name='mmd_vertex_order')
 
+        pmx_vertices = pmxModel.vertices
+        vertex_map = self.__vertex_map
+        if vertex_map:
+            indices = collections.OrderedDict(vertex_map).keys()
+            pmx_vertices = (pmxModel.vertices[x] for x in indices)
+            vertex_count = len(indices)
+
         mesh.vertices.add(count=vertex_count)
-        for i, pv in enumerate(pmxModel.vertices):
+        for i, pv in enumerate(pmx_vertices):
             bv = mesh.vertices[i]
 
             bv.co = mathutils.Vector(pv.co) * self.TO_BLE_MATRIX * self.__scale
@@ -240,15 +248,19 @@ class PMXImporter:
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 if m_bone.isIK and m_bone.target != -1:
+                    logging.debug(' - checking IK links of %s', b_bone.name)
+                    b_target = editBoneTable[m_bone.target]
                     for i in range(len(m_bone.ik_links)):
                         b_bone_link = editBoneTable[m_bone.ik_links[i].target]
-                        if b_bone_link.length < 0.001:
-                            logging.debug(' * special IK link %d %s of IK bone %s', i, b_bone_link.name, b_bone.name)
-                            b_bone_tail = b_bone if i == 0 else editBoneTable[m_bone.ik_links[i-1].target]
+                        if self.__fix_IK_links or b_bone_link.length < 0.001:
+                            b_bone_tail = b_target if i == 0 else editBoneTable[m_bone.ik_links[i-1].target]
                             loc = b_bone_tail.head - b_bone_link.head
                             if loc.length < 0.001:
                                 logging.warning('   ** unsolved IK link %s **', b_bone_link.name)
-                            else:
+                            elif b_bone_tail.parent != b_bone_link:
+                                logging.warning('   ** skipped IK link %s **', b_bone_link.name)
+                            elif (b_bone_link.tail - b_bone_tail.head).length > 1e-4:
+                                logging.debug('   * fix IK link %s', b_bone_link.name)
                                 b_bone_link.tail = b_bone_link.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
@@ -563,12 +575,13 @@ class PMXImporter:
     def __importFaces(self):
         pmxModel = self.__model
         mesh = self.__meshObj.data
+        vertex_map = self.__vertex_map
 
         mesh.tessfaces.add(len(pmxModel.faces))
         uvLayer = mesh.tessface_uv_textures.new()
         for i, f in enumerate(pmxModel.faces):
             bf = mesh.tessfaces[i]
-            bf.vertices_raw = list(f) + [0]
+            bf.vertices_raw = list(vertex_map[x][1] for x in f)+[0] if vertex_map else list(f)+[0]
             bf.use_smooth = True
 
             uv = uvLayer.data[i]
@@ -740,8 +753,13 @@ class PMXImporter:
             logging.info(' * No support for custom normals!!')
             return
         logging.info('Setting custom normals...')
-        custom_normals = [(mathutils.Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
-        mesh.normals_split_custom_set_from_vertices(custom_normals)
+        if self.__vertex_map:
+            verts, faces = self.__model.vertices, self.__model.faces
+            custom_normals = [(mathutils.Vector(verts[i].normal).xzy).normalized() for f in faces for i in f]
+            mesh.normals_split_custom_set(custom_normals)
+        else:
+            custom_normals = [(mathutils.Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
+            mesh.normals_split_custom_set_from_vertices(custom_normals)
         mesh.use_auto_smooth = True
         logging.info('   - Done!!')
 
@@ -777,10 +795,12 @@ class PMXImporter:
 
         types = args.get('types', set())
         clean_model = args.get('clean_model', False)
+        remove_doubles = args.get('remove_doubles', False)
         self.__scale = args.get('scale', 1.0)
         self.__use_mipmap = args.get('use_mipmap', True)
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
         self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
+        self.__fix_IK_links = args.get('fix_IK_links', False)
 
         logging.info('****************************************')
         logging.info(' mmd_tools.import_pmx module')
@@ -796,6 +816,8 @@ class PMXImporter:
         if 'MESH' in types:
             if clean_model:
                 _PMXCleaner.clean(self.__model, 'MORPHS' not in types)
+            if remove_doubles:
+                self.__vertex_map = _PMXCleaner.remove_doubles(self.__model, 'MORPHS' not in types)
             self.__createMeshObject()
             self.__importVertices()
             self.__importMaterials()
@@ -850,42 +872,18 @@ class PMXImporter:
         logging.info(' mmd_tools.import_pmx module')
         logging.info('****************************************')
 
+
 class _PMXCleaner:
     @classmethod
     def clean(cls, pmx_model, mesh_only):
         logging.info('Cleaning PMX data...')
-        pmx_materials = pmx_model.materials
         pmx_faces = pmx_model.faces
         pmx_vertices = pmx_model.vertices
 
         # clean face/vertex
-        index_map = {}
-        used_faces = set()
-        new_face_count = 0
-        face_iter = iter(pmx_faces)
-        for mat in pmx_materials:
-            new_vertex_count = 0
-            for i in range(int(mat.vertex_count/3)):
-                f = next(face_iter)
+        cls.__clean_pmx_faces(pmx_faces, pmx_model.materials, lambda f: frozenset(f))
 
-                f_key = frozenset(f)
-                if len(f_key) != 3 or f_key in used_faces:
-                    continue
-                used_faces.add(f_key)
-
-                for v in f:
-                    index_map[v] = v
-                pmx_faces[new_face_count] = list(f)
-                new_face_count += 1
-                new_vertex_count += 3
-            mat.vertex_count = new_vertex_count
-        face_iter = None
-        if new_face_count == len(pmx_faces):
-            logging.info('   (faces is clean)')
-        else:
-            logging.warning('   - removed %d faces', len(pmx_faces)-new_face_count)
-            del pmx_faces[new_face_count:]
-
+        index_map = {v:v for f in pmx_faces for v in f}
         is_index_clean = len(index_map) == len(pmx_vertices)
         if is_index_clean:
             logging.info('   (vertices is clean)')
@@ -912,13 +910,92 @@ class _PMXCleaner:
             def __update_index(x):
                 x.index = index_map.get(x.index, None)
                 return x.index is not None
+            cls.__clean_pmx_morphs(pmx_model.morphs, __update_index)
+        logging.info('   - Done!!')
+
+    @classmethod
+    def remove_doubles(cls, pmx_model, mesh_only):
+        logging.info('Removing doubles...')
+        pmx_vertices = pmx_model.vertices
+
+        vertex_map = [None] * len(pmx_vertices)
+        # gather vertex data
+        for i, v in enumerate(pmx_vertices):
+            vertex_map[i] = [tuple(v.co)]
+        if not mesh_only:
             for m in pmx_model.morphs:
                 if not isinstance(m, pmx.VertexMorph) and not isinstance(m, pmx.UVMorph):
                     continue
-                old_len = len(m.offsets)
-                m.offsets = [x for x in m.offsets if __update_index(x)]
-                counts = old_len - len(m.offsets)
-                if counts:
-                    logging.warning('   - removed %d offsets(%d) in morph %s', counts, old_len, m.name)
-        logging.info('   - Done!!')
+                for x in m.offsets:
+                    vertex_map[x.index].append(tuple(x.offset))
+        # generate vertex merging table
+        keys = {}
+        for i, v in enumerate(vertex_map):
+            k = tuple(v)
+            if k in keys:
+                vertex_map[i] = keys[k] # merge pmx_vertices[i] to pmx_vertices[keys[k][0]]
+            else:
+                vertex_map[i] = keys[k] = (i, len(keys)) # (pmx index, blender index)
+        counts = len(vertex_map) - len(keys)
+        keys.clear()
+        if counts:
+            logging.warning('   - %d vertices will be removed', counts)
+        else:
+            logging.info('   - Done (no changes)!!')
+            return None
+
+        # clean face
+        #face_key_func = lambda f: frozenset(vertex_map[x][0] for x in f)
+        face_key_func = lambda f: frozenset({vertex_map[x][0]:tuple(pmx_vertices[x].uv) for x in f}.items())
+        cls.__clean_pmx_faces(pmx_model.faces, pmx_model.materials, face_key_func)
+
+        if mesh_only:
+            logging.info('   - Done (mesh only)!!')
+        else:
+            # clean vertex/uv morphs
+            def __update_index(x):
+                indices = vertex_map[x.index]
+                x.index = indices[1] if x.index == indices[0] else None
+                return x.index is not None
+            cls.__clean_pmx_morphs(pmx_model.morphs, __update_index)
+            logging.info('   - Done!!')
+        return vertex_map
+
+
+    @staticmethod
+    def __clean_pmx_faces(pmx_faces, pmx_materials, face_key_func):
+        new_face_count = 0
+        face_iter = iter(pmx_faces)
+        for mat in pmx_materials:
+            used_faces = set()
+            new_vertex_count = 0
+            for i in range(int(mat.vertex_count/3)):
+                f = next(face_iter)
+
+                f_key = face_key_func(f)
+                if len(f_key) != 3 or f_key in used_faces:
+                    continue
+                used_faces.add(f_key)
+
+                pmx_faces[new_face_count] = list(f)
+                new_face_count += 1
+                new_vertex_count += 3
+            mat.vertex_count = new_vertex_count
+        face_iter = None
+        if new_face_count == len(pmx_faces):
+            logging.info('   (faces is clean)')
+        else:
+            logging.warning('   - removed %d faces', len(pmx_faces)-new_face_count)
+            del pmx_faces[new_face_count:]
+
+    @staticmethod
+    def __clean_pmx_morphs(pmx_morphs, index_update_func):
+        for m in pmx_morphs:
+            if not isinstance(m, pmx.VertexMorph) and not isinstance(m, pmx.UVMorph):
+                continue
+            old_len = len(m.offsets)
+            m.offsets = [x for x in m.offsets if index_update_func(x)]
+            counts = old_len - len(m.offsets)
+            if counts:
+                logging.warning('   - removed %d (of %d) offsets of "%s"', counts, old_len, m.name)
 
