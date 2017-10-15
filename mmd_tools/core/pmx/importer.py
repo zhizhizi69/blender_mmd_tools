@@ -17,6 +17,7 @@ from mmd_tools import translations
 from mmd_tools import bpyutils
 from mmd_tools.core.vmd.importer import BoneConverter
 from mmd_tools.operators.display_item import DisplayItemQuickSetup
+from mmd_tools.operators.misc import MoveObject
 
 
 class PMXImporter:
@@ -456,7 +457,7 @@ class PMXImporter:
         start_time = time.time()
         self.__rigidTable = {}
         rigid_pool = self.__rig.createRigidBodyPool(len(self.__model.rigids))
-        for rigid, rigid_obj in zip(self.__model.rigids, rigid_pool):
+        for i, (rigid, rigid_obj) in enumerate(zip(self.__model.rigids, rigid_pool)):
             loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
             if rigid.type == pmx.Rigid.TYPE_BOX:
@@ -484,14 +485,15 @@ class PMXImporter:
                 bone = None if rigid.bone == -1 or rigid.bone is None else self.__boneTable[rigid.bone].name,
                 )
             obj.hide = True
-            self.__rigidTable[len(self.__rigidTable)] = obj
+            MoveObject.set_index(obj, i)
+            self.__rigidTable[i] = obj
 
         logging.debug('Finished importing rigid bodies in %f seconds.', time.time() - start_time)
 
     def __importJoints(self):
         start_time = time.time()
         joint_pool = self.__rig.createJointPool(len(self.__model.joints))
-        for joint, joint_obj in zip(self.__model.joints, joint_pool):
+        for i, (joint, joint_obj) in enumerate(zip(self.__model.joints, joint_pool)):
             loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
             rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
 
@@ -511,6 +513,7 @@ class PMXImporter:
                 spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
                 )
             obj.hide = True
+            MoveObject.set_index(obj, i)
 
         logging.debug('Finished importing joints in %f seconds.', time.time() - start_time)
 

@@ -36,10 +36,6 @@ class SelectRigidBody(Operator):
         default=False,
         )
 
-    @classmethod
-    def poll(cls, context):
-        return mmd_model.isRigidBodyObject(context.active_object)
-
     def invoke(self, context, event):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
@@ -49,6 +45,10 @@ class SelectRigidBody(Operator):
         root = mmd_model.Model.findRoot(obj)
         if root is None:
             self.report({ 'ERROR' }, "The model root can't be found")
+            return { 'CANCELLED' }
+
+        if not mmd_model.isRigidBodyObject(obj):
+            self.report({ 'ERROR' }, 'Active object is not a MMD rigidbody')
             return { 'CANCELLED' }
 
         rig = mmd_model.Model(root)

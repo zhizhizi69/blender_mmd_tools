@@ -1182,20 +1182,17 @@ class __PmxExporter:
             if len(root.mmd_root.uv_morphs) > 0:
                 self.__vertex_index_map = None # has_uv_morphs = True
 
-        meshes = args.get('meshes', [])
-        meshes = tuple(meshes) # ??? a filter object can only iterate once
         self.__armature = args.get('armature', None)
-        rigid_bodeis = args.get('rigid_bodies', [])
-        joints = args.get('joints', [])        
-        self.__copyTextures = args.get('copy_textures', False)
-        self.__filepath = filepath
+        meshes = sorted(args.get('meshes', []), key=lambda x: x.name)
+        rigids = sorted(args.get('rigid_bodies', []), key=lambda x: x.name)
+        joints = sorted(args.get('joints', []), key=lambda x: x.name)
 
         self.__scale = args.get('scale', 1.0)
+        copy_textures = args.get('copy_textures', False)
         sort_materials = args.get('sort_materials', False)
         sort_vertices = args.get('sort_vertices', 'NONE')
         if sort_vertices != 'NONE':
             self.__vertex_order_map = {'method':sort_vertices}
-
 
         nameMap = self.__exportBones(meshes)
         self.__exportIK(nameMap)
@@ -1209,7 +1206,7 @@ class __PmxExporter:
         self.__exportVertexMorphs(mesh_data, root)
         if sort_materials:
             self.__sortMaterials()
-        rigid_map = self.__exportRigidBodies(rigid_bodeis, nameMap)
+        rigid_map = self.__exportRigidBodies(rigids, nameMap)
         self.__exportJoints(joints, rigid_map)
         if root is not None:
             self.__export_bone_morphs(root)
@@ -1218,7 +1215,7 @@ class __PmxExporter:
             self.__export_group_morphs(root)
             self.__exportDisplayItems(root, nameMap)
 
-        if self.__copyTextures:
+        if copy_textures:
             output_dir = os.path.dirname(filepath)
             import_folder = root.get('import_folder', '') if root else ''
             base_folder = bpyutils.addon_preferences('base_texture_folder', '')

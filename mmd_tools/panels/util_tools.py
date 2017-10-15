@@ -3,6 +3,7 @@
 from bpy.types import Panel, UIList
 
 from mmd_tools.core.model import Model
+from mmd_tools.panels.tool import TRIA_UP_BAR, TRIA_DOWN_BAR
 
 class _PanelBase(object):
     bl_space_type = 'VIEW_3D'
@@ -105,10 +106,6 @@ class MMDMeshSorter(_PanelBase, Panel):
         if root is None:
             layout.label("Select a MMD Model")
             return
-        rig = Model(root)
-        if rig.firstMesh() is None:
-            layout.label("This model don't have meshes")
-            return
 
         col = layout.column(align=True)
         row = col.row()
@@ -116,6 +113,10 @@ class MMDMeshSorter(_PanelBase, Panel):
                           context.scene, "objects",
                           root.mmd_root, "active_mesh_index")
         tb = row.column()
-        tbl = tb.column(align=True)
-        tbl.operator('mmd_tools.move_mesh_up', text='', icon='TRIA_UP')
-        tbl.operator('mmd_tools.move_mesh_down', text='', icon='TRIA_DOWN')
+        tb1 = tb.column(align=True)
+        tb1.enabled = active_obj.type == 'MESH' and active_obj.mmd_type == 'NONE'
+        tb1.operator('mmd_tools.object_move', text='', icon=TRIA_UP_BAR).type = 'TOP'
+        tb1.operator('mmd_tools.object_move', text='', icon='TRIA_UP').type = 'UP'
+        tb1.operator('mmd_tools.object_move', text='', icon='TRIA_DOWN').type = 'DOWN'
+        tb1.operator('mmd_tools.object_move', text='', icon=TRIA_DOWN_BAR).type = 'BOTTOM'
+

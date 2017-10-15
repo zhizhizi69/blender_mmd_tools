@@ -131,9 +131,7 @@ class TestPmxExporter(unittest.TestCase):
         result_materials = result_model.materials
         self.assertEqual(len(source_materials), len(result_materials))
 
-        source_table = sorted(source_materials, key=lambda x: x.name)
-        result_table = sorted(result_materials, key=lambda x: x.name)
-        for mat0, mat1 in zip(source_table, result_table):
+        for mat0, mat1 in zip(source_materials, result_materials):
             msg = mat0.name
             self.assertEqual(mat0.name, mat1.name, msg)
             self.assertEqual(mat0.name_e or mat0.name, mat1.name_e, msg)
@@ -325,9 +323,7 @@ class TestPmxExporter(unittest.TestCase):
         source_bones = source_model.bones
         result_bones = result_model.bones
 
-        source_table = sorted(source_rigids, key=lambda x: x.name)
-        result_table = sorted(result_rigids, key=lambda x: x.name)
-        for rigid0, rigid1 in zip(source_table, result_table):
+        for rigid0, rigid1 in zip(source_rigids, result_rigids):
             msg = rigid0.name
             self.assertEqual(rigid0.name, rigid1.name, msg)
             self.assertEqual(rigid0.name_e, rigid1.name_e, msg)
@@ -364,9 +360,7 @@ class TestPmxExporter(unittest.TestCase):
         result_joints = result_model.joints
         self.assertEqual(len(source_joints), len(result_joints))
 
-        source_table = sorted(source_joints, key=lambda x: x.name)
-        result_table = sorted(result_joints, key=lambda x: x.name)
-        for joint0, joint1 in zip(source_table, result_table):
+        for joint0, joint1 in zip(source_joints, result_joints):
             msg = joint0.name
             self.assertEqual(joint0.name, joint1.name, msg)
             self.assertEqual(joint0.name_e, joint1.name_e, msg)
@@ -632,6 +626,7 @@ class TestPmxExporter(unittest.TestCase):
                     output_pmx = os.path.join(TESTS_DIR, 'output', '%d.pmx'%test_num)
                     bpy.ops.mmd_tools.export_pmx(
                         filepath=output_pmx,
+                        scale=1,
                         copy_textures=False,
                         sort_materials=False,
                         log_level='ERROR',

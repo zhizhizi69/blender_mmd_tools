@@ -214,7 +214,6 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             c.label('Select a MMD Model')
             return
 
-        rig = mmd_model.Model(root)
         mmd_root = root.mmd_root
         col = self.layout.column()
         row = col.row()
@@ -644,7 +643,11 @@ class MMDRigidbodyMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
+        layout.enabled = context.active_object.mmd_type == 'RIGID_BODY'
         layout.menu('OBJECT_MT_mmd_tools_rigidbody_select_menu', text='Select Similar')
+        layout.separator()
+        layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
+        layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
 
 class MMDRigidbodySelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
@@ -653,17 +656,12 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
 
     def draw(self, context):
         active_obj = context.active_object
-        root = None
-        if active_obj:
-            root = mmd_model.Model.findRoot(active_obj)
+        root = mmd_model.Model.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
 
-        rig = mmd_model.Model(root)
-        root = rig.rootObject()
-        mmd_root = root.mmd_root
         col = self.layout.column()
         c = col.column(align=True)
         row = c.row()
@@ -671,13 +669,18 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
             "UL_rigidbodies",
             "",
             context.scene, "objects",
-            mmd_root, 'active_rigidbody_index',
+            root.mmd_root, 'active_rigidbody_index',
             )
         tb = row.column()
         tb1 = tb.column(align=True)
         tb1.operator(operators.rigid_body.AddRigidBody.bl_idname, text='', icon='ZOOMIN')
         tb1.operator(operators.rigid_body.RemoveRigidBody.bl_idname, text='', icon='ZOOMOUT')
         tb1.menu('OBJECT_MT_mmd_tools_rigidbody_menu', text='', icon='DOWNARROW_HLT')
+        tb.separator()
+        tb1 = tb.column(align=True)
+        tb1.enabled = active_obj.mmd_type == 'RIGID_BODY'
+        tb1.operator('mmd_tools.object_move', text='', icon='TRIA_UP').type = 'UP'
+        tb1.operator('mmd_tools.object_move', text='', icon='TRIA_DOWN').type = 'DOWN'
 
 
 class UL_joints(UL_ObjectsMixIn, UIList):
@@ -694,6 +697,16 @@ class UL_joints(UL_ObjectsMixIn, UIList):
         elif rbc.object1 == rbc.object2:
             layout.label(icon='MESH_CUBE')
 
+class MMDJointMenu(Menu):
+    bl_idname = 'OBJECT_MT_mmd_tools_joint_menu'
+    bl_label = 'Joint Menu'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.enabled = context.active_object.mmd_type == 'JOINT'
+        layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
+        layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+
 class MMDJointSelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_joint_list'
     bl_label = 'Joints'
@@ -701,17 +714,11 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
 
     def draw(self, context):
         active_obj = context.active_object
-        root = None
-        if active_obj:
-            root = mmd_model.Model.findRoot(active_obj)
+        root = mmd_model.Model.findRoot(active_obj)
         if root is None:
             c = self.layout.column()
             c.label('Select a MMD Model')
             return
-
-        rig = mmd_model.Model(root)
-        root = rig.rootObject()
-        mmd_root = root.mmd_root
 
         col = self.layout.column()
         c = col.column(align=True)
@@ -721,9 +728,16 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
             "UL_joints",
             "",
             context.scene, "objects",
-            mmd_root, 'active_joint_index',
+            root.mmd_root, 'active_joint_index',
             )
         tb = row.column()
         tb1 = tb.column(align=True)
         tb1.operator(operators.rigid_body.AddJoint.bl_idname, text='', icon='ZOOMIN')
         tb1.operator(operators.rigid_body.RemoveJoint.bl_idname, text='', icon='ZOOMOUT')
+        tb1.menu('OBJECT_MT_mmd_tools_joint_menu', text='', icon='DOWNARROW_HLT')
+        tb.separator()
+        tb1 = tb.column(align=True)
+        tb1.enabled = active_obj.mmd_type == 'JOINT'
+        tb1.operator('mmd_tools.object_move', text='', icon='TRIA_UP').type = 'UP'
+        tb1.operator('mmd_tools.object_move', text='', icon='TRIA_DOWN').type = 'DOWN'
+

@@ -146,26 +146,26 @@ def uniqueName(name, used_names):
         count += 1
     return new_name
 
-def int2base(x, base):
+def int2base(x, base, width=0):
     """
     Method to convert an int to a base
     Source: http://stackoverflow.com/questions/2267362
     """
     import string
     digs = string.digits + string.ascii_uppercase
-    if x < 0: sign = -1
-    elif x == 0: return digs[0]
-    else: 
-        sign = 1
-        x *= sign
-        digits = []
+    assert(2 <= base <= len(digs))
+    digits, negtive = '', False
+    if x <= 0:
+        if x == 0:
+            return '0'*max(1, width)
+        x, negtive, width = -x, True, width-1
     while x:
-        digits.append(digs[x % base])
-        x = int(x / base)
-    if sign < 0:
-        digits.append('-')
-    digits.reverse()
-    return ''.join(digits)
+        digits = digs[x % base] + digits
+        x //= base
+    digits = '0'*(width-len(digits)) + digits
+    if negtive:
+        digits = '-' + digits
+    return digits
 
 def saferelpath(path, start, strategy='inside'):
     """
