@@ -3,9 +3,9 @@
 import bpy
 from bpy.types import Operator
 
-from mmd_tools import translations
 from mmd_tools import bpyutils
 from mmd_tools.core.bone import FnBone
+from mmd_tools.translations import DictionaryEnum
 import mmd_tools.core.model as mmd_model
 
 
@@ -140,10 +140,10 @@ class TranslateMMDModel(Operator):
     bl_label = 'Translate a MMD Model'
     bl_description = 'Translate Japanese names of a MMD model'
 
-    dictionary = bpy.props.StringProperty(
+    dictionary = bpy.props.EnumProperty(
         name='Dictionary',
-        description='Select a dictionary text, leave it unset to try loading default csv file',
-        default='',
+        items=DictionaryEnum.get_dictionary_items,
+        description='Translate names from Japanese to English using selected dictionary',
         )
     types = bpy.props.EnumProperty(
         name='Types',
@@ -163,7 +163,7 @@ class TranslateMMDModel(Operator):
         name='Full-width Katakana',
         description='Use full-width katakana translation',
         default=True,
-        options={'SKIP_SAVE'},
+        options={'SKIP_SAVE', 'HIDDEN'},
         )
     use_morph_prefix = bpy.props.BoolProperty(
         name='Use Morph Prefix',
@@ -180,32 +180,9 @@ class TranslateMMDModel(Operator):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
-    def draw(self, context):
-        layout = self.layout
-
-        row = layout.split(percentage=0.5)
-        row.column().label('Dictionary')
-        row.column().prop_search(self, 'dictionary', search_data=bpy.data, search_property='texts', text='')
-
-        row = layout.split(percentage=0.5)
-        row.column().label('Types')
-        row.column().prop(self, 'types')
-
-        #row = layout.split(percentage=0.5)
-        #row.column().label()
-        #row.column().prop(self, 'use_full_width')
-
-        row = layout.split(percentage=0.5)
-        row.column().label()
-        row.column().prop(self, 'use_morph_prefix')
-
-        row = layout.split(percentage=0.5)
-        row.column().label()
-        row.column().prop(self, 'overwrite')
-
     def execute(self, context):
         try:
-            self.__translator = translations.getTranslator(self.dictionary)
+            self.__translator = DictionaryEnum.get_translator(self.dictionary)
         except Exception as e:
             self.report({'ERROR'}, 'Failed to load dictionary: %s'%e)
             return {'CANCELLED'}

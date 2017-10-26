@@ -233,12 +233,11 @@ class MMDTranslator:
         return True
 
     def translate(self, name, default=None):
-        name_orig = name
-        name = self.replace_from_tuples(name, self.__csv_tuples)
-        if not self.is_translated(name):
-            self.__fails[name_orig] = name
+        name_new = self.replace_from_tuples(name, self.__csv_tuples)
+        if default is not None and not self.is_translated(name_new):
+            self.__fails[name] = name_new
             return default
-        return name
+        return name_new
 
     def save_fails(self, text_name=None):
         text_name = text_name or (__name__+'.fails')
@@ -278,4 +277,46 @@ class MMDTranslator:
         print('Saving csv file:', filepath)
         with open(filepath, 'wt', encoding='utf-8', newline='') as csvfile:
             self.save_to_stream(csvfile)
+
+
+class DictionaryEnum:
+    __items_id = None
+    __items_cache = None
+
+    @staticmethod
+    def get_dictionary_items(prop, context):
+        id_tag = prop.as_pointer()
+        if id_tag and DictionaryEnum.__items_id == id_tag:
+            return DictionaryEnum.__items_cache
+
+        DictionaryEnum.__items_id = id_tag
+        DictionaryEnum.__items_cache = items = []
+        if 'import' in prop.bl_rna.identifier:
+            items.append(('DISABLED', 'Disabled', '', 0))
+
+        items.append(('INTERNAL', 'Internal Dictionary', 'The dictionary defined in '+__name__, len(items)))
+
+        for txt_name in sorted(x.name for x in bpy.data.texts if x.name.lower().endswith('.csv')):
+            items.append((txt_name, txt_name, "bpy.data.texts['%s']"%txt_name, 'TEXT', len(items)))
+
+        import os
+        from mmd_tools.bpyutils import addon_preferences
+        folder = addon_preferences('dictionary_folder', '')
+        if os.path.isdir(folder):
+            for filename in sorted(x for x in os.listdir(folder) if x.lower().endswith('.csv')):
+                filepath = os.path.join(folder, filename)
+                if os.path.isfile(filepath):
+                    items.append((filepath, filename, filepath, 'FILE', len(items)))
+
+        if 'dictionary' in prop:
+            prop['dictionary'] = min(prop['dictionary'], len(items)-1)
+        return items
+
+    @staticmethod
+    def get_translator(dictionary):
+        if dictionary == 'DISABLED':
+            return None
+        if dictionary == 'INTERNAL':
+            return getTranslator(dict(jp_to_en_tuples))
+        return getTranslator(dictionary)
 

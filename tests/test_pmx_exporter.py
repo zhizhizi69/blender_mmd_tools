@@ -616,7 +616,6 @@ class TestPmxExporter(unittest.TestCase):
                     types=import_types,
                     scale=1,
                     clean_model=False,
-                    renameBones=False,
                     )
                 bpy.context.scene.update()
             except Exception:

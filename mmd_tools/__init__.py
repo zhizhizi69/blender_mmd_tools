@@ -57,11 +57,18 @@ class MMDToolsAddonPreferences(AddonPreferences):
             description='Path for textures shared between models',
             subtype='DIR_PATH',
             )
+    dictionary_folder = StringProperty(
+            name='Dictionary Folder',
+            description='Path for searching csv dictionaries',
+            subtype='DIR_PATH',
+            default=__file__[:-11],
+            )
 
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "shared_toon_folder")
         layout.prop(self, "base_texture_folder")
+        layout.prop(self, "dictionary_folder")
 
 
 def menu_func_import(self, context):

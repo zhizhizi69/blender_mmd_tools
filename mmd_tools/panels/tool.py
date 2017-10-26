@@ -43,7 +43,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         if root:
             col.operator('mmd_tools.join_meshes')
             col.operator('mmd_tools.attach_meshes')
-            col.operator('mmd_tools.translate_mmd_model', text='Translate')
+            col.operator('mmd_tools.translate_mmd_model', text='Translation')
 
             row = layout.split(percentage=0.5, align=False)
 
@@ -189,8 +189,8 @@ class MMDDisplayItemFrameMenu(Menu):
         layout = self.layout
         layout.operator_enum('mmd_tools.display_item_quick_setup', 'type')
         layout.separator()
-        layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
-        layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+        layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
+        layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
 class MMDDisplayItemMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_display_item_menu'
@@ -198,8 +198,8 @@ class MMDDisplayItemMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator('mmd_tools.display_item_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
-        layout.operator('mmd_tools.display_item_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+        layout.operator('mmd_tools.display_item_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
+        layout.operator('mmd_tools.display_item_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
 class MMDDisplayItemsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
@@ -342,8 +342,8 @@ class MMDMorphMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator('mmd_tools.morph_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
-        layout.operator('mmd_tools.morph_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+        layout.operator('mmd_tools.morph_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
+        layout.operator('mmd_tools.morph_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
 class MMDMorphToolsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_morph_tools'
@@ -646,8 +646,8 @@ class MMDRigidbodyMenu(Menu):
         layout.enabled = context.active_object.mmd_type == 'RIGID_BODY'
         layout.menu('OBJECT_MT_mmd_tools_rigidbody_select_menu', text='Select Similar')
         layout.separator()
-        layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
-        layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+        layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
+        layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
 class MMDRigidbodySelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
@@ -704,8 +704,8 @@ class MMDJointMenu(Menu):
     def draw(self, context):
         layout = self.layout
         layout.enabled = context.active_object.mmd_type == 'JOINT'
-        layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move to Top').type = 'TOP'
-        layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move to Bottom').type = 'BOTTOM'
+        layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
+        layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
 class MMDJointSelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_joint_list'

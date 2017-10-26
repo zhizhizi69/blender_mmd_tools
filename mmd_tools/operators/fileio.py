@@ -15,6 +15,7 @@ from mmd_tools import auto_scene_setup
 from mmd_tools.utils import makePmxBoneMap
 from mmd_tools.core.camera import MMDCamera
 from mmd_tools.core.lamp import MMDLamp
+from mmd_tools.translations import DictionaryEnum
 
 import mmd_tools.core.pmd.importer as pmd_importer
 import mmd_tools.core.pmx.importer as pmx_importer
@@ -115,11 +116,11 @@ class ImportPmx(Operator, ImportHelper):
         description='Will not use dot, e.g. if renaming bones, will use _R instead of .R',
         default=False,
         )
-    translate_to_english = bpy.props.BoolProperty(
-        name="Rename Bones To English",
-        description='Translate bone names from Japanese to English',
-        default=False,
-        )    
+    dictionary = bpy.props.EnumProperty(
+        name='Rename Bones To English',
+        items=DictionaryEnum.get_dictionary_items,
+        description='Translate bone names from Japanese to English using selected dictionary',
+        )
     use_mipmap = bpy.props.BoolProperty(
         name='use MIP maps for UV textures',
         description='Specify if mipmaps will be generated',
@@ -149,6 +150,7 @@ class ImportPmx(Operator, ImportHelper):
 
     def execute(self, context):
         try:
+            self.__translator = DictionaryEnum.get_translator(self.dictionary)
             if self.directory:
                 for f in self.files:
                     self.filepath = os.path.join(self.directory, f.name)
@@ -180,7 +182,7 @@ class ImportPmx(Operator, ImportHelper):
                 fix_IK_links=self.fix_IK_links,
                 rename_LR_bones=self.rename_bones,
                 use_underscore=self.use_underscore,
-                translate_to_english=self.translate_to_english,
+                translator=self.__translator,
                 use_mipmap=self.use_mipmap,
                 sph_blend_factor=self.sph_blend_factor,
                 spa_blend_factor=self.spa_blend_factor,
@@ -237,10 +239,10 @@ class ImportVmd(Operator, ImportHelper):
         description='Will not use dot, e.g. if renaming bones, will use _R instead of .R',
         default=False,
         )
-    translate_to_english = bpy.props.BoolProperty(
-        name="Rename Bones To English",
-        description='Translate bone names from Japanese to English',
-        default=False,
+    dictionary = bpy.props.EnumProperty(
+        name='Rename Bones To English',
+        items=DictionaryEnum.get_dictionary_items,
+        description='Translate bone names from Japanese to English using selected dictionary',
         )
     use_pose_mode = bpy.props.BoolProperty(
         name='Treat Current Pose as Rest Pose',
@@ -267,7 +269,7 @@ class ImportVmd(Operator, ImportHelper):
         if self.bone_mapper == 'RENAMED_BONES':
             layout.prop(self, 'rename_bones')
             layout.prop(self, 'use_underscore')
-            layout.prop(self, 'translate_to_english')
+            layout.prop(self, 'dictionary')
         layout.prop(self, 'use_pose_mode')
 
         layout.prop(self, 'update_scene_settings')
@@ -292,7 +294,7 @@ class ImportVmd(Operator, ImportHelper):
             bone_mapper = vmd_importer.RenamedBoneMapper(
                 rename_LR_bones=self.rename_bones,
                 use_underscore=self.use_underscore,
-                translate_to_english=self.translate_to_english,
+                translator=DictionaryEnum.get_translator(self.dictionary),
                 ).init
 
         start_time = time.time()
@@ -352,10 +354,10 @@ class ImportVpd(Operator, ImportHelper):
         description='Will not use dot, e.g. if renaming bones, will use _R instead of .R',
         default=False,
         )
-    translate_to_english = bpy.props.BoolProperty(
-        name="Rename Bones To English",
-        description='Translate bone names from Japanese to English',
-        default=False,
+    dictionary = bpy.props.EnumProperty(
+        name='Rename Bones To English',
+        items=DictionaryEnum.get_dictionary_items,
+        description='Translate bone names from Japanese to English using selected dictionary',
         )
     use_pose_mode = bpy.props.BoolProperty(
         name='Treat Current Pose as Rest Pose',
@@ -376,7 +378,7 @@ class ImportVpd(Operator, ImportHelper):
         if self.bone_mapper == 'RENAMED_BONES':
             layout.prop(self, 'rename_bones')
             layout.prop(self, 'use_underscore')
-            layout.prop(self, 'translate_to_english')
+            layout.prop(self, 'dictionary')
         layout.prop(self, 'use_pose_mode')
 
     def execute(self, context):
@@ -399,7 +401,7 @@ class ImportVpd(Operator, ImportHelper):
             bone_mapper = vmd_importer.RenamedBoneMapper(
                 rename_LR_bones=self.rename_bones,
                 use_underscore=self.use_underscore,
-                translate_to_english=self.translate_to_english,
+                translator=DictionaryEnum.get_translator(self.dictionary),
                 ).init
 
         for f in self.files:

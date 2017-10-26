@@ -3,18 +3,16 @@ import os
 import collections
 import logging
 import time
-import re
 
 import bpy
 import mathutils
 
 import mmd_tools.core.model as mmd_model
-import mmd_tools.core.pmx as pmx
+from mmd_tools import utils
+from mmd_tools import bpyutils
+from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
-from mmd_tools import utils
-from mmd_tools import translations
-from mmd_tools import bpyutils
 from mmd_tools.core.vmd.importer import BoneConverter
 from mmd_tools.operators.display_item import DisplayItemQuickSetup
 from mmd_tools.operators.misc import MoveObject
@@ -779,7 +777,7 @@ class PMXImporter:
         for i in pose_bones:
             if i.is_mmd_shadow_bone:
                 continue
-            self.__rig.renameBone(i.name, translations.translateFromJp(i.name))
+            self.__rig.renameBone(i.name, self.__translator.translate(i.name))
 
     def __fixRepeatedMorphName(self):
         used_names_map = {}
@@ -804,6 +802,7 @@ class PMXImporter:
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
         self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
         self.__fix_IK_links = args.get('fix_IK_links', False)
+        self.__translator = args.get('translator', None)
 
         logging.info('****************************************')
         logging.info(' mmd_tools.import_pmx module')
@@ -838,7 +837,7 @@ class PMXImporter:
             if args.get('rename_LR_bones', False):
                 use_underscore = args.get('use_underscore', False)
                 self.__renameLRBones(use_underscore)
-            if args.get('translate_to_english', False):
+            if self.__translator:
                 self.__translateBoneNames()
             self.__rig.applyAdditionalTransformConstraints()
 
