@@ -27,24 +27,22 @@ def _set_name(prop, value):
     prop_name = prop.get('name', None)
     if prop_name == value:
         return
-    value = utils.uniqueName(value, getattr(mmd_root, morph_type))
+
+    used_names = set(x.name for x in getattr(mmd_root, morph_type))
+    value = utils.uniqueName(value, used_names)
     if prop_name is not None:
         if morph_type == 'vertex_morphs':
-            kb_list = []
+            kb_list = {}
             for mesh in FnModel(prop.id_data).meshes():
                 shape_keys = mesh.data.shape_keys
-                if shape_keys is None:
-                    continue
-                kb = shape_keys.key_blocks.get(prop_name, None)
-                if kb:
-                    kb_list.append(kb)
+                if shape_keys:
+                    for kb in shape_keys.key_blocks:
+                        kb_list.setdefault(kb.name, []).append(kb)
 
-            value_check = None
-            while value_check != value:
-                value_check = value
-                for kb in kb_list:
+            if prop_name in kb_list:
+                value = utils.uniqueName(value, used_names|kb_list.keys())
+                for kb in kb_list[prop_name]:
                     kb.name = value
-                    value = kb.name
 
         if 1:#morph_type != 'group_morphs':
             for m in mmd_root.group_morphs:

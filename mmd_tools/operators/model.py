@@ -159,11 +159,15 @@ class TranslateMMDModel(Operator):
             ],
         default={'BONE', 'MORPH', 'MATERIAL', 'DISPLAY', 'PHYSICS',},
         )
-    use_full_width = bpy.props.BoolProperty(
-        name='Full-width Katakana',
-        description='Use full-width katakana translation',
-        default=True,
-        options={'SKIP_SAVE', 'HIDDEN'},
+    modes = bpy.props.EnumProperty(
+        name='Modes',
+        description='Select translation mode',
+        options={'ENUM_FLAG'},
+        items = [
+            ('MMD', 'MMD Names', 'Fill MMD English names', 1),
+            ('BLENDER', 'Blender Names', 'Translate blender names (experimental)', 2),
+            ],
+        default={'MMD'},
         )
     use_morph_prefix = bpy.props.BoolProperty(
         name='Use Morph Prefix',
@@ -173,6 +177,11 @@ class TranslateMMDModel(Operator):
     overwrite = bpy.props.BoolProperty(
         name='Overwrite',
         description='Overwrite a translated English name',
+        default=False,
+        )
+    allow_fails = bpy.props.BoolProperty(
+        name='Allow Fails',
+        description='Allow incompletely translated names',
         default=False,
         )
 
@@ -190,8 +199,13 @@ class TranslateMMDModel(Operator):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
-        for i in self.types:
-            getattr(self, 'translate_%s'%i.lower())(rig)
+
+        if 'MMD' in self.modes:
+            for i in self.types:
+                getattr(self, 'translate_%s'%i.lower())(rig)
+
+        if 'BLENDER' in self.modes:
+            self.translate_blender_names(rig)
 
         translator = self.__translator
         txt = translator.save_fails()
@@ -202,9 +216,40 @@ class TranslateMMDModel(Operator):
     def translate(self, name_j, name_e):
         if not self.overwrite and name_e and self.__translator.is_translated(name_e):
             return name_e
-        if self.use_full_width:
-            name_j = self.__translator.half_to_full(name_j)
+        if self.allow_fails:
+            name_e = None
         return self.__translator.translate(name_j, name_e)
+
+    def translate_blender_names(self, rig):
+        if 'BONE' in self.types:
+            for b in rig.armature().pose.bones:
+                rig.renameBone(b.name, self.translate(b.name, b.name))
+
+        if 'MORPH' in self.types:
+            for i in (x for x in rig.meshes() if x.data.shape_keys):
+                for kb in i.data.shape_keys.key_blocks:
+                    kb.name = self.translate(kb.name, kb.name)
+
+        if 'MATERIAL' in self.types:
+            for m in (x for x in rig.materials() if x):
+                m.name = self.translate(m.name, m.name)
+
+        if 'DISPLAY' in self.types:
+            for g in rig.armature().pose.bone_groups:
+                g.name = self.translate(g.name, g.name)
+
+        if 'PHYSICS' in self.types:
+            for i in rig.rigidBodies():
+                i.name = self.translate(i.name, i.name)
+
+            for i in rig.joints():
+                i.name = self.translate(i.name, i.name)
+
+        if 'INFO' in self.types:
+            objects = [rig.rootObject(), rig.armature()]
+            objects.extend(rig.meshes())
+            for i in objects:
+                i.name = self.translate(i.name, i.name)
 
     def translate_info(self, rig):
         mmd_root = rig.rootObject().mmd_root

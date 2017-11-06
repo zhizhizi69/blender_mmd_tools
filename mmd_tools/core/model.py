@@ -481,8 +481,12 @@ class Model:
         return material_list
 
     def renameBone(self, old_bone_name, new_bone_name):
+        if old_bone_name == new_bone_name:
+            return
         armature = self.armature()
         bone = armature.pose.bones[old_bone_name]
+        bone.name = new_bone_name
+        new_bone_name = bone.name
 
         mmd_root = self.rootObject().mmd_root
         for frame in mmd_root.display_item_frames:
@@ -492,8 +496,6 @@ class Model:
         for mesh in self.meshes():
             if old_bone_name in mesh.vertex_groups:
                 mesh.vertex_groups[old_bone_name].name = new_bone_name
-
-        bone.name = new_bone_name
 
     def build(self):
         rigidbody_world_enabled = rigid_body.setRigidBodyWorldEnabled(False)

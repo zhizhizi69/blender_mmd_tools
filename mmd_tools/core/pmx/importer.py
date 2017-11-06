@@ -696,7 +696,7 @@ class PMXImporter:
                 dx, dy, dz, dw = morph_data.offset
                 data = uv_morph.data.add()
                 data.index = idx
-                data.offset = (dx, -dy, dz, dw) # dz, dw are not used
+                data.offset = (dx, -dy, dz, -dw)
 
     def __importGroupMorphs(self):
         mmd_root = self.__root.mmd_root

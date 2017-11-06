@@ -410,7 +410,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             if kb:
                 row = col.row(align=True)
                 row.label(i.name, icon='OBJECT_DATA')
-                row.prop(kb, 'value')
+                row.prop(kb, 'value', text=kb.name)
 
     def _draw_material_data(self, context, rig, col, morph):
         c = col.column(align=True)

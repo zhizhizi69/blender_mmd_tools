@@ -220,7 +220,7 @@ class MMDTranslator:
         tuples_dict = OrderedDict((row[0], row) for row in self.__csv_tuples if len(row) >= 2)
         self.__csv_tuples.clear()
         self.__csv_tuples.extend(tuples_dict.values())
-        print(' - removed items:', count_old-len(self.__csv_tuples))
+        print(' - removed items:', count_old-len(self.__csv_tuples), '(of %d)'%count_old)
 
     def half_to_full(self, name):
         return self.replace_from_tuples(name, jp_half_to_full_tuples)
@@ -232,7 +232,9 @@ class MMDTranslator:
             return False
         return True
 
-    def translate(self, name, default=None):
+    def translate(self, name, default=None, from_full_width=True):
+        if from_full_width:
+            name = self.half_to_full(name)
         name_new = self.replace_from_tuples(name, self.__csv_tuples)
         if default is not None and not self.is_translated(name_new):
             self.__fails[name] = name_new

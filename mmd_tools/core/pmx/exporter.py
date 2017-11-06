@@ -705,7 +705,7 @@ class __PmxExporter:
             offsets = []
             for data in morph.data:
                 dx, dy, dz, dw = data.offset
-                offset = (dx, -dy, 0, 0) # dz, dw are not used
+                offset = (dx, -dy, dz, -dw)
                 for idx in self.__vertex_index_map.get(data.index, []):
                     morph_data = pmx.UVMorphOffset()
                     morph_data.index = idx
