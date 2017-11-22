@@ -198,9 +198,10 @@ class JoinMeshes(Operator):
                     active_mesh.data.materials.append(mat)
 
         # Store the current order of shape keys (vertex morphs)
+        from collections import OrderedDict
         __get_key_blocks = lambda x: x.data.shape_keys.key_blocks if x.data.shape_keys else []
-        shape_key_names = {kb.name for m in meshes_list for kb in __get_key_blocks(m)}
-        shape_key_names = sorted(shape_key_names, key=lambda x: root.mmd_root.vertex_morphs.find(x))
+        shape_key_names = OrderedDict((kb.name, None) for m in meshes_list for kb in __get_key_blocks(m))
+        shape_key_names = sorted(shape_key_names.keys(), key=lambda x: root.mmd_root.vertex_morphs.find(x))
         FnMorph.storeShapeKeyOrder(active_mesh, shape_key_names)
         active_mesh.active_shape_key_index = 0
 
