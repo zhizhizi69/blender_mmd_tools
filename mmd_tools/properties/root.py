@@ -128,9 +128,15 @@ def _getActiveJointObject(prop):
         prop['active_joint_object_index'] = objects.find(active_obj.name)
     return prop.get('active_joint_object_index', 0)
 
-def _activeMorphReset(self, context):
-    root = self.id_data
-    root.mmd_root.active_morph = 0
+def _setActiveMorph(prop, v):
+    if 'active_morph_indices' not in prop:
+        prop['active_morph_indices'] = [0]*5
+    prop['active_morph_indices'][prop.get('active_morph_type', 3)] = v
+
+def _getActiveMorph(prop):
+    if 'active_morph_indices' in prop:
+        return prop['active_morph_indices'][prop.get('active_morph_type', 3)]
+    return 0
 
 def _setActiveMeshObject(prop, v):
     obj = bpy.context.scene.objects[v]
@@ -361,17 +367,16 @@ class MMDRoot(PropertyGroup):
             ('group_morphs', 'Group', 'Group Morphs', 4),
             ],
         default='vertex_morphs',
-        update=_activeMorphReset
         )
     active_morph = IntProperty(
         name='Active Morph',
         min=0,
-        default=0
+        set=_setActiveMorph,
+        get=_getActiveMorph,
         )
     active_mesh_index = IntProperty(
         name='Active Mesh',
         description='Active Mesh in this model',
-        default=-1,
         set=_setActiveMeshObject,
         get=_getActiveMeshObject,
         )

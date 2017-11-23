@@ -13,7 +13,7 @@ from collections import OrderedDict
 from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
-from mmd_tools.core.vmd.importer import BoneConverter
+from mmd_tools.core.vmd.importer import BoneConverter, BoneConverterPoseMode
 from mmd_tools import bpyutils
 from mmd_tools.utils import saferelpath
 
@@ -667,6 +667,7 @@ class __PmxExporter:
             return
         categories = self.CATEGORIES
         pose_bones = self.__armature.pose.bones
+        bone_util_cls = BoneConverterPoseMode if mmd_root.is_built else BoneConverter
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
                 name=morph.name,
@@ -683,7 +684,7 @@ class __PmxExporter:
                 if blender_bone is None:
                     logging.warning('Bone Morph (%s): Bone %s was not found.', morph.name, data.bone)
                     continue
-                converter = BoneConverter(blender_bone, self.__scale, invert=True)
+                converter = bone_util_cls(blender_bone, self.__scale, invert=True)
                 morph_data.location_offset = converter.convert_location(data.location)
                 rw, rx, ry, rz = data.rotation
                 rw, rx, ry, rz = converter.convert_rotation([rx, ry, rz, rw])
