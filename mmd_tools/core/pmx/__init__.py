@@ -416,7 +416,7 @@ class Model:
         self.materials = []
         for i in range(num_materials):
             m = Material()
-            m.load(fs)
+            m.load(fs, num_textures)
             self.materials.append(m)
 
             logging.info('Material %d: %s', i, m.name)
@@ -880,7 +880,10 @@ class Material:
             str(self.toon_texture),
             str(self.comment),)
 
-    def load(self, fs):
+    def load(self, fs, num_textures):
+        def __tex_index(index):
+            return index if 0 <= index < num_textures else -1
+
         self.name = fs.readStr()
         self.name_e = fs.readStr()
 
@@ -899,8 +902,8 @@ class Material:
         self.edge_color = fs.readVector(4)
         self.edge_size = fs.readFloat()
 
-        self.texture = fs.readTextureIndex()
-        self.sphere_texture = fs.readTextureIndex()
+        self.texture = __tex_index(fs.readTextureIndex())
+        self.sphere_texture = __tex_index(fs.readTextureIndex())
         self.sphere_texture_mode = fs.readSignedByte()
 
         self.is_shared_toon_texture = fs.readSignedByte()
@@ -908,7 +911,7 @@ class Material:
         if self.is_shared_toon_texture:
             self.toon_texture = fs.readSignedByte()
         else:
-            self.toon_texture = fs.readTextureIndex()
+            self.toon_texture = __tex_index(fs.readTextureIndex())
 
         self.comment = fs.readStr()
         self.vertex_count = fs.readInt()
@@ -1603,7 +1606,11 @@ def load(path):
         header.load(fs)
         fs.setHeader(header)
         model = Model()
-        model.load(fs)
+        try:
+            model.load(fs)
+        except struct.error as e:
+            logging.error(' * Corrupted file: %s', e)
+            #raise
         logging.info(' Finished loading.')
         logging.info('----------------------------------------')
         logging.info(' mmd_tools.pmx module')
