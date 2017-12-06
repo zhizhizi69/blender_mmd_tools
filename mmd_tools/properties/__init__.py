@@ -1,8 +1,22 @@
 # -*- coding: utf-8 -*-
 
-import bpy
-
-from . import root, camera, material, bone, rigid_body
+if "bpy" in locals():
+    import importlib
+    importlib.reload(morph)
+    importlib.reload(root)
+    importlib.reload(camera)
+    importlib.reload(material)
+    importlib.reload(bone)
+    importlib.reload(rigid_body)
+else:
+    import bpy
+    from . import (
+        root,
+        camera,
+        material,
+        bone,
+        rigid_body,
+        )
 
 __properties = {
     bpy.types.Object: {
@@ -53,4 +67,3 @@ def unregister():
     for typ, t in __properties.items():
         for attr in t.keys():
             delattr(typ, attr)
-
