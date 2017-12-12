@@ -88,6 +88,8 @@ class CleanShapeKeys(Operator):
         for kb in key_blocks:
             if self.__can_remove(kb):
                 obj.shape_key_remove(kb)
+        if len(key_blocks) == 1:
+            obj.shape_key_remove(key_blocks[0])
 
     def __shape_key_clean_old(self, context, obj, key_blocks):
         context.scene.objects.active = obj
@@ -96,6 +98,9 @@ class CleanShapeKeys(Operator):
             if self.__can_remove(kb):
                 obj.active_shape_key_index = i
                 bpy.ops.object.shape_key_remove()
+        if len(key_blocks) == 1:
+            obj.active_shape_key_index = 0
+            bpy.ops.object.shape_key_remove()
 
     __do_shape_key_clean = __shape_key_clean_old if bpy.app.version < (2, 75, 0) else __shape_key_clean
 

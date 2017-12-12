@@ -88,6 +88,7 @@ def mergeVertexGroup(meshObj, src_vertex_group_name, dest_vertex_group_name):
 
 def separateByMaterials(meshObj):
     import bpy
+    matrix_parent_inverse = meshObj.matrix_parent_inverse.copy()
     prev_parent = meshObj.parent
     dummy_parent = bpy.data.objects.new(name='tmp', object_data=None)
     meshObj.parent = dummy_parent
@@ -112,6 +113,8 @@ def separateByMaterials(meshObj):
                 po.material_index = 0
             i.name = mat.name
             i.parent = prev_parent
+            i.matrix_parent_inverse = matrix_parent_inverse
+    bpy.data.objects.remove(dummy_parent)
 
 def clearUnusedMeshes():
     import bpy
