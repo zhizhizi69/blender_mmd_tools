@@ -111,10 +111,7 @@ class CleanShapeKeys(Operator):
             if not ob.data.shape_keys.use_relative:
                 continue # not be considered yet
             key_blocks = ob.data.shape_keys.key_blocks
-            counts = len(key_blocks)
             self.__do_shape_key_clean(context, ob, key_blocks)
-            counts -= len(key_blocks)
-            self.report({ 'INFO' }, 'Removed %d shape keys of object "%s"'%(counts, ob.name))
         return {'FINISHED'}
 
 class SeparateByMaterials(Operator):
@@ -144,7 +141,7 @@ class SeparateByMaterials(Operator):
         if root:
             # Store the current material names
             rig = mmd_model.Model(root)
-            mat_names = [mat.name for mat in rig.materials()]
+            mat_names = [getattr(mat, 'name', None) for mat in rig.materials()]
         utils.separateByMaterials(obj)
         if self.clean_shape_keys:
             bpy.ops.mmd_tools.clean_shape_keys()
@@ -155,7 +152,7 @@ class SeparateByMaterials(Operator):
             for mesh in rig.meshes():
                 if len(mesh.data.materials) == 1:
                     mat = mesh.data.materials[0]
-                    idx = mat_names.index(mat.name)
+                    idx = mat_names.index(getattr(mat, 'name', None))
                     MoveObject.set_index(mesh, idx)
 
         if root and len(root.mmd_root.material_morphs) > 0:
@@ -187,19 +184,13 @@ class JoinMeshes(Operator):
         meshes_list = sorted(rig.meshes(), key=lambda x: x.name)
         active_mesh = meshes_list[0]
 
-        bpy.ops.object.select_all(action='DESELECT')
-        act_layer = context.scene.active_layer
-        for mesh in meshes_list:
-            mesh.layers[act_layer] = True
-            mesh.hide_select = False
-            mesh.hide = False
-            mesh.select = True
-        bpy.context.scene.objects.active = active_mesh
+        from mmd_tools import bpyutils
+        bpyutils.select_object(active_mesh, objects=meshes_list)
 
         # Store the current order of the materials
         for m in meshes_list[1:]:
             for mat in m.data.materials:
-                if mat and mat.name not in active_mesh.data.materials:
+                if getattr(mat, 'name', None) not in active_mesh.data.materials[:]:
                     active_mesh.data.materials.append(mat)
 
         # Store the current order of shape keys (vertex morphs)

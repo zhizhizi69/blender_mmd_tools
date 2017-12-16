@@ -214,6 +214,8 @@ class Model:
         obj.empty_draw_size = 0.1 * self.__root.empty_draw_size
         obj.hide_render = True
 
+        if bpy.ops.rigidbody.world_add.poll():
+            bpy.ops.rigidbody.world_add()
         bpy.ops.rigidbody.constraint_add(type='GENERIC_SPRING')
         rbc = obj.rigid_body_constraint
         rbc.disable_collisions = False

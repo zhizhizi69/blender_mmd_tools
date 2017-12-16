@@ -435,8 +435,8 @@ class __PmxExporter:
             self.__model.bones = pmx_bones
         return r
 
-    def __exportIKLinks(self, pose_bone, pmx_bones, bone_map, ik_links, count):
-        if count <= 0:
+    def __exportIKLinks(self, pose_bone, count, bone_map, ik_links):
+        if count <= 0 or pose_bone is None or pose_bone.name not in bone_map:
             return ik_links
 
         logging.debug('    Create IK Link for %s', pose_bone.name)
@@ -484,10 +484,7 @@ class __PmxExporter:
             ik_link.minimumAngle = list(minimum)
             ik_link.maximumAngle = list(maximum)
 
-        if pose_bone.parent is not None:
-            return self.__exportIKLinks(pose_bone.parent, pmx_bones, bone_map, ik_links + [ik_link], count - 1)
-        else:
-            return ik_links + [ik_link]
+        return self.__exportIKLinks(pose_bone.parent, count - 1, bone_map, ik_links + [ik_link])
 
 
     def __exportIK(self, bone_map):
@@ -504,24 +501,44 @@ class __PmxExporter:
             for c in bone.constraints:
                 if c.type == 'IK' and not c.mute:
                     logging.debug('  Found IK constraint.')
-                    ik_pose_bone = pose_bones[c.subtarget]
-                    if ik_pose_bone.mmd_shadow_bone_type == 'IK_TARGET':
-                        ik_bone_index = bone_map[ik_pose_bone.parent.name]
-                        logging.debug('  Found IK proxy bone: %s -> %s', ik_pose_bone.name, ik_pose_bone.parent.name)
-                    else:
-                        ik_bone_index = bone_map[c.subtarget]
-
-                    ik_target_bone = self.__get_ik_target_bone(bone)
-                    pmx_ik_bone = pmx_bones[ik_bone_index]
-                    if ik_target_bone is None:
-                        logging.warning('  - IK bone: %s, IK Target not found !!!', pmx_ik_bone.name)
+                    ik_pose_bone = self.__get_ik_control_bone(c)
+                    if ik_pose_bone is None:
+                        logging.warning('  * Invalid IK constraint "%s" on bone %s', c.name, bone.name)
                         continue
-                    logging.debug('  - IK bone: %s, IK Target: %s', pmx_ik_bone.name, ik_target_bone.name)
+
+                    ik_bone_index = bone_map.get(ik_pose_bone.name, -1)
+                    if ik_bone_index < 0:
+                        logging.warning('  * IK bone "%s" not found !!!', ik_pose_bone.name)
+                        continue
+
+                    pmx_ik_bone = pmx_bones[ik_bone_index]
+                    if pmx_ik_bone.isIK:
+                        logging.warning('  * IK bone "%s" is used by another IK setting !!!', ik_pose_bone.name)
+                        continue
+
+                    ik_chain0 = bone if c.use_tail else bone.parent
+                    ik_target_bone = self.__get_ik_target_bone(bone) if c.use_tail else bone
+                    if ik_target_bone is None:
+                        logging.warning('  * IK bone: %s, IK Target not found !!!', ik_pose_bone.name)
+                        continue
+                    logging.debug('  - IK bone: %s, IK Target: %s', ik_pose_bone.name, ik_target_bone.name)
                     pmx_ik_bone.isIK = True
                     pmx_ik_bone.loopCount = max(int(c.iterations/ik_loop_factor), 1)
                     pmx_ik_bone.rotationConstraint = bone.mmd_bone.ik_rotation_constraint
                     pmx_ik_bone.target = bone_map[ik_target_bone.name]
-                    pmx_ik_bone.ik_links = self.__exportIKLinks(bone, pmx_bones, bone_map, [], c.chain_count)
+                    pmx_ik_bone.ik_links = self.__exportIKLinks(ik_chain0, c.chain_count, bone_map, [])
+
+    def __get_ik_control_bone(self, ik_constraint):
+        arm = ik_constraint.target
+        if arm != ik_constraint.id_data:
+            return None
+        bone = arm.pose.bones.get(ik_constraint.subtarget, None)
+        if bone is None:
+            return None
+        if bone.mmd_shadow_bone_type == 'IK_TARGET':
+            logging.debug('  Found IK proxy bone: %s -> %s', bone.name, getattr(bone.parent, 'name', None))
+            return bone.parent
+        return bone
 
     def __get_ik_target_bone(self, target_bone):
         """ Get mmd ik target bone.
@@ -667,7 +684,8 @@ class __PmxExporter:
             return
         categories = self.CATEGORIES
         pose_bones = self.__armature.pose.bones
-        bone_util_cls = BoneConverterPoseMode if mmd_root.is_built else BoneConverter
+        use_pose_mode = mmd_root.is_built and self.__armature.data.pose_position != 'REST'
+        bone_util_cls = BoneConverterPoseMode if use_pose_mode else BoneConverter
         for morph in mmd_root.bone_morphs:
             bone_morph = pmx.BoneMorph(
                 name=morph.name,
@@ -1043,6 +1061,9 @@ class __PmxExporter:
             meshObj.active_shape_key_index = i
             mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
             mesh.transform(pmx_matrix)
+            if len(mesh.vertices) != len(base_mesh.vertices):
+                logging.warning('   * Error! vertex count mismatch!')
+                continue
             if shape_key_name in {'mmd_sdef_c', 'mmd_sdef_r0', 'mmd_sdef_r1'}:
                 if shape_key_name == 'mmd_sdef_c':
                     for v in mesh.vertices:

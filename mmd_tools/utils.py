@@ -34,7 +34,6 @@ def setParentToBone(obj, parent, bone_name):
 
 def selectSingleBone(context, armature, bone_name, reset_pose=False):
     import bpy
-    from mathutils import Vector, Quaternion
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
     except:
@@ -104,14 +103,13 @@ def separateByMaterials(meshObj):
     for i in dummy_parent.children:
         mesh = i.data
         if len(mesh.polygons) > 0:
-            mat_index = mesh.polygons[0].material_index
-            mat = mesh.materials[mat_index]
-            for k in mesh.materials:
-                mesh.materials.pop(index=0, update_data=True)
-            mesh.materials.append(mat)
-            for po in mesh.polygons:
-                po.material_index = 0
-            i.name = mat.name
+            materials = mesh.materials
+            if len(materials) > 1:
+                mat_index = mesh.polygons[0].material_index
+                for i in reversed(range(len(materials))):
+                    if i != mat_index:
+                        materials.pop(index=i, update_data=True)
+            i.name = getattr(materials[0], 'name', 'None') if len(materials) else 'None'
             i.parent = prev_parent
             i.matrix_parent_inverse = matrix_parent_inverse
     bpy.data.objects.remove(dummy_parent)

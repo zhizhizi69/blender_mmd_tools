@@ -537,8 +537,7 @@ class Model:
             logging.debug('  Name(english): %s', r.name_e)
             logging.debug('  Type: %s', rigid_types[r.type])
             logging.debug('  Mode: %s', rigid_modes[r.mode])
-            if r.bone is not None:
-                logging.debug('  Related bone: %s (index: %d)', self.bones[r.bone].name, r.bone)
+            logging.debug('  Related bone: %s', r.bone)
             logging.debug('  Collision group: %d', r.collision_group_number)
             logging.debug('  Collision group mask: 0x%x', r.collision_group_mask)
             logging.debug('  Size: (%f, %f, %f)', *r.size)
@@ -564,8 +563,8 @@ class Model:
 
             logging.info('Joint %d: %s', i, j.name)
             logging.debug('  Name(english): %s', j.name_e)
-            logging.debug('  Rigid A: %s (index: %d)', self.rigids[j.src_rigid].name, j.src_rigid)
-            logging.debug('  Rigid B: %s (index: %d)', self.rigids[j.dest_rigid].name, j.dest_rigid)
+            logging.debug('  Rigid A: %s', j.src_rigid)
+            logging.debug('  Rigid B: %s', j.dest_rigid)
             logging.debug('  Location: (%f, %f, %f)', *j.location)
             logging.debug('  Rotation: (%f, %f, %f)', *j.rotation)
             logging.debug('  Location Limit: (%f, %f, %f) - (%f, %f, %f)', *(j.minimum_location + j.maximum_location))
