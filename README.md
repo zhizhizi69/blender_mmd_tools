@@ -3,7 +3,7 @@ mmd_tools
 
 Overview
 ----
-mmd_tools is a blender import addon for importing MMD (MikuMikuDance) model data (.pmd, .pmx) and motion data (.vmd)
+mmd_tools is a blender addon for importing MMD (MikuMikuDance) model data (.pmd, .pmx), motion data (.vmd) and pose data (.vpd). Exporting model data (.pmx), motion data (.vmd) and pose data (.vpd) are supported as well.
 
 ### Environment
 
@@ -25,6 +25,15 @@ Extract the archive and put the folder mmd_tools into the addon folder of blende
 ### Loading Addon
 1. User Preferences -> addon tab -> select the User filter and click the checkbox before mmd_tools (you can also find the addon using the search function)
 2. After the installation, you can find two panels called mmd_tools and mmd_utils on the left of the 3D view
+
+### Configuring Addon
+The following settings can be configured under mmd_tools Addon Preferences.
+* Shared Toon Texture Folder
+    * The `Data` directory within of your MikuMikuDance directory for toon textures (_toon01.bmp ~ toon10.bmp_).
+* Base Texture Folder
+    * Path for textures shared between models. In order to copy textures properly while exporting to pmx file.
+* Dictionary Folder
+    * Path for searching custom csv dictionaries. You can create your own dictionary or download from [Hogarth-MMD/mmd_tools_translation](https://github.com/Hogarth-MMD/mmd_tools_translation).
 
 ### Importing a model
 1. Go to the mmd_tools panel
@@ -82,11 +91,16 @@ Notes
 * Use the same scale in case you import multiple pmx files.
 
 
+More Informations
+----------
+* See https://github.com/powroupi/blender_mmd_tools/wiki
+
+
 Known issues
 ----------
 * See https://github.com/powroupi/blender_mmd_tools/issues
-    
-    
+
+
 License
 ----------
 &copy; 2012-2014 sugiany, 2015-2017 powroupi.
