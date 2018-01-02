@@ -168,7 +168,7 @@ class FnBone(object):
         mmd_bone = p_bone.mmd_bone
         influence = mmd_bone.additional_transform_influence
         target_bone = mmd_bone.additional_transform_bone
-        mute_rotation = not mmd_bone.has_additional_rotation or p_bone.is_in_ik_chain
+        mute_rotation = not mmd_bone.has_additional_rotation #or p_bone.is_in_ik_chain
         mute_location = not mmd_bone.has_additional_location
 
         constraints = p_bone.constraints

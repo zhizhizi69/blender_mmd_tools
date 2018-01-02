@@ -106,9 +106,9 @@ def separateByMaterials(meshObj):
             materials = mesh.materials
             if len(materials) > 1:
                 mat_index = mesh.polygons[0].material_index
-                for i in reversed(range(len(materials))):
-                    if i != mat_index:
-                        materials.pop(index=i, update_data=True)
+                for x in reversed(range(len(materials))):
+                    if x != mat_index:
+                        materials.pop(index=x, update_data=True)
             i.name = getattr(materials[0], 'name', 'None') if len(materials) else 'None'
             i.parent = prev_parent
             i.matrix_parent_inverse = matrix_parent_inverse

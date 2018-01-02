@@ -37,9 +37,7 @@ class MMDBonePanel(Panel):
         row.prop(mmd_bone, 'transform_order')
         row.prop(mmd_bone, 'transform_after_dynamics')
         row = c.row()
-        row.prop(mmd_bone, 'is_visible')
         row.prop(mmd_bone, 'is_controllable')
-        row = c.row()
         row.prop(mmd_bone, 'is_tip')
 
         c = layout.column(align=True)

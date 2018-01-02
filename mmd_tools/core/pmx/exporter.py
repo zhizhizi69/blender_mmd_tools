@@ -374,7 +374,7 @@ class __PmxExporter:
 
                 pmx_bone.location = __to_pmx_location(p_bone.head)
                 pmx_bone.parent = bone.parent
-                pmx_bone.visible = mmd_bone.is_visible
+                pmx_bone.visible = not bone.hide and any((all(x) for x in zip(bone.layers, arm.data.layers)))
                 pmx_bone.isControllable = mmd_bone.is_controllable
                 pmx_bone.isMovable = not all(p_bone.lock_location)
                 pmx_bone.isRotatable = not all(p_bone.lock_rotation)
@@ -1105,6 +1105,7 @@ class __PmxExporter:
         else:
             uv_data = iter(lambda: _DummyUV, None)
         face_seq = []
+        reversing = not pmx_matrix.is_negative # pmx.load/pmx.save reverse face vertices by default
         for face, uv in zip(base_mesh.tessfaces, uv_data):
             if len(face.vertices) != 3:
                 raise Exception
@@ -1114,7 +1115,7 @@ class __PmxExporter:
             v2 = self.__convertFaceUVToVertexUV(face.vertices[1], uv.uv2, n2, base_vertices)
             v3 = self.__convertFaceUVToVertexUV(face.vertices[2], uv.uv3, n3, base_vertices)
 
-            t = _Face([v1, v2, v3])
+            t = _Face([v3, v2, v1]) if reversing else _Face([v1, v2, v3])
             face_seq.append(t)
             if face.material_index not in materials:
                 materials[face.material_index] = []
@@ -1193,8 +1194,8 @@ class __PmxExporter:
         self.__model.comment_e = 'exported by mmd_tools'
 
         if root is not None:
-            self.__model.name = root.mmd_root.name
-            self.__model.name_e = root.mmd_root.name_e
+            self.__model.name = root.mmd_root.name or root.name
+            self.__model.name_e = root.mmd_root.name_e or root.name
             txt = bpy.data.texts.get(root.mmd_root.comment_text, None)
             if txt:
                 self.__model.comment = txt.as_string().replace('\n', '\r\n')

@@ -400,7 +400,6 @@ class PMXImporter:
             mmd_bone = b_bone.mmd_bone
             mmd_bone.name_j = pmx_bone.name
             mmd_bone.name_e = pmx_bone.name_e
-            mmd_bone.is_visible = pmx_bone.visible
             mmd_bone.is_controllable = pmx_bone.isControllable
             mmd_bone.transform_order = pmx_bone.transform_order
             mmd_bone.transform_after_dynamics = pmx_bone.transAfterPhis
