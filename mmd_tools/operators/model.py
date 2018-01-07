@@ -135,6 +135,59 @@ class CreateMMDModelRoot(Operator):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
+class ConvertToMMDModel(Operator):
+    bl_idname = 'mmd_tools.convert_to_mmd_model'
+    bl_label = 'Convert to a MMD Model'
+    bl_description = 'Convert active armature with its meshes to a MMD model (experimental)'
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        return obj and obj.type == 'ARMATURE'
+
+    def execute(self, context):
+        #TODO convert some basic MMD properties
+        armature = context.active_object
+        scale = 1
+        model_name = 'New MMD Model'
+
+        root = mmd_model.Model.findRoot(armature)
+        if root is None or root != armature.parent:
+            rig = mmd_model.Model.create(model_name, model_name, scale)
+            root = rig.rootObject()
+            arm = rig.armature()
+            arm.parent = None
+            context.scene.objects.unlink(arm)
+            m = armature.matrix_world
+            armature.parent_type = 'OBJECT'
+            armature.parent = root
+            armature.matrix_world = m
+
+        def __is_child_of_armature(mesh):
+            if mesh.parent is None:
+                return False
+            return mesh.parent == armature or __is_child_of_armature(mesh.parent)
+
+        def __is_using_armature(mesh):
+            for m in mesh.modifiers:
+                if m.type =='ARMATURE' and m.object == armature:
+                    return True
+            return False
+
+        def __get_root(mesh):
+            if mesh.parent is None:
+                return mesh
+            return __get_root(mesh.parent)
+
+        for x in context.scene.objects:
+            if __is_using_armature(x) and not __is_child_of_armature(x):
+                x_root = __get_root(x)
+                m = x_root.matrix_world
+                x_root.parent_type = 'OBJECT'
+                x_root.parent = armature
+                x_root.matrix_world = m
+        return {'FINISHED'}
+
 class TranslateMMDModel(Operator):
     bl_idname = 'mmd_tools.translate_mmd_model'
     bl_label = 'Translate a MMD Model'

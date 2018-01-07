@@ -121,9 +121,10 @@ class Model:
         obj.show_wire = True
         obj.show_transparent = True
         obj.hide_render = True
-        for attr_name in ('camera', 'diffuse', 'glossy', 'scatter', 'shadow', 'transmission'):
-            if hasattr(obj.cycles_visibility, attr_name):
-                setattr(obj.cycles_visibility, attr_name, False)
+        if hasattr(obj, 'cycles_visibility'):
+            for attr_name in ('camera', 'diffuse', 'glossy', 'scatter', 'shadow', 'transmission'):
+                if hasattr(obj.cycles_visibility, attr_name):
+                    setattr(obj.cycles_visibility, attr_name, False)
 
         if bpy.app.version < (2, 71, 0):
             obj.mmd_rigid.shape = 'BOX'

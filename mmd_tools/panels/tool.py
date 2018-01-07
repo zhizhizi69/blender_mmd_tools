@@ -34,6 +34,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         col = layout.column(align=True)
         row = col.row(align=True)
         row.operator('mmd_tools.create_mmd_model_root_object', text='Create Model', icon='OUTLINER_OB_ARMATURE')
+        row.operator('mmd_tools.convert_to_mmd_model', text='Convert Model', icon='OUTLINER_OB_ARMATURE')
 
         col = layout.column(align=True)
         col.operator('mmd_tools.convert_materials_for_cycles', text='Convert Materials For Cycles')

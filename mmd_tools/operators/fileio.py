@@ -445,9 +445,13 @@ class ExportPmx(Operator, ExportHelper):
         )
     disable_specular = bpy.props.BoolProperty(
         name='Disable SPH/SPA',
-        description = ('Disables all the Specular Map textures. ' +
-                       'It is required for some MME Shaders.'),
-        default = False,
+        description='Disables all the Specular Map textures. It is required for some MME Shaders.',
+        default=False,
+        )
+    visible_meshes_only = bpy.props.BoolProperty(
+        name='Visible Meshes Only',
+        description='Export visible meshes only',
+        default=False,
         )
     sort_vertices = bpy.props.EnumProperty(
         name='Sort Vertices',
@@ -459,7 +463,6 @@ class ExportPmx(Operator, ExportHelper):
             ],
         default='NONE',
         )
-
     log_level = bpy.props.EnumProperty(
         name='Log level',
         description='Select log level',
@@ -517,12 +520,15 @@ class ExportPmx(Operator, ExportHelper):
             context.scene.frame_set(context.scene.frame_current)
 
         try:
+            meshes = rig.meshes()
+            if self.visible_meshes_only:
+                meshes = (x for x in meshes if x in context.visible_objects)
             pmx_exporter.export(
                 filepath=self.filepath,
                 scale=self.scale,
                 root=rig.rootObject(),
                 armature=rig.armature(),
-                meshes=rig.meshes(),
+                meshes=meshes,
                 rigid_bodies=rig.rigidBodies(),
                 joints=rig.joints(),
                 copy_textures=self.copy_textures,

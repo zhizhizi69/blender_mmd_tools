@@ -229,14 +229,20 @@ class AttachMeshesToMMD(Operator):
         if armObj is None:
             self.report({ 'ERROR' }, 'Model Armature not found')
             return { 'CANCELLED' }
-        act_layer = bpy.context.scene.active_layer
-        meshes_list = (o for o in bpy.context.scene.objects 
-                       if o.layers[act_layer] and o.type == 'MESH' and o.mmd_type == 'NONE')
+
+        def __get_root(mesh):
+            if mesh.parent is None:
+                return mesh
+            return __get_root(mesh.parent)
+
+        meshes_list = (o for o in context.visible_objects if o.type == 'MESH' and o.mmd_type == 'NONE')
         for mesh in meshes_list:
             if mmd_model.Model.findRoot(mesh) is not None:
                 # Do not attach meshes from other models
                 continue
+            mesh = __get_root(mesh)
             m = mesh.matrix_world
+            mesh.parent_type = 'OBJECT'
             mesh.parent = armObj
             mesh.matrix_world = m
         return { 'FINISHED' }

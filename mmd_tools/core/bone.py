@@ -69,7 +69,7 @@ class FnBone(object):
             mmd_bone = b.mmd_bone
             mmd_bone.enabled_local_axes = enable
             if enable:
-                axes = bone.matrix_local.to_3x3().transposed()
+                axes = b.bone.matrix_local.to_3x3().transposed()
                 mmd_bone.local_axis_x = axes[0].xzy
                 mmd_bone.local_axis_z = axes[2].xzy
 

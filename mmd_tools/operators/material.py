@@ -14,6 +14,11 @@ class ConvertMaterialsForCycles(Operator):
     bl_description = 'Convert materials of selected objects for Cycles.'
 
     def execute(self, context):
+        try:
+            context.scene.render.engine = 'CYCLES'
+        except:
+            self.report({'ERROR'}, ' * Failed to change to Cycles render engine.')
+            return {'CANCELLED'}
         for obj in [x for x in context.selected_objects if x.type == 'MESH']:
             cycles_converter.convertToCyclesShader(obj)
         return {'FINISHED'}
