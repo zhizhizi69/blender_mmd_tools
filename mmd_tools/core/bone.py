@@ -56,16 +56,18 @@ class FnBone(object):
     pose_bone = property(__get_pose_bone, __set_pose_bone)
 
 
-    @classmethod
-    def load_bone_local_axes(cls, armature, enable=True):
+    @staticmethod
+    def get_selected_pose_bones(armature):
         if armature.mode == 'EDIT':
             with bpyutils.select_object(armature): # update selected bones
                 bpy.ops.object.mode_set(mode='EDIT') # back to edit mode
+        context_selected_bones = bpy.context.selected_pose_bones or bpy.context.selected_bones or []
+        bones = armature.pose.bones
+        return (bones[b.name] for b in context_selected_bones if not bones[b.name].is_mmd_shadow_bone)
 
-        for b in armature.pose.bones:
-            bone = b.bone
-            if b.is_mmd_shadow_bone or not bone.select:
-                continue
+    @classmethod
+    def load_bone_local_axes(cls, armature, enable=True):
+        for b in cls.get_selected_pose_bones(armature):
             mmd_bone = b.mmd_bone
             mmd_bone.enabled_local_axes = enable
             if enable:

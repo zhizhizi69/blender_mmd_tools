@@ -156,7 +156,7 @@ class MMDMaterial(PropertyGroup):
     is_double_sided = BoolProperty(
         name='Double Sided',
         description='Both sides of mesh should be rendered',
-        default=True,
+        default=False,
         update=_updateIsDoubleSided,
         )
 

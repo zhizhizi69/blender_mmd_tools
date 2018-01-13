@@ -116,19 +116,8 @@ class CreateMMDModelRoot(Operator):
         )
 
     def execute(self, context):
-        rig = mmd_model.Model.create(self.name_j, self.name_e, self.scale)
-        arm = rig.armature()
-        with bpyutils.edit_object(arm) as data:
-            bone = data.edit_bones.new(name=u'全ての親')
-            bone.head = [0.0, 0.0, 0.0]
-            bone.tail = [0.0, 0.0, 5.0*self.scale]
-        arm.pose.bones[u'全ての親'].mmd_bone.name_j = u'全ての親'
-        arm.pose.bones[u'全ての親'].mmd_bone.name_e = 'Root'
-
-        rig.initialDisplayFrames(root_bone_name=arm.data.bones[0].name)
-        root = rig.rootObject()
-        context.scene.objects.active = root
-        root.select = True
+        rig = mmd_model.Model.create(self.name_j, self.name_e, self.scale, add_root_bone=True)
+        rig.initialDisplayFrames()
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -143,7 +132,7 @@ class ConvertToMMDModel(Operator):
     @classmethod
     def poll(cls, context):
         obj = context.active_object
-        return obj and obj.type == 'ARMATURE'
+        return obj and obj.type == 'ARMATURE' and obj.mode != 'EDIT'
 
     def execute(self, context):
         #TODO convert some basic MMD properties
@@ -153,15 +142,14 @@ class ConvertToMMDModel(Operator):
 
         root = mmd_model.Model.findRoot(armature)
         if root is None or root != armature.parent:
-            rig = mmd_model.Model.create(model_name, model_name, scale)
-            root = rig.rootObject()
-            arm = rig.armature()
-            arm.parent = None
-            context.scene.objects.unlink(arm)
-            m = armature.matrix_world
-            armature.parent_type = 'OBJECT'
-            armature.parent = root
-            armature.matrix_world = m
+            rig = mmd_model.Model.create(model_name, model_name, scale, armature=armature)
+            bpy.ops.mmd_tools.display_item_quick_setup(type='GROUP_LOAD')
+
+        self.__attach_meshes_to(armature, context.scene.objects)
+        self.__configure_rig(mmd_model.Model(armature.parent))
+        return {'FINISHED'}
+
+    def __attach_meshes_to(self, armature, objects):
 
         def __is_child_of_armature(mesh):
             if mesh.parent is None:
@@ -179,14 +167,59 @@ class ConvertToMMDModel(Operator):
                 return mesh
             return __get_root(mesh.parent)
 
-        for x in context.scene.objects:
+        for x in objects:
             if __is_using_armature(x) and not __is_child_of_armature(x):
                 x_root = __get_root(x)
                 m = x_root.matrix_world
                 x_root.parent_type = 'OBJECT'
                 x_root.parent = armature
                 x_root.matrix_world = m
-        return {'FINISHED'}
+
+    def __configure_rig(self, rig):
+        root = rig.rootObject()
+        armature = rig.armature()
+        meshes = tuple(rig.meshes())
+
+        vertex_groups = {g.name for mesh in meshes for g in mesh.vertex_groups}
+        for pose_bone in armature.pose.bones:
+            if not pose_bone.parent:
+                continue
+            if not pose_bone.bone.use_connect and pose_bone.name not in vertex_groups:
+                continue
+            pose_bone.lock_location = (True, True, True)
+
+        vertex_morphs = root.mmd_root.vertex_morphs
+        for obj in meshes:
+            shape_keys = obj.data.shape_keys
+            if shape_keys:
+                for kb in shape_keys.key_blocks[1:]:
+                    if not kb.name.startswith('mmd_') and kb.name not in vertex_morphs:
+                        item = vertex_morphs.add()
+                        item.name = kb.name
+                        item.name_e = kb.name
+                        name_lower = item.name.lower()
+                        if 'mouth' in name_lower:
+                            item.category = 'MOUTH'
+                        elif 'eye' in name_lower:
+                            if 'brow' in name_lower:
+                                item.category = 'EYEBROW'
+                            else:
+                                item.category = 'EYE'
+
+        for m in {x for mesh in meshes for x in mesh.data.materials if x}:
+            mmd_material = m.mmd_material
+
+            diffuse = m.diffuse_color[:]
+            mmd_material.diffuse_color = diffuse
+            mmd_material.ambient_color = [0.5*c for c in diffuse]
+            mmd_material.alpha = m.alpha
+            mmd_material.specular_color = m.specular_color
+            mmd_material.shininess = m.specular_hardness
+            mmd_material.is_double_sided = m.game_settings.use_backface_culling
+            mmd_material.enabled_self_shadow_map = m.use_cast_buffer_shadows and m.alpha > 1e-3
+            mmd_material.enabled_self_shadow = m.use_shadows
+            mmd_material.edge_color = m.line_color
+            mmd_material.enabled_toon_edge = m.line_color[3] > 1e-3
 
 class TranslateMMDModel(Operator):
     bl_idname = 'mmd_tools.translate_mmd_model'

@@ -103,9 +103,6 @@ class PMXImporter:
         self.__armObj.hide = True
         self.__armObj.select = False
 
-        # Temporarily set the root object as active to let property function hooks access it.
-        self.__targetScene.objects.active = root
-
     def __createMeshObject(self):
         model_name = self.__root.name
         self.__meshObj = bpy.data.objects.new(name=model_name+'_mesh', object_data=bpy.data.meshes.new(name=model_name))

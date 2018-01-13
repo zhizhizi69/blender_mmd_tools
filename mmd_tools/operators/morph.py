@@ -348,6 +348,7 @@ class ApplyBoneMorph(Operator):
         mmd_root = root.mmd_root
         morph = mmd_root.bone_morphs[mmd_root.active_morph]
         morph.data.clear()
+        morph.active_data = 0
         def_loc = Vector((0,0,0))
         def_rot = Quaternion((1,0,0,0))
         for p_bone in armature.pose.bones:

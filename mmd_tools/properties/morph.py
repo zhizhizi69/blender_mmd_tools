@@ -50,7 +50,8 @@ def _set_name(prop, value):
                     if d.name == prop_name and d.morph_type == morph_type:
                         d.name = value
 
-        for item in mmd_root.display_item_frames[u'表情'].items:
+        frame_facial = mmd_root.display_item_frames.get(u'表情')
+        for item in getattr(frame_facial, 'items', []):
             if item.name == prop_name and item.morph_type == morph_type:
                 item.name = value
                 break
