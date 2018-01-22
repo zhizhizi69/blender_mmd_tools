@@ -141,6 +141,7 @@ class PMXImporter:
             pmx_vertices = (pmxModel.vertices[x] for x in indices)
             vertex_count = len(indices)
 
+        vertex_group_table = self.__vertexGroupTable
         mesh.vertices.add(count=vertex_count)
         for i, pv in enumerate(pmx_vertices):
             bv = mesh.vertices[i]
@@ -150,21 +151,22 @@ class PMXImporter:
             vg_edge_scale.add(index=[i], weight=pv.edge_scale, type='REPLACE')
             vg_vertex_order.add(index=[i], weight=i/vertex_count, type='REPLACE')
 
-            if isinstance(pv.weight.weights, pmx.BoneWeightSDEF):
-                self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights.weight, type='REPLACE')
-                self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=1.0-pv.weight.weights.weight, type='REPLACE')
+            pv_bones = pv.weight.bones
+            pv_weights = pv.weight.weights
+            if isinstance(pv_weights, pmx.BoneWeightSDEF):
+                vertex_group_table[pv_bones[0]].add(index=[i], weight=pv_weights.weight, type='ADD')
+                vertex_group_table[pv_bones[1]].add(index=[i], weight=1.0-pv_weights.weight, type='ADD')
                 self.__sdefVertices[i] = pv
-            elif len(pv.weight.bones) == 1:
-                bone_index = pv.weight.bones[0]
+            elif len(pv_bones) == 1:
+                bone_index = pv_bones[0]
                 if bone_index >= 0:
-                    self.__vertexGroupTable[bone_index].add(index=[i], weight=1.0, type='REPLACE')
-            elif len(pv.weight.bones) == 2:
-                self.__vertexGroupTable[pv.weight.bones[0]].add(index=[i], weight=pv.weight.weights[0], type='REPLACE')
-                self.__vertexGroupTable[pv.weight.bones[1]].add(index=[i], weight=1.0-pv.weight.weights[0], type='REPLACE')
-            elif len(pv.weight.bones) == 4:
-                # If two or more weights for the same bone is present, the second and subsequent will be ignored.
-                for bone, weight in reversed([x for x in zip(pv.weight.bones, pv.weight.weights) if x[0] >= 0]):
-                    self.__vertexGroupTable[bone].add(index=[i], weight=weight, type='REPLACE')
+                    vertex_group_table[bone_index].add(index=[i], weight=1.0, type='ADD')
+            elif len(pv_bones) == 2:
+                vertex_group_table[pv_bones[0]].add(index=[i], weight=pv_weights[0], type='ADD')
+                vertex_group_table[pv_bones[1]].add(index=[i], weight=1.0-pv_weights[0], type='ADD')
+            elif len(pv_bones) == 4:
+                for bone, weight in zip(pv_bones, pv_weights):
+                    vertex_group_table[bone].add(index=[i], weight=weight, type='ADD')
             else:
                 raise Exception('unkown bone weight type.')
 
