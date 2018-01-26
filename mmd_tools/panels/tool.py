@@ -410,6 +410,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             kb = shape_keys.key_blocks.get(morph.name, None)
             if kb:
                 row = col.row(align=True)
+                row.active = not i.show_only_shape_key
                 row.label(i.name, icon='OBJECT_DATA')
                 row.prop(kb, 'value', text=kb.name)
 

@@ -150,7 +150,7 @@ class SeparateByMaterials(Operator):
             # The material morphs store the name of the mesh, not of the object.
             # So they will not be out of sync
             for mesh in rig.meshes():
-                if len(mesh.data.materials) == 1:
+                if len(mesh.data.materials) > 0:
                     mat = mesh.data.materials[0]
                     idx = mat_names.index(getattr(mat, 'name', None))
                     MoveObject.set_index(mesh, idx)

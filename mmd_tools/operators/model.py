@@ -143,7 +143,6 @@ class ConvertToMMDModel(Operator):
         root = mmd_model.Model.findRoot(armature)
         if root is None or root != armature.parent:
             rig = mmd_model.Model.create(model_name, model_name, scale, armature=armature)
-            bpy.ops.mmd_tools.display_item_quick_setup(type='GROUP_LOAD')
 
         self.__attach_meshes_to(armature, context.scene.objects)
         self.__configure_rig(mmd_model.Model(armature.parent))
@@ -220,6 +219,11 @@ class ConvertToMMDModel(Operator):
             mmd_material.enabled_self_shadow = m.use_shadows
             mmd_material.edge_color = m.line_color
             mmd_material.enabled_toon_edge = m.line_color[3] > 1e-3
+
+        from mmd_tools.operators.display_item import DisplayItemQuickSetup
+        DisplayItemQuickSetup.load_bone_groups(root.mmd_root, armature)
+        rig.initialDisplayFrames(reset=False) # ensure default frames
+        DisplayItemQuickSetup.load_facial_items(root.mmd_root)
 
 class TranslateMMDModel(Operator):
     bl_idname = 'mmd_tools.translate_mmd_model'

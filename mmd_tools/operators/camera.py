@@ -2,6 +2,7 @@
 
 from bpy.props import FloatProperty
 from bpy.props import BoolProperty
+from bpy.props import EnumProperty
 from bpy.types import Operator
 
 from mmd_tools.core.camera import MMDCamera
@@ -19,9 +20,25 @@ class ConvertToMMDCamera(Operator):
 
     bake_animation = BoolProperty(
         name='Bake Animation',
-        description='Bake the animation of active camera (with a selected target) to a new MMD camera rig',
+        description='Bake camera animation to a new MMD camera rig',
         default=False,
         options={'SKIP_SAVE'},
+        )
+
+    camera_source = EnumProperty(
+        name='Camera Source',
+        description='Select camera source to bake animation',
+        items = [
+            ('CURRENT', 'Current', 'Current active camera object (with a selected target)', 0),
+            ('SCENE', 'Scene', 'Scene camera object', 1),
+            ],
+        default='CURRENT',
+        )
+
+    min_distance = FloatProperty(
+        name='Min Distance',
+        description='Minimum distance to camera target when baking animation',
+        default=0.1,
         )
 
     @classmethod
@@ -37,13 +54,15 @@ class ConvertToMMDCamera(Operator):
         if self.bake_animation:
             obj = context.active_object
             target = None
-            if len(context.selected_objects) == 2 and obj in context.selected_objects:
-                target = context.selected_objects[0]
-                if target == obj:
-                    target = context.selected_objects[1]
-            elif len(context.selected_objects) == 1 and obj not in context.selected_objects:
-                target = context.selected_objects[0]
-            MMDCamera.newMMDCameraAnimation(obj, target, self.scale)
+            if self.camera_source == 'SCENE':
+                obj = None
+            else:
+                targets = [x for x in context.selected_objects if x != obj]
+                if len(targets) == 1:
+                    target = targets[0]
+            camera = MMDCamera.newMMDCameraAnimation(obj, target, self.scale, self.min_distance).camera()
+            camera.select = True
+            context.scene.objects.active = camera
         else:
             MMDCamera.convertToMMDCamera(context.active_object, self.scale)
         return {'FINISHED'}

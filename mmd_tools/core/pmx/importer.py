@@ -765,16 +765,12 @@ class PMXImporter:
     def __renameLRBones(self, use_underscore):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
-            if i.is_mmd_shadow_bone:
-                continue
             self.__rig.renameBone(i.name, utils.convertNameToLR(i.name, use_underscore))
             # self.__meshObj.vertex_groups[i.mmd_bone.name_j].name = i.name
 
     def __translateBoneNames(self):
         pose_bones = self.__armObj.pose.bones
         for i in pose_bones:
-            if i.is_mmd_shadow_bone:
-                continue
             self.__rig.renameBone(i.name, self.__translator.translate(i.name))
 
     def __fixRepeatedMorphName(self):

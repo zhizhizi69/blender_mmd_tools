@@ -80,7 +80,7 @@ class MMDCamera:
         return MMDCamera(empty)
 
     @staticmethod
-    def newMMDCameraAnimation(cameraObj, cameraTarget=None, scale=1.0):
+    def newMMDCameraAnimation(cameraObj, cameraTarget=None, scale=1.0, min_distance=0.1):
         if cameraTarget is None:
             cameraTarget = cameraObj
 
@@ -89,6 +89,14 @@ class MMDCamera:
         scene.objects.link(mmd_cam)
         MMDCamera.convertToMMDCamera(mmd_cam, scale=scale)
         mmd_cam_root = mmd_cam.parent
+
+        _camera_override_func = None
+        if cameraObj is None:
+            if scene.camera is None:
+                scene.camera = mmd_cam
+                return MMDCamera(mmd_cam_root)
+            def _camera_override_func():
+                return scene.camera, scene.camera
 
         action_name = mmd_cam_root.name
         parent_action = bpy.data.actions.new(name=action_name)
@@ -118,6 +126,8 @@ class MMDCamera:
 
         for f, x, y, z, rx, ry, rz, fov, persp, dis in zip(frames, *(c.keyframe_points for c in fcurves)):
             scene.frame_set(f)
+            if _camera_override_func:
+                cameraObj, cameraTarget = _camera_override_func()
             cam_matrix_world = cameraObj.matrix_world
             cam_target_loc = cameraTarget.matrix_world.translation
             cam_rotation = (cam_matrix_world * matrix_rotation).to_euler(mmd_cam_root.rotation_mode)
@@ -131,7 +141,7 @@ class MMDCamera:
                         cam_dis *= min(1, factor)
             else:
                 target_vec = cam_target_loc - cam_matrix_world.translation
-                cam_dis = -target_vec.length * abs(cam_vec.dot(target_vec.normalized()))
+                cam_dis = -max(target_vec.length * cam_vec.dot(target_vec.normalized()), min_distance)
             cam_target_loc = cam_matrix_world.translation - cam_vec*cam_dis
 
             tan_val = cameraObj.data.sensor_height/cameraObj.data.lens/2
