@@ -128,11 +128,32 @@ class ConvertToMMDModel(Operator):
     bl_idname = 'mmd_tools.convert_to_mmd_model'
     bl_label = 'Convert to a MMD Model'
     bl_description = 'Convert active armature with its meshes to a MMD model (experimental)'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    ambient_color_source = bpy.props.EnumProperty(
+        name='Ambient Color Source',
+        description='Select ambient color source',
+        items = [
+            ('DIFFUSE', 'Diffuse', 'Diffuse color', 0),
+            ('MIRROR', 'Mirror', 'Mirror color', 1),
+            ],
+        default='DIFFUSE',
+        )
+
+    edge_threshold = bpy.props.FloatProperty(
+        name='Edge Threshold',
+        description='MMD toon edge will not be enabled if freestyle line color alpha less than this value',
+        default=0.1,
+        )
 
     @classmethod
     def poll(cls, context):
         obj = context.active_object
         return obj and obj.type == 'ARMATURE' and obj.mode != 'EDIT'
+
+    def invoke(self, context, event):
+        vm = context.window_manager
+        return vm.invoke_props_dialog(self)
 
     def execute(self, context):
         #TODO convert some basic MMD properties
@@ -210,15 +231,24 @@ class ConvertToMMDModel(Operator):
 
             diffuse = m.diffuse_color[:]
             mmd_material.diffuse_color = diffuse
-            mmd_material.ambient_color = [0.5*c for c in diffuse]
+            if self.ambient_color_source == 'MIRROR':
+                mmd_material.ambient_color = m.mirror_color
+            else:
+                mmd_material.ambient_color = [0.5*c for c in diffuse]
             mmd_material.alpha = m.alpha
             mmd_material.specular_color = m.specular_color
             mmd_material.shininess = m.specular_hardness
             mmd_material.is_double_sided = m.game_settings.use_backface_culling
             mmd_material.enabled_self_shadow_map = m.use_cast_buffer_shadows and m.alpha > 1e-3
             mmd_material.enabled_self_shadow = m.use_shadows
-            mmd_material.edge_color = m.line_color
-            mmd_material.enabled_toon_edge = m.line_color[3] > 1e-3
+            if hasattr(m, 'line_color'): # freestyle line color
+                line_color = list(m.line_color)
+                if line_color[3] < self.edge_threshold:
+                    mmd_material.enabled_toon_edge = False
+                    mmd_material.edge_color[:3] = line_color[:3] # skip alpha
+                else:
+                    mmd_material.enabled_toon_edge = True
+                    mmd_material.edge_color = line_color
 
         from mmd_tools.operators.display_item import DisplayItemQuickSetup
         DisplayItemQuickSetup.load_bone_groups(root.mmd_root, armature)

@@ -48,6 +48,13 @@ class MMDCamera:
         __add_ortho_driver(cameraObj, 'rotation_euler', 'pi if $type == 1 and $dis > 1e-5 else 0', index=1)
 
     @staticmethod
+    def removeDrivers(cameraObj):
+        if cameraObj.type != 'CAMERA':
+            return
+        cameraObj.data.driver_remove('ortho_scale')
+        cameraObj.driver_remove('rotation_euler')
+
+    @staticmethod
     def convertToMMDCamera(cameraObj, scale=1.0):
         if MMDCamera.isMMDCamera(cameraObj):
             return MMDCamera(cameraObj)
@@ -81,9 +88,6 @@ class MMDCamera:
 
     @staticmethod
     def newMMDCameraAnimation(cameraObj, cameraTarget=None, scale=1.0, min_distance=0.1):
-        if cameraTarget is None:
-            cameraTarget = cameraObj
-
         scene = bpy.context.scene
         mmd_cam = bpy.data.objects.new(name='Camera', object_data=bpy.data.cameras.new('Camera'))
         scene.objects.link(mmd_cam)
@@ -95,12 +99,16 @@ class MMDCamera:
             if scene.camera is None:
                 scene.camera = mmd_cam
                 return MMDCamera(mmd_cam_root)
-            def _camera_override_func():
-                return scene.camera, scene.camera
+            _camera_override_func = lambda: scene.camera
+
+        _target_override_func = None
+        if cameraTarget is None:
+            _target_override_func = lambda camObj: camObj.data.dof_object or camObj
 
         action_name = mmd_cam_root.name
         parent_action = bpy.data.actions.new(name=action_name)
         distance_action = bpy.data.actions.new(name=action_name+'_dis')
+        MMDCamera.removeDrivers(mmd_cam)
 
         from math import atan
         from mathutils import Matrix, Vector
@@ -127,7 +135,9 @@ class MMDCamera:
         for f, x, y, z, rx, ry, rz, fov, persp, dis in zip(frames, *(c.keyframe_points for c in fcurves)):
             scene.frame_set(f)
             if _camera_override_func:
-                cameraObj, cameraTarget = _camera_override_func()
+                cameraObj = _camera_override_func()
+            if _target_override_func:
+                cameraTarget = _target_override_func(cameraObj)
             cam_matrix_world = cameraObj.matrix_world
             cam_target_loc = cameraTarget.matrix_world.translation
             cam_rotation = (cam_matrix_world * matrix_rotation).to_euler(mmd_cam_root.rotation_mode)
@@ -162,6 +172,7 @@ class MMDCamera:
         for c in fcurves:
             c.update()
 
+        MMDCamera.addDrivers(mmd_cam)
         mmd_cam_root.animation_data_create().action = parent_action
         mmd_cam.animation_data_create().action = distance_action
         scene.frame_set(frame_current)

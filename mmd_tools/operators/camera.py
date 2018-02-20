@@ -27,9 +27,9 @@ class ConvertToMMDCamera(Operator):
 
     camera_source = EnumProperty(
         name='Camera Source',
-        description='Select camera source to bake animation',
+        description='Select camera source to bake animation (camera target is the selected or DoF object)',
         items = [
-            ('CURRENT', 'Current', 'Current active camera object (with a selected target)', 0),
+            ('CURRENT', 'Current', 'Current active camera object', 0),
             ('SCENE', 'Scene', 'Scene camera object', 1),
             ],
         default='CURRENT',
@@ -53,13 +53,10 @@ class ConvertToMMDCamera(Operator):
     def execute(self, context):
         if self.bake_animation:
             obj = context.active_object
-            target = None
+            targets = [x for x in context.selected_objects if x != obj]
+            target = targets[0] if len(targets) == 1 else None
             if self.camera_source == 'SCENE':
                 obj = None
-            else:
-                targets = [x for x in context.selected_objects if x != obj]
-                if len(targets) == 1:
-                    target = targets[0]
             camera = MMDCamera.newMMDCameraAnimation(obj, target, self.scale, self.min_distance).camera()
             camera.select = True
             context.scene.objects.active = camera

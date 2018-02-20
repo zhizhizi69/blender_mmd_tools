@@ -182,6 +182,8 @@ class JoinMeshes(Operator):
         # Find all the meshes in mmd_root
         rig = mmd_model.Model(root)
         meshes_list = sorted(rig.meshes(), key=lambda x: x.name)
+        if not meshes_list:
+            return { 'CANCELLED' }
         active_mesh = meshes_list[0]
 
         from mmd_tools import bpyutils
