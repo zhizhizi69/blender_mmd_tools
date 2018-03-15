@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
 if "bpy" in locals():
-    import importlib
+    if bpy.app.version < (2, 71, 0):
+        import imp as importlib
+    else:
+        import importlib
     importlib.reload(prop_bone)
     importlib.reload(prop_camera)
     importlib.reload(prop_lamp)

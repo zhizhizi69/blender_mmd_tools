@@ -28,7 +28,7 @@ def _set_name(prop, value):
     if prop_name == value:
         return
 
-    used_names = set(x.name for x in getattr(mmd_root, morph_type))
+    used_names = {x.name for x in getattr(mmd_root, morph_type) if x != prop}
     value = utils.uniqueName(value, used_names)
     if prop_name is not None:
         if morph_type == 'vertex_morphs':

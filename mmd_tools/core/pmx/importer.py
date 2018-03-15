@@ -778,7 +778,7 @@ class PMXImporter:
         for m in self.__model.morphs:
             #used_names = used_names_map.setdefault('all', set())
             used_names = used_names_map.setdefault(type(m), set())
-            m.name = utils.uniqueName(m.name, used_names)
+            m.name = utils.uniqueName(m.name or 'Morph', used_names)
             used_names.add(m.name)
 
     def execute(self, **args):

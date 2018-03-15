@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-
 bl_info= {
     "name": "mmd_tools",
     "author": "sugiany",
     "version": (0, 6, 0),
-    "blender": (2, 71, 0),
+    "blender": (2, 70, 0),
     "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing. (powroupi's forked version)",
     "warning": "",
@@ -14,7 +13,10 @@ bl_info= {
     "category": "Object"}
 
 if "bpy" in locals():
-    import importlib
+    if bpy.app.version < (2, 71, 0):
+        import imp as importlib
+    else:
+        import importlib
     importlib.reload(properties)
     importlib.reload(operators)
     importlib.reload(panels)
@@ -23,7 +25,7 @@ else:
     import logging
     from bpy.types import AddonPreferences
     from bpy.props import StringProperty
-    
+
     from . import properties
     from . import operators
     from . import panels

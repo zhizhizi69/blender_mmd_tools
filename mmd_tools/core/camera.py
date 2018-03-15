@@ -168,9 +168,8 @@ class MMDCamera:
             fov.co = (f, 2*atan(tan_val))
             persp.co = (f, cameraObj.data.type != 'ORTHO')
             persp.interpolation = 'CONSTANT'
-
-        for c in fcurves:
-            c.update()
+            for kp in (x, y, z, rx, ry, rz, fov, dis):
+                kp.interpolation = 'LINEAR'
 
         MMDCamera.addDrivers(mmd_cam)
         mmd_cam_root.animation_data_create().action = parent_action
