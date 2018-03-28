@@ -6,6 +6,7 @@ import mathutils
 from mmd_tools import bpyutils
 from mmd_tools.core import rigid_body
 from mmd_tools.core.bone import FnBone
+from mmd_tools.core.morph import FnMorph
 
 import logging
 import time
@@ -113,16 +114,12 @@ class Model:
             self.__root.mmd_root.active_display_item_frame = 0
             frames.clear()
 
-        frame_root = frames.get('Root', None)
-        if frame_root is None:
-            frame_root = frames.add()
+        frame_root = frames.get('Root', None) or frames.add()
         frame_root.name = 'Root'
         frame_root.name_e = 'Root'
         frame_root.is_special = True
 
-        frame_facial = frames.get(u'表情', None)
-        if frame_facial is None:
-            frame_facial = frames.add()
+        frame_facial = frames.get(u'表情', None) or frames.add()
         frame_facial.name = u'表情'
         frame_facial.name_e = 'Facial'
         frame_facial.is_special = True
@@ -136,6 +133,17 @@ class Model:
         if not reset:
             frames.move(frames.find('Root'), 0)
             frames.move(frames.find(u'表情'), 1)
+
+    def loadMorphs(self):
+        mmd_root = self.__root.mmd_root
+        vertex_morphs = mmd_root.vertex_morphs
+        for obj in self.meshes():
+            for kb in getattr(obj.data.shape_keys, 'key_blocks', ())[1:]:
+                if not kb.name.startswith('mmd_') and kb.name not in vertex_morphs:
+                    item = vertex_morphs.add()
+                    item.name = kb.name
+                    item.name_e = kb.name
+                    FnMorph.category_guess(item)
 
     def createRigidBodyPool(self, counts):
         if counts < 1:

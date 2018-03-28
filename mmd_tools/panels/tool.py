@@ -410,7 +410,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             kb = shape_keys.key_blocks.get(morph.name, None)
             if kb:
                 row = col.row(align=True)
-                row.active = not i.show_only_shape_key
+                row.active = not (i.show_only_shape_key or kb.mute)
                 row.label(i.name, icon='OBJECT_DATA')
                 row.prop(kb, 'value', text=kb.name)
 
@@ -573,7 +573,7 @@ class UL_ObjectsMixIn(object):
         default=False,
         )
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, flt_flag):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             row = layout.split(percentage=0.5, align=True)
             item_prop = getattr(item, self.prop_name)

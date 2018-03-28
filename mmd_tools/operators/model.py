@@ -143,6 +143,10 @@ class ConvertToMMDModel(Operator):
     edge_threshold = bpy.props.FloatProperty(
         name='Edge Threshold',
         description='MMD toon edge will not be enabled if freestyle line color alpha less than this value',
+        min=0,
+        max=1,
+        precision=3,
+        step=0.1,
         default=0.1,
         )
 
@@ -200,6 +204,8 @@ class ConvertToMMDModel(Operator):
         armature = rig.armature()
         meshes = tuple(rig.meshes())
 
+        rig.loadMorphs()
+
         vertex_groups = {g.name for mesh in meshes for g in mesh.vertex_groups}
         for pose_bone in armature.pose.bones:
             if not pose_bone.parent:
@@ -207,24 +213,6 @@ class ConvertToMMDModel(Operator):
             if not pose_bone.bone.use_connect and pose_bone.name not in vertex_groups:
                 continue
             pose_bone.lock_location = (True, True, True)
-
-        vertex_morphs = root.mmd_root.vertex_morphs
-        for obj in meshes:
-            shape_keys = obj.data.shape_keys
-            if shape_keys:
-                for kb in shape_keys.key_blocks[1:]:
-                    if not kb.name.startswith('mmd_') and kb.name not in vertex_morphs:
-                        item = vertex_morphs.add()
-                        item.name = kb.name
-                        item.name_e = kb.name
-                        name_lower = item.name.lower()
-                        if 'mouth' in name_lower:
-                            item.category = 'MOUTH'
-                        elif 'eye' in name_lower:
-                            if 'brow' in name_lower:
-                                item.category = 'EYEBROW'
-                            else:
-                                item.category = 'EYE'
 
         for m in {x for mesh in meshes for x in mesh.data.materials if x}:
             mmd_material = m.mmd_material

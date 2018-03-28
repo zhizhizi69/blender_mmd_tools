@@ -6,6 +6,7 @@ import bpy
 from bpy.types import Operator
 
 from mmd_tools import utils
+from mmd_tools.bpyutils import ObjectOp
 from mmd_tools.core import model as mmd_model
 from mmd_tools.core.morph import FnMorph
 from mmd_tools.core.material import FnMaterial
@@ -84,25 +85,12 @@ class CleanShapeKeys(Operator):
                 return False
         return True
 
-    def __shape_key_clean(self, context, obj, key_blocks):
+    def __shape_key_clean(self, obj, key_blocks):
         for kb in key_blocks:
             if self.__can_remove(kb):
                 obj.shape_key_remove(kb)
         if len(key_blocks) == 1:
             obj.shape_key_remove(key_blocks[0])
-
-    def __shape_key_clean_old(self, context, obj, key_blocks):
-        context.scene.objects.active = obj
-        for i in reversed(range(len(key_blocks))):
-            kb = key_blocks[i]
-            if self.__can_remove(kb):
-                obj.active_shape_key_index = i
-                bpy.ops.object.shape_key_remove()
-        if len(key_blocks) == 1:
-            obj.active_shape_key_index = 0
-            bpy.ops.object.shape_key_remove()
-
-    __do_shape_key_clean = __shape_key_clean_old if bpy.app.version < (2, 75, 0) else __shape_key_clean
 
     def execute(self, context):
         for ob in context.selected_objects:
@@ -110,8 +98,7 @@ class CleanShapeKeys(Operator):
                 continue
             if not ob.data.shape_keys.use_relative:
                 continue # not be considered yet
-            key_blocks = ob.data.shape_keys.key_blocks
-            self.__do_shape_key_clean(context, ob, key_blocks)
+            self.__shape_key_clean(ObjectOp(ob), ob.data.shape_keys.key_blocks)
         return {'FINISHED'}
 
 class SeparateByMaterials(Operator):

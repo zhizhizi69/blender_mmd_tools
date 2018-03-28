@@ -34,10 +34,8 @@ def _set_name(prop, value):
         if morph_type == 'vertex_morphs':
             kb_list = {}
             for mesh in FnModel(prop.id_data).meshes():
-                shape_keys = mesh.data.shape_keys
-                if shape_keys:
-                    for kb in shape_keys.key_blocks:
-                        kb_list.setdefault(kb.name, []).append(kb)
+                for kb in getattr(mesh.data.shape_keys, 'key_blocks', ()):
+                    kb_list.setdefault(kb.name, []).append(kb)
 
             if prop_name in kb_list:
                 value = utils.uniqueName(value, used_names|kb_list.keys())

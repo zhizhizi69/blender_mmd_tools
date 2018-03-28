@@ -3,7 +3,7 @@
 import bpy
 
 class FnMorph(object):
-    
+
     def __init__(self, morph, model):
         self.__morph = morph
         self.__rig = model
@@ -38,10 +38,9 @@ class FnMorph(object):
         if len(shape_key_names) < 1:
             return
         assert(bpy.context.scene.objects.active == obj)
-        shape_keys = obj.data.shape_keys
-        if shape_keys is None:
+        key_blocks = getattr(obj.data.shape_keys, 'key_blocks', None)
+        if key_blocks is None:
             return
-        key_blocks = shape_keys.key_blocks
         if bpy.app.version < (2, 73, 0):
             len_key_blocks = len(key_blocks)
             for ii, name in enumerate(reversed(shape_key_names)):
@@ -60,6 +59,17 @@ class FnMorph(object):
                     continue
                 obj.active_shape_key_index = idx
                 bpy.ops.object.shape_key_move(type='BOTTOM')
+
+    @staticmethod
+    def category_guess(morph):
+        name_lower = morph.name.lower()
+        if 'mouth' in name_lower:
+            morph.category = 'MOUTH'
+        elif 'eye' in name_lower:
+            if 'brow' in name_lower:
+                morph.category = 'EYEBROW'
+            else:
+                morph.category = 'EYE'
 
     def update_mat_related_mesh(self, new_mesh=None):
         for offset in self.__morph.data:
