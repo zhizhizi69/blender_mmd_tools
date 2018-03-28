@@ -33,6 +33,7 @@ __properties = {
                 ('RIGID_GRP_OBJ', 'Rigid Body Grp Empty', '', 3),
                 ('JOINT_GRP_OBJ', 'Joint Grp Empty', '', 4),
                 ('TEMPORARY_GRP_OBJ', 'Temporary Grp Empty', '', 5),
+                ('PLACEHOLDER', 'Place Holder', '', 6),
 
                 ('CAMERA', 'Camera', '', 21),
                 ('JOINT', 'Joint', '', 22),

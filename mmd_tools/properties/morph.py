@@ -54,6 +54,12 @@ def _set_name(prop, value):
                 item.name = value
                 break
 
+        obj = FnModel(prop.id_data).morph_slider.placeholder()
+        if obj and value not in obj.data.shape_keys.key_blocks:
+            kb = obj.data.shape_keys.key_blocks.get(prop_name, None)
+            if kb:
+                kb.name = value
+
     prop['name'] = value
 
 class _MorphBase:

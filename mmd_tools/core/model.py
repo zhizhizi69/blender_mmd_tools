@@ -134,6 +134,10 @@ class Model:
             frames.move(frames.find('Root'), 0)
             frames.move(frames.find(u'表情'), 1)
 
+    @property
+    def morph_slider(self):
+        return FnMorph.get_morph_slider(self)
+
     def loadMorphs(self):
         mmd_root = self.__root.mmd_root
         vertex_morphs = mmd_root.vertex_morphs

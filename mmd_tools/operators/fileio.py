@@ -275,17 +275,14 @@ class ImportVmd(Operator, ImportHelper):
         layout.prop(self, 'update_scene_settings')
 
     def execute(self, context):
-        selected_objects = list(context.selected_objects)
-        for i in selected_objects:
+        selected_objects = set(context.selected_objects)
+        for i in frozenset(selected_objects):
             root = mmd_model.Model.findRoot(i)
             if root == i:
                 rig = mmd_model.Model(root)
-                arm = rig.armature()
-                if arm not in selected_objects:
-                    selected_objects.append(arm)
-                for m in rig.meshes():
-                    if m not in selected_objects:
-                        selected_objects.append(m)
+                selected_objects.add(rig.armature())
+                selected_objects.add(rig.morph_slider.placeholder())
+                selected_objects |= set(rig.meshes())
 
         bone_mapper = None
         if self.bone_mapper == 'PMX':
@@ -382,17 +379,14 @@ class ImportVpd(Operator, ImportHelper):
         layout.prop(self, 'use_pose_mode')
 
     def execute(self, context):
-        selected_objects = list(context.selected_objects)
-        for i in selected_objects:
+        selected_objects = set(context.selected_objects)
+        for i in frozenset(selected_objects):
             root = mmd_model.Model.findRoot(i)
             if root == i:
                 rig = mmd_model.Model(root)
-                arm = rig.armature()
-                if arm not in selected_objects:
-                    selected_objects.append(arm)
-                for m in rig.meshes():
-                    if m not in selected_objects:
-                        selected_objects.append(m)
+                selected_objects.add(rig.armature())
+                selected_objects.add(rig.morph_slider.placeholder())
+                selected_objects |= set(rig.meshes())
 
         bone_mapper = None
         if self.bone_mapper == 'PMX':

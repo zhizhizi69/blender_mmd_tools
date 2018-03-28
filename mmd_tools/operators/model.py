@@ -9,6 +9,36 @@ from mmd_tools.translations import DictionaryEnum
 import mmd_tools.core.model as mmd_model
 
 
+class MorphSliderSetup(Operator):
+    bl_idname = 'mmd_tools.morph_slider_setup'
+    bl_label = 'Morph Slider Setup'
+    bl_description = 'Translate MMD morphs of selected object into format usable by Blender'
+    bl_options = {'INTERNAL'}
+
+    type = bpy.props.EnumProperty(
+        name='Type',
+        description='Select type',
+        items = [
+            ('CREATE', 'Create', 'Create placeholder object for morph sliders', 'SHAPEKEY_DATA', 0),
+            ('BIND', 'Bind', 'Bind morph sliders', 'DRIVER', 1),
+            ('UNBIND', 'Unbind', 'Unbind morph sliders', 'X', 2),
+            ],
+        default='CREATE',
+        )
+
+    def execute(self, context):
+        obj = context.active_object
+        root = mmd_model.Model.findRoot(context.active_object)
+        rig = mmd_model.Model(root)
+        if self.type == 'BIND':
+            rig.morph_slider.bind()
+        elif self.type == 'UNBIND':
+            rig.morph_slider.unbind()
+        else:
+            rig.morph_slider.create()
+        context.scene.objects.active = obj
+        return {'FINISHED'}
+
 class CleanRiggingObjects(Operator):
     bl_idname = 'mmd_tools.clean_rig'
     bl_label = 'Clean Rig'

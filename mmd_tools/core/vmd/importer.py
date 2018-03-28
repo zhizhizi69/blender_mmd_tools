@@ -334,6 +334,8 @@ class VMDImporter:
 
 
     def assign(self, obj, action_name=None):
+        if obj is None:
+            return
         if action_name is None:
             action_name = os.path.splitext(os.path.basename(self.__vmdFile.filepath))[0]
 

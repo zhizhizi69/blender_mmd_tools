@@ -330,8 +330,8 @@ class ViewBoneMorph(Operator):
             p_bone = armature.pose.bones.get(morph_data.bone, None)
             if p_bone:
                 p_bone.bone.select = True
-                p_bone.location = morph_data.location
-                p_bone.rotation_quaternion = morph_data.rotation
+                p_bone.location += morph_data.location
+                p_bone.rotation_quaternion *= morph_data.rotation
         return { 'FINISHED' }
 
 class ApplyBoneMorph(Operator):

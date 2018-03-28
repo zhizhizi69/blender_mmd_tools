@@ -343,6 +343,8 @@ class MMDMorphMenu(Menu):
 
     def draw(self, context):
         layout = self.layout
+        layout.operator_enum('mmd_tools.morph_slider_setup', 'type')
+        layout.separator()
         layout.operator('mmd_tools.morph_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
         layout.operator('mmd_tools.morph_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
@@ -385,6 +387,9 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
         morph = ItemOp.get_by_index(getattr(mmd_root, morph_type), mmd_root.active_morph)
         if morph:
+            slider = rig.morph_slider.get(morph.name)
+            if slider:
+                col.row().prop(slider, 'value')
             draw_func = getattr(self, '_draw_%s_data'%morph_type[:-7], None)
             if draw_func:
                 draw_func(context, rig, col, morph)
