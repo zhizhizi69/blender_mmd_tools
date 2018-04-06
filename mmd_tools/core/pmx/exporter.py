@@ -16,6 +16,7 @@ from mmd_tools.core.material import FnMaterial
 from mmd_tools.core.vmd.importer import BoneConverter, BoneConverterPoseMode
 from mmd_tools import bpyutils
 from mmd_tools.utils import saferelpath
+from mmd_tools.operators.misc import MoveObject
 
 
 class _Vertex:
@@ -805,7 +806,7 @@ class __PmxExporter:
                 continue
             p_rigid = pmx.Rigid()
             mmd_rigid = obj.mmd_rigid
-            p_rigid.name = mmd_rigid.name_j
+            p_rigid.name = mmd_rigid.name_j or MoveObject.get_name(obj)
             p_rigid.name_e = mmd_rigid.name_e
             p_rigid.location = mathutils.Vector(t) * self.TO_PMX_MATRIX * self.__scale
             p_rigid.rotation = mathutils.Vector(r) * self.TO_PMX_MATRIX * -1
@@ -854,7 +855,7 @@ class __PmxExporter:
                 continue
             p_joint = pmx.Joint()
             mmd_joint = joint.mmd_joint
-            p_joint.name = mmd_joint.name_j
+            p_joint.name = mmd_joint.name_j or MoveObject.get_name(joint, 'J.')
             p_joint.name_e = mmd_joint.name_e
             p_joint.location = mathutils.Vector(t) * self.TO_PMX_MATRIX * self.__scale
             p_joint.rotation = mathutils.Vector(r) * self.TO_PMX_MATRIX * -1

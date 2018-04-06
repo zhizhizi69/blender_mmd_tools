@@ -78,6 +78,18 @@ class FnMorph(object):
             else:
                 morph.category = 'EYE'
 
+    @classmethod
+    def load_morphs(cls, rig):
+        mmd_root = rig.rootObject().mmd_root
+        vertex_morphs = mmd_root.vertex_morphs
+        for obj in rig.meshes():
+            for kb in getattr(obj.data.shape_keys, 'key_blocks', ())[1:]:
+                if not kb.name.startswith('mmd_') and kb.name not in vertex_morphs:
+                    item = vertex_morphs.add()
+                    item.name = kb.name
+                    item.name_e = kb.name
+                    cls.category_guess(item)
+
     def update_mat_related_mesh(self, new_mesh=None):
         for offset in self.__morph.data:
             # Use the new_mesh if provided  
@@ -247,6 +259,7 @@ class _MorphSlider:
                 data_path = 'data.shape_keys.key_blocks["%s"].value'%m.name.replace('"', '\\"')
                 for d in m.data:
                     if not d.bone:
+                        d.name = ''
                         continue
                     d.name = str(hash(d))
                     name_bind = 'mmd_bind%s'%hash(d)

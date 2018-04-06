@@ -27,6 +27,12 @@ class MoveObject(Operator, utils.ItemMoveOp):
         obj.name = '%s_%s'%(utils.int2base(index, 36, 3), name)
 
     @classmethod
+    def get_name(cls, obj, prefix=None):
+        m = cls.__PREFIX_REGEXP.match(obj.name)
+        name = m.group('name') if m else obj.name
+        return name[len(prefix):] if prefix and name.startswith(prefix) else name
+
+    @classmethod
     def normalize_indices(cls, objects):
         for i, x in enumerate(objects):
             cls.set_index(x, i)

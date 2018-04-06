@@ -89,12 +89,13 @@ class Model:
         armObj.draw_type = 'WIRE'
 
         if add_root_bone:
+            bone_name = u'全ての親'
             with bpyutils.edit_object(armObj) as data:
-                bone = data.edit_bones.new(name=u'全ての親')
+                bone = data.edit_bones.new(name=bone_name)
                 bone.head = [0.0, 0.0, 0.0]
                 bone.tail = [0.0, 0.0, root.empty_draw_size]
-            armObj.pose.bones[bone.name].mmd_bone.name_j = u'全ての親'
-            armObj.pose.bones[bone.name].mmd_bone.name_e = 'Root'
+            armObj.pose.bones[bone_name].mmd_bone.name_j = bone_name
+            armObj.pose.bones[bone_name].mmd_bone.name_e = 'Root'
 
         scene.objects.active = root
         root.select = True
@@ -139,15 +140,7 @@ class Model:
         return FnMorph.get_morph_slider(self)
 
     def loadMorphs(self):
-        mmd_root = self.__root.mmd_root
-        vertex_morphs = mmd_root.vertex_morphs
-        for obj in self.meshes():
-            for kb in getattr(obj.data.shape_keys, 'key_blocks', ())[1:]:
-                if not kb.name.startswith('mmd_') and kb.name not in vertex_morphs:
-                    item = vertex_morphs.add()
-                    item.name = kb.name
-                    item.name_e = kb.name
-                    FnMorph.category_guess(item)
+        FnMorph.load_morphs(self)
 
     def createRigidBodyPool(self, counts):
         if counts < 1:
