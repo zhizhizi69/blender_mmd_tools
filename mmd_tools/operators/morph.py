@@ -48,6 +48,7 @@ class AddMorph(Operator):
     bl_idname = 'mmd_tools.morph_add'
     bl_label = 'Add Morph'
     bl_description = 'Add a morph item to active morph list'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -63,6 +64,7 @@ class RemoveMorph(Operator):
     bl_idname = 'mmd_tools.morph_remove'
     bl_label = 'Remove Morph'
     bl_description = 'Remove active morph item from the list'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -84,6 +86,7 @@ class MoveMorph(Operator, ItemMoveOp):
     bl_idname = 'mmd_tools.morph_move'
     bl_label = 'Move Morph'
     bl_description = 'Move active morph item up/down in the list'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -101,7 +104,7 @@ class AddMorphOffset(Operator):
     bl_idname = 'mmd_tools.morph_offset_add'
     bl_label = 'Add Morph Offset'
     bl_description = 'Add a morph offset item to the list'
-    bl_options = {'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -134,7 +137,7 @@ class RemoveMorphOffset(Operator):
     bl_idname = 'mmd_tools.morph_offset_remove'
     bl_label = 'Remove Morph Offset'
     bl_description = 'Remove active morph offset item from the list'
-    bl_options = {'INTERNAL'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -157,7 +160,7 @@ class ApplyMaterialOffset(Operator):
     bl_idname = 'mmd_tools.apply_material_morph_offset'
     bl_label = 'Apply Material Offset'
     bl_description = 'Calculates the offsets and apply them, then the temporary material is removed'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -222,7 +225,7 @@ class CreateWorkMaterial(Operator):
     bl_idname = 'mmd_tools.create_work_material'
     bl_label = 'Create Work Material'
     bl_description = 'Creates a temporary material to edit this offset'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -287,7 +290,7 @@ class ClearTempMaterials(Operator):
     bl_idname = 'mmd_tools.clear_temp_materials'
     bl_label = 'Clear Temp Materials'
     bl_description = 'Clears all the temporary materials'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -316,7 +319,7 @@ class ViewBoneMorph(Operator):
     bl_idname = 'mmd_tools.view_bone_morph'
     bl_label = 'View Bone Morph'
     bl_description = 'View the result of active bone morph'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -338,7 +341,7 @@ class ApplyBoneMorph(Operator):
     bl_idname = 'mmd_tools.apply_bone_morph'
     bl_label = 'Apply Bone Morph'
     bl_description = 'Apply current pose to active bone morph'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -366,7 +369,7 @@ class SelectRelatedBone(Operator):
     bl_idname = 'mmd_tools.select_bone_morph_offset_bone'
     bl_label = 'Select Related Bone'
     bl_description = 'Select the bone assigned to this offset in the armature'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -383,8 +386,8 @@ class EditBoneOffset(Operator):
     bl_idname = 'mmd_tools.edit_bone_morph_offset'
     bl_label = 'Edit Related Bone'
     bl_description = 'Applies the location and rotation of this offset to the bone'
-    bl_options = {'PRESET'}    
-    
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -403,8 +406,8 @@ class ApplyBoneOffset(Operator):
     bl_idname = 'mmd_tools.apply_bone_morph_offset'
     bl_label = 'Apply Bone Morph Offset'
     bl_description = 'Stores the current bone location and rotation into this offset'
-    bl_options = {'PRESET'}
-    
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
     def execute(self, context):
         obj = context.active_object
         root = mmd_model.Model.findRoot(obj)
@@ -423,7 +426,7 @@ class ViewUVMorph(Operator):
     bl_idname = 'mmd_tools.view_uv_morph'
     bl_label = 'View UV Morph'
     bl_description = 'View the result of active UV morph'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     with_animation = bpy.props.BoolProperty(
         name='With Animation',
@@ -514,7 +517,7 @@ class ClearUVMorphView(Operator):
     bl_idname = 'mmd_tools.clear_uv_morph_view'
     bl_label = 'Clear UV Morph View'
     bl_description = 'Clear all temporary data of UV morphs'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     def execute(self, context):
         obj = context.active_object
@@ -550,7 +553,7 @@ class EditUVMorph(Operator):
     bl_idname = 'mmd_tools.edit_uv_morph'
     bl_label = 'Edit UV Morph'
     bl_description = 'Edit UV morph on a temporary UV layer (use UV Editor to edit the result)'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
     def poll(cls, context):
@@ -591,7 +594,7 @@ class ApplyUVMorph(Operator):
     bl_idname = 'mmd_tools.apply_uv_morph'
     bl_label = 'Apply UV Morph'
     bl_description = 'Calculate the UV offsets of selected vertices and apply to active UV morph'
-    bl_options = {'PRESET'}
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
 
     @classmethod
     def poll(cls, context):
