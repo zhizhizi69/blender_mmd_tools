@@ -13,13 +13,13 @@ import time
 
 
 def isRigidBodyObject(obj):
-    return obj.mmd_type == 'RIGID_BODY'
+    return obj and obj.mmd_type == 'RIGID_BODY'
 
 def isJointObject(obj):
-    return obj.mmd_type == 'JOINT'
+    return obj and obj.mmd_type == 'JOINT'
 
 def isTemporaryObject(obj):
-    return obj.mmd_type in ['TRACK_TARGET', 'NON_COLLISION_CONSTRAINT', 'SPRING_CONSTRAINT', 'SPRING_GOAL']
+    return obj and obj.mmd_type in {'TRACK_TARGET', 'NON_COLLISION_CONSTRAINT', 'SPRING_CONSTRAINT', 'SPRING_GOAL'}
 
 
 def getRigidBodySize(obj):

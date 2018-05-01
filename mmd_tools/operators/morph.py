@@ -63,8 +63,15 @@ class AddMorph(Operator):
 class RemoveMorph(Operator):
     bl_idname = 'mmd_tools.morph_remove'
     bl_label = 'Remove Morph'
-    bl_description = 'Remove active morph item from the list'
+    bl_description = 'Remove morph item(s) from the list'
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    all = bpy.props.BoolProperty(
+        name='All',
+        description='Delete all morph items',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
 
     def execute(self, context):
         obj = context.active_object
@@ -78,8 +85,12 @@ class RemoveMorph(Operator):
             bpy.ops.mmd_tools.clear_uv_morph_view()
 
         morphs = getattr(mmd_root, morph_type)
-        morphs.remove(mmd_root.active_morph)
-        mmd_root.active_morph = max(0, mmd_root.active_morph-1)
+        if self.all:
+            morphs.clear()
+            mmd_root.active_morph = 0
+        else:
+            morphs.remove(mmd_root.active_morph)
+            mmd_root.active_morph = max(0, mmd_root.active_morph-1)
         return {'FINISHED'}
 
 class MoveMorph(Operator, ItemMoveOp):
@@ -136,8 +147,15 @@ class AddMorphOffset(Operator):
 class RemoveMorphOffset(Operator):
     bl_idname = 'mmd_tools.morph_offset_remove'
     bl_label = 'Remove Morph Offset'
-    bl_description = 'Remove active morph offset item from the list'
+    bl_description = 'Remove morph offset item(s) from the list'
     bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    all = bpy.props.BoolProperty(
+        name='All',
+        description='Delete all morph offset items',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
 
     def execute(self, context):
         obj = context.active_object
@@ -151,8 +169,12 @@ class RemoveMorphOffset(Operator):
         if morph_type.startswith('material'):
             bpy.ops.mmd_tools.clear_temp_materials()
 
-        morph.data.remove(morph.active_data)
-        morph.active_data = max(0, morph.active_data-1)
+        if self.all:
+            morph.data.clear()
+            morph.active_data = 0
+        else:
+            morph.data.remove(morph.active_data)
+            morph.active_data = max(0, morph.active_data-1)
         return { 'FINISHED' }
 
 
