@@ -97,8 +97,7 @@ class Model:
             armObj.pose.bones[bone_name].mmd_bone.name_j = bone_name
             armObj.pose.bones[bone_name].mmd_bone.name_e = 'Root'
 
-        scene.objects.active = root
-        root.select = True
+        bpyutils.select_object(root)
         return Model(root)
 
     @classmethod
