@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import re
 
 import bpy
 from mmd_tools import bpyutils
@@ -89,6 +90,74 @@ class FnMorph(object):
                     item.name = kb.name
                     item.name_e = kb.name
                     cls.category_guess(item)
+
+
+    @staticmethod
+    def get_uv_morph_vertex_groups(obj, morph_name=None, offset_axes='XYZW'):
+        pattern = 'UV_%s[+-][%s]$'%(morph_name or '.{1,}', offset_axes or 'XYZW')
+        # yield (vertex_group, morph_name, axis),...
+        return ((g, g.name[3:-2], g.name[-2:]) for g in obj.vertex_groups if re.match(pattern, g.name))
+
+    @staticmethod
+    def clean_uv_morph_vertex_groups(obj):
+        # remove empty vertex groups of uv morphs
+        vg_indices = {g.index for g, n, x in FnMorph.get_uv_morph_vertex_groups(obj)}
+        vertex_groups = obj.vertex_groups
+        for v in obj.data.vertices:
+            for x in v.groups:
+                if x.group in vg_indices and x.weight > 0:
+                    vg_indices.remove(x.group)
+        for i in sorted(vg_indices, reverse=True):
+            vg = vertex_groups[i]
+            vertex_groups.remove(vg)
+
+    @staticmethod
+    def get_uv_morph_offset_map(obj, morph):
+        offset_map = {} # offset_map[vertex_index] = offset_xyzw
+        if morph.data_type == 'VERTEX_GROUP':
+            scale = morph.vertex_group_scale
+            axis_map = {g.index:x for g, n, x in FnMorph.get_uv_morph_vertex_groups(obj, morph.name)}
+            for v in obj.data.vertices:
+                i = v.index
+                for x in v.groups:
+                    if x.group in axis_map and x.weight > 0:
+                        axis, weight = axis_map[x.group], x.weight
+                        d = offset_map.setdefault(i, [0, 0, 0, 0])
+                        d['XYZW'.index(axis[1])] += -weight*scale if axis[0] == '-' else weight*scale
+        else:
+            for val in morph.data:
+                i = val.index
+                if i in offset_map:
+                    offset_map[i] = [a+b for a, b in zip(offset_map[i], val.offset)]
+                else:
+                    offset_map[i] = val.offset
+        return offset_map
+
+    @staticmethod
+    def store_uv_morph_data(obj, morph, offsets=None, offset_axes='XYZW'):
+        vertex_groups = obj.vertex_groups
+        morph_name = getattr(morph, 'name', None)
+        if offset_axes:
+            for vg, n, x in FnMorph.get_uv_morph_vertex_groups(obj, morph_name, offset_axes):
+                vertex_groups.remove(vg)
+        if not morph_name or not offsets:
+            return
+
+        axis_indices = tuple('XYZW'.index(x) for x in offset_axes) or tuple(range(4))
+        offset_map = FnMorph.get_uv_morph_offset_map(obj, morph) if offset_axes else {}
+        for data in offsets:
+            idx, offset = data.index, data.offset
+            for i in axis_indices:
+                offset_map.setdefault(idx, [0, 0, 0, 0])[i] += round(offset[i], 5)
+
+        max_value = max(max(abs(x) for x in v) for v in offset_map.values() or ([0],))
+        scale = morph.vertex_group_scale = max(abs(morph.vertex_group_scale), max_value)
+        for idx, offset in offset_map.items():
+            for val, axis in zip(offset, 'XYZW'):
+                if abs(val) > 1e-4:
+                    vg_name = 'UV_{0}{1}{2}'.format(morph_name, '-' if val < 0 else '+', axis)
+                    vg = vertex_groups.get(vg_name, None) or vertex_groups.new(name=vg_name)
+                    vg.add(index=[idx], weight=abs(val)/scale, type='REPLACE')
 
     def update_mat_related_mesh(self, new_mesh=None):
         for offset in self.__morph.data:
