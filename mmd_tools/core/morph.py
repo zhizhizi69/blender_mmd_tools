@@ -109,6 +109,9 @@ class FnMorph(object):
                     vg_indices.remove(x.group)
         for i in sorted(vg_indices, reverse=True):
             vg = vertex_groups[i]
+            m = obj.modifiers.get('mmd_bind%s'%hash(vg.name), None)
+            if m:
+                obj.modifiers.remove(m)
             vertex_groups.remove(vg)
 
     @staticmethod
@@ -263,6 +266,9 @@ class _MorphSlider:
                     kb.driver_remove('value')
                     kb.relative_key.mute = False
                     ObjectOp(mesh).shape_key_remove(kb)
+            for m in mesh.modifiers: # uv morph
+                if m.name.startswith('mmd_bind') and m.name not in names_in_use:
+                    mesh.modifiers.remove(m)
 
         attributes = set(TransformConstraintOp.min_max_attributes('LOCATION', 'to'))
         attributes |= set(TransformConstraintOp.min_max_attributes('ROTATION', 'to'))
@@ -300,6 +306,7 @@ class _MorphSlider:
         group_map = {}
 
         shape_key_map = {}
+        uv_morph_map = {}
         for mesh in rig.meshes():
             mesh.show_only_shape_key = False
             key_blocks = getattr(mesh.data.shape_keys, 'key_blocks', ())
@@ -321,9 +328,43 @@ class _MorphSlider:
                 shape_key_map.setdefault(name_bind, []).append((kb_bind, data_path, groups))
                 group_map.setdefault(('vertex_morphs', kb_name), []).append(groups)
 
+            uv_layers = [l.name for l in mesh.data.uv_layers if not l.name.startswith('_')]
+            uv_layers += ['']*(5-len(uv_layers))
+            for vg, morph_name, axis in FnMorph.get_uv_morph_vertex_groups(mesh):
+                morph = mmd_root.uv_morphs.get(morph_name, None)
+                if morph is None or morph.data_type != 'VERTEX_GROUP':
+                    continue
+
+                uv_layer = '_'+uv_layers[morph.uv_index] if axis[1] in 'ZW' else uv_layers[morph.uv_index]
+                if uv_layer not in mesh.data.uv_layers:
+                    continue
+
+                name_bind = 'mmd_bind%s'%hash(vg.name)
+                uv_morph_map.setdefault(name_bind, ())
+                mod = mesh.modifiers.get(name_bind, None) or mesh.modifiers.new(name=name_bind, type='UV_WARP')
+                mod.show_expanded = False
+                mod.vertex_group = vg.name
+                mod.axis_u, mod.axis_v = ('Y', 'X') if axis[1] in 'YW' else ('X', 'Y')
+                mod.uv_layer = uv_layer
+                name_bind = 'mmd_bind%s'%hash(morph_name)
+                mod.object_from = mod.object_to = arm
+                if axis[0] == '-':
+                    mod.bone_from, mod.bone_to = 'mmd_bind_ctrl_base', name_bind
+                else:
+                    mod.bone_from, mod.bone_to = name_bind, 'mmd_bind_ctrl_base'
+
         bone_offset_map = {}
         with bpyutils.edit_object(arm) as data:
             edit_bones = data.edit_bones
+            def __get_bone(name, layer, parent):
+                b = edit_bones.get(name, None) or edit_bones.new(name=name)
+                b.layers = [x == layer for x in range(len(b.layers))]
+                b.head = (0, 0, 0)
+                b.tail = (0, 0, 1)
+                b.use_deform = False
+                b.parent = parent
+                return b
+
             for m in mmd_root.bone_morphs:
                 data_path = 'data.shape_keys.key_blocks["%s"].value'%m.name.replace('"', '\\"')
                 for d in m.data:
@@ -332,17 +373,26 @@ class _MorphSlider:
                         continue
                     d.name = str(hash(d))
                     name_bind = 'mmd_bind%s'%hash(d)
-                    b = edit_bones.get(name_bind, None) or edit_bones.new(name=name_bind)
-                    b.layers = [x == 10 for x in range(len(b.layers))]
-                    b.head = (0, 0, 0)
-                    b.tail = (0, 0, 1)
-                    b.use_deform = False
+                    b = __get_bone(name_bind, 10, None)
                     groups = []
                     bone_offset_map[name_bind] = (m.name, d, b.name, data_path, groups)
                     group_map.setdefault(('bone_morphs', m.name), []).append(groups)
 
+            ctrl_base = __get_bone('mmd_bind_ctrl_base', 11, None)
+            for m in mmd_root.uv_morphs:
+                morph_name = m.name.replace('"', '\\"')
+                data_path = 'data.shape_keys.key_blocks["%s"].value'%morph_name
+                scale_path = 'mmd_root.uv_morphs["%s"].vertex_group_scale'%morph_name
+                name_bind = 'mmd_bind%s'%hash(m.name)
+                b = __get_bone(name_bind, 11, ctrl_base)
+                groups = []
+                uv_morph_map.setdefault(name_bind, []).append((b.name, data_path, scale_path, groups))
+                group_map.setdefault(('uv_morphs', m.name), []).append(groups)
+
+            used_bone_names = bone_offset_map.keys()|uv_morph_map.keys()
+            used_bone_names.add(ctrl_base.name)
             for b in edit_bones: # cleanup
-                if b.name.startswith('mmd_bind') and b.name not in bone_offset_map:
+                if b.name.startswith('mmd_bind') and b.name not in used_bone_names:
                     edit_bones.remove(b)
 
         for m in mmd_root.group_morphs:
@@ -354,7 +404,7 @@ class _MorphSlider:
                     morph_path = 'data.shape_keys.key_blocks["%s"].value'%morph_name
                     groups.append((m.name, morph_path, factor_path))
 
-        self.__cleanup(shape_key_map.keys()|bone_offset_map.keys())
+        self.__cleanup(shape_key_map.keys()|bone_offset_map.keys()|uv_morph_map.keys())
 
         def __config_groups(variables, expression, groups):
             for g_name, morph_path, factor_path in groups:
@@ -406,7 +456,20 @@ class _MorphSlider:
             __config_bone_morph(pb.constraints, 'ROTATION', attributes_rot, pi, 'pi')
             __config_bone_morph(pb.constraints, 'LOCATION', attributes_loc, 100, '100')
 
-        #TODO material/uv morphs if possible
+        # uv morphs
+        b = arm.pose.bones['mmd_bind_ctrl_base']
+        b.is_mmd_shadow_bone = True
+        b.mmd_shadow_bone_type = 'BIND'
+        for bname, data_path, scale_path, groups in (i for l in uv_morph_map.values() for i in l):
+            b = arm.pose.bones[bname]
+            b.is_mmd_shadow_bone = True
+            b.mmd_shadow_bone_type = 'BIND'
+            driver, variables = self.__driver_variables(b, 'location', index=0)
+            var = self.__add_single_prop(variables, obj, data_path, 'u')
+            fvar = self.__add_single_prop(variables, root, scale_path, 's')
+            driver.expression = '(%s)*%s'%(__config_groups(variables, var.name, groups), fvar.name)
+
+        #TODO material morphs if possible
 
         morph_key_blocks[0].mute = False
 
