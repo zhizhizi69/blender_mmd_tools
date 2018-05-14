@@ -5,6 +5,13 @@ Overview
 ----
 mmd_tools is a blender addon for importing MMD (MikuMikuDance) model data (.pmd, .pmx), motion data (.vmd) and pose data (.vpd). Exporting model data (.pmx), motion data (.vmd) and pose data (.vpd) are supported as well.
 
+mmd_toolsはMMD(MikuMikuDance)のモデルデータ(.pmd, .pmx)、モーションデータ(.vmd)、ポーズデータ(.vpd)をインポートするためのBlenderアドオンです。モデルデータ(.pmx)、モーションデータ(.vmd)、ポーズデータ(.vpd)のエクスポートにも対応しています。
+
+The detailed documentation can be found at Wiki Documentation Page.
+
+- [Documentation](../../wiki/Documentation)
+- [日本語ドキュメント](../../wiki/Documentation.ja)
+
 ### Environment
 
 #### Compatible Versions
