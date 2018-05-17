@@ -89,7 +89,7 @@ class FnMaterial(object):
 
     def __same_image_file(self, image, filepath):
         if image and image.source == 'FILE':
-            img_filepath = image.filepath_from_user()
+            img_filepath = bpy.path.abspath(image.filepath) # image.filepath_from_user()
             if img_filepath == filepath:
                 return True
             try:

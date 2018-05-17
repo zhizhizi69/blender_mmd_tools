@@ -247,13 +247,20 @@ class ConvertToMMDModel(Operator):
         for m in {x for mesh in meshes for x in mesh.data.materials if x}:
             mmd_material = m.mmd_material
 
-            diffuse = m.diffuse_color[:]
+            tex_slot = m.texture_slots[0]
+            is_default_blend_type = getattr(tex_slot, 'blend_type', 'MULTIPLY') in {'MULTIPLY'}
+            map_diffuse = getattr(tex_slot, 'use_map_color_diffuse', False)
+            map_alpha = getattr(tex_slot, 'use_map_alpha', False)
+
+            diffuse = m.diffuse_color[:] if not map_diffuse or is_default_blend_type else (1.0, 1.0, 1.0)
             mmd_material.diffuse_color = diffuse
             if self.ambient_color_source == 'MIRROR':
                 mmd_material.ambient_color = m.mirror_color
             else:
                 mmd_material.ambient_color = [0.5*c for c in diffuse]
-            mmd_material.alpha = m.alpha
+
+            if m.use_transparency and (m.alpha > 1e-3 or not map_alpha or is_default_blend_type):
+                mmd_material.alpha = m.alpha
             mmd_material.specular_color = m.specular_color
             mmd_material.shininess = m.specular_hardness
             mmd_material.is_double_sided = m.game_settings.use_backface_culling
