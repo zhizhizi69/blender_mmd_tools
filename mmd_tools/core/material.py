@@ -268,6 +268,7 @@ class FnMaterial(object):
         mat = self.__material
         mmd_mat = mat.mmd_material
         mat.diffuse_color = self._mixDiffuseAndAmbient(mmd_mat)
+        mat.diffuse_intensity = 0.8
 
     def update_alpha(self):
         mat = self.__material
