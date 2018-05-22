@@ -169,17 +169,15 @@ class ConvertToMMDModel(Operator):
             ],
         default='DIFFUSE',
         )
-
     edge_threshold = bpy.props.FloatProperty(
         name='Edge Threshold',
         description='MMD toon edge will not be enabled if freestyle line color alpha less than this value',
         min=0,
-        max=1,
+        max=1.001,
         precision=3,
         step=0.1,
         default=0.1,
         )
-
     edge_alpha_min = bpy.props.FloatProperty(
         name='Minimum Edge Alpha',
         description='Minimum alpha of MMD toon edge color',
@@ -279,7 +277,7 @@ class ConvertToMMDModel(Operator):
             mmd_material.enabled_self_shadow = m.use_shadows
             if hasattr(m, 'line_color'): # freestyle line color
                 line_color = list(m.line_color)
-                mmd_material.enabled_toon_edge = line_color[3] > self.edge_threshold
+                mmd_material.enabled_toon_edge = line_color[3] >= self.edge_threshold
                 mmd_material.edge_color = line_color[:3] + [max(line_color[3], self.edge_alpha_min)]
 
         from mmd_tools.operators.display_item import DisplayItemQuickSetup
