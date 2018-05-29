@@ -255,12 +255,8 @@ class ConvertToMMDModel(Operator):
         for m in {x for mesh in meshes for x in mesh.data.materials if x}:
             mmd_material = m.mmd_material
 
-            tex_slot = m.texture_slots[0]
-            is_default_blend_type = getattr(tex_slot, 'blend_type', 'MULTIPLY') in {'MULTIPLY'}
-            map_diffuse = getattr(tex_slot, 'use_map_color_diffuse', False)
-            map_alpha = getattr(tex_slot, 'use_map_alpha', False)
-            use_diffuse = not map_diffuse or is_default_blend_type
-
+            map_diffuse = next((s.blend_type for s in m.texture_slots if s and s.use_map_color_diffuse), None)
+            use_diffuse = map_diffuse in {None, 'MULTIPLY'}
             diffuse = m.diffuse_color*min(1.0, m.diffuse_intensity/0.8) if use_diffuse else (1.0, 1.0, 1.0)
             mmd_material.diffuse_color = diffuse
             if self.ambient_color_source == 'MIRROR':
@@ -268,8 +264,10 @@ class ConvertToMMDModel(Operator):
             else:
                 mmd_material.ambient_color = [0.5*c for c in diffuse]
 
-            if m.use_transparency and (not map_alpha or is_default_blend_type):
+            map_alpha = next((s.blend_type for s in m.texture_slots if s and s.use_map_alpha), None)
+            if m.use_transparency and map_alpha in {None, 'MULTIPLY'}:
                 mmd_material.alpha = m.alpha
+
             mmd_material.specular_color = m.specular_color*min(1.0, m.specular_intensity/0.8)
             mmd_material.shininess = m.specular_hardness
             mmd_material.is_double_sided = m.game_settings.use_backface_culling
