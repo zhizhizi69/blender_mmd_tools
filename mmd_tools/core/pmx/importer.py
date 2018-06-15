@@ -263,8 +263,19 @@ class PMXImporter:
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 # Set the length of too short bones to 1 because Blender delete them.
                 if b_bone.length < 0.001:
-                    loc = mathutils.Vector([0, 0, 1]) * self.__scale
-                    b_bone.tail = b_bone.head + loc
+                    if m_bone.axis is not None:
+                        bone_loc = mathutils.Vector(m_bone.location)
+                        fixed_axis = mathutils.Vector(m_bone.axis).normalized()
+                        bone_dir = ((bone_loc + fixed_axis - bone_loc) * self.TO_BLE_MATRIX).normalized()
+                        if bone_dir.length > 0.0:
+                            loc = bone_dir * self.__scale
+                            b_bone.tail = b_bone.head + loc
+                        else:
+                            loc = mathutils.Vector([0, 0, 1]) * self.__scale
+                            b_bone.tail = b_bone.head + loc
+                    else:
+                        loc = mathutils.Vector([0, 0, 1]) * self.__scale
+                        b_bone.tail = b_bone.head + loc
                     if m_bone.displayConnection != -1 and m_bone.displayConnection != [0.0, 0.0, 0.0]:
                         logging.debug(' * special tip bone %s, display %s', b_bone.name, str(m_bone.displayConnection))
                         specialTipBones.append(b_bone.name)
@@ -443,10 +454,10 @@ class PMXImporter:
                 mmd_bone.enabled_fixed_axis = True
                 mmd_bone.fixed_axis = pmx_bone.axis
 
-            #if mmd_bone.is_tip:
-            #    b_bone.lock_rotation = [True, True, True]
-            #    b_bone.lock_location = [True, True, True]
-            #    b_bone.lock_scale = [True, True, True]
+                if mmd_bone.is_tip:
+                    b_bone.lock_rotation = [True, False, True]
+                    b_bone.lock_location = [True, True, True]
+                    b_bone.lock_scale = [True, True, True]
 
     def __importRigids(self):
         start_time = time.time()
