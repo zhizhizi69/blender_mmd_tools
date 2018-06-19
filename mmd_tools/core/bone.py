@@ -68,6 +68,67 @@ class FnBone(object):
         return (bones[b.name] for b in context_selected_bones if not bones[b.name].is_mmd_shadow_bone)
 
     @classmethod
+    def load_bone_fixed_axis(cls, armature, enable=True):
+        for b in cls.get_selected_pose_bones(armature):
+            mmd_bone = b.mmd_bone
+            mmd_bone.enabled_fixed_axis = enable
+            if enable:
+                axes = b.bone.matrix_local.to_3x3().transposed()
+                lock_rotation = b.lock_rotation[:]
+                if lock_rotation.count(False) == 1:
+                    mmd_bone.fixed_axis = axes[lock_rotation.index(False)].xzy
+                else:
+                    mmd_bone.fixed_axis = axes[1].xzy # Y-axis
+
+    @classmethod
+    def apply_bone_fixed_axis(cls, armature):
+        bone_map = {}
+        for b in armature.pose.bones:
+            if b.is_mmd_shadow_bone or not b.mmd_bone.enabled_fixed_axis:
+                continue
+            mmd_bone = b.mmd_bone
+            parent_tip = b.parent and not b.parent.is_mmd_shadow_bone and b.parent.mmd_bone.is_tip
+            bone_map[b.name] = (mmd_bone.fixed_axis.normalized(), mmd_bone.is_tip, parent_tip)
+
+        force_align = True
+        with bpyutils.edit_object(armature) as data:
+            for bone in data.edit_bones:
+                if bone.name not in bone_map:
+                    bone.select = False
+                    continue
+                fixed_axis, is_tip, parent_tip = bone_map[bone.name]
+                if fixed_axis.length:
+                    axes = [bone.x_axis, bone.y_axis, bone.z_axis]
+                    direction = fixed_axis.normalized().xzy
+                    idx, val = max([(i, direction.dot(v)) for i, v in enumerate(axes)], key=lambda x: abs(x[1]))
+                    idx_1, idx_2 = (idx+1)%3, (idx+2)%3
+                    axes[idx] = -direction if val < 0 else direction
+                    axes[idx_2] = axes[idx].cross(axes[idx_1])
+                    axes[idx_1] = axes[idx_2].cross(axes[idx])
+                    if parent_tip and bone.use_connect:
+                        bone.use_connect = False
+                        bone.head = bone.parent.head
+                    if force_align:
+                        tail = bone.head + axes[1].normalized()*bone.length
+                        if is_tip or (tail - bone.tail).length > 1e-4:
+                            for c in bone.children:
+                                if c.use_connect:
+                                    c.use_connect = False
+                                    if is_tip:
+                                        c.head = bone.head
+                        bone.tail = tail
+                    bone.align_roll(axes[2])
+                    bone_map[bone.name] = tuple(i!=idx for i in range(3))
+                else:
+                    bone_map[bone.name] = (True, True, True)
+                bone.select = True
+
+        for bone_name, locks in bone_map.items():
+            b = armature.pose.bones[bone_name]
+            b.lock_location = (True, True, True)
+            b.lock_ik_x, b.lock_ik_y, b.lock_ik_z = b.lock_rotation = locks
+
+    @classmethod
     def load_bone_local_axes(cls, armature, enable=True):
         for b in cls.get_selected_pose_bones(armature):
             mmd_bone = b.mmd_bone
@@ -105,8 +166,8 @@ class FnBone(object):
     def get_axes(mmd_local_axis_x, mmd_local_axis_z):
         x_axis = Vector(mmd_local_axis_x).normalized().xzy
         z_axis = Vector(mmd_local_axis_z).normalized().xzy
-        y_axis = z_axis.cross(x_axis)
-        z_axis = x_axis.cross(y_axis) # correction
+        y_axis = z_axis.cross(x_axis).normalized()
+        z_axis = x_axis.cross(y_axis).normalized() # correction
         return (x_axis, y_axis, z_axis)
 
 

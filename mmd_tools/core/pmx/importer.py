@@ -263,12 +263,10 @@ class PMXImporter:
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 # Set the length of too short bones to 1 because Blender delete them.
                 if b_bone.length < 0.001:
-                    if m_bone.axis is not None:
-                        bone_loc = mathutils.Vector(m_bone.location)
-                        fixed_axis = mathutils.Vector(m_bone.axis).normalized()
-                        bone_dir = ((bone_loc + fixed_axis - bone_loc) * self.TO_BLE_MATRIX).normalized()
-                        if bone_dir.length > 0.0:
-                            loc = bone_dir * self.__scale
+                    if not self.__apply_bone_fixed_axis and m_bone.axis is not None:
+                        fixed_axis = mathutils.Vector(m_bone.axis)
+                        if fixed_axis.length:
+                            loc = (fixed_axis * self.TO_BLE_MATRIX).normalized() * self.__scale
                             b_bone.tail = b_bone.head + loc
                         else:
                             loc = mathutils.Vector([0, 0, 1]) * self.__scale
@@ -454,7 +452,7 @@ class PMXImporter:
                 mmd_bone.enabled_fixed_axis = True
                 mmd_bone.fixed_axis = pmx_bone.axis
 
-                if mmd_bone.is_tip:
+                if not self.__apply_bone_fixed_axis and mmd_bone.is_tip:
                     b_bone.lock_rotation = [True, False, True]
                     b_bone.lock_location = [True, True, True]
                     b_bone.lock_scale = [True, True, True]
@@ -806,6 +804,7 @@ class PMXImporter:
         self.__sph_blend_factor = args.get('sph_blend_factor', 1.0)
         self.__spa_blend_factor = args.get('spa_blend_factor', 1.0)
         self.__fix_IK_links = args.get('fix_IK_links', False)
+        self.__apply_bone_fixed_axis = args.get('apply_bone_fixed_axis', False)
         self.__translator = args.get('translator', None)
 
         logging.info('****************************************')
@@ -843,7 +842,9 @@ class PMXImporter:
                 self.__renameLRBones(use_underscore)
             if self.__translator:
                 self.__translateBoneNames()
-            self.__rig.applyAdditionalTransformConstraints()
+            if self.__apply_bone_fixed_axis:
+                FnBone.apply_bone_fixed_axis(self.__armObj)
+            FnBone.apply_additional_transformation(self.__armObj)
 
         if 'PHYSICS' in types:
             self.__importRigids()
