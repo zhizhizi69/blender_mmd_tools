@@ -24,6 +24,9 @@ def remove_edit_bones(edit_bones, bone_names):
 
 
 class FnBone(object):
+    AUTO_LOCAL_AXIS_ARMS = ('左腕', '左ひじ', '左手首', '右腕', '右ひじ', '右手首')
+    AUTO_LOCAL_AXIS_FINGERS = ('親指','人指', '中指', '薬指','小指')
+    AUTO_LOCAL_AXIS_SEMI_STANDARD_ARMS = ('左腕捩', '左手捩', '左ダミー', '右腕捩', '右手捩', '右ダミー')
 
     def __init__(self, pose_bone=None):
         if pose_bone is not None and not isinstance(pose_bone, PoseBone):
@@ -109,6 +112,44 @@ class FnBone(object):
         z_axis = x_axis.cross(y_axis) # correction
         return (x_axis, y_axis, z_axis)
 
+    @classmethod
+    def apply_auto_bone_roll(cls, armature):
+        bone_names = []
+        for b in armature.pose.bones:
+            if (not b.is_mmd_shadow_bone and
+                    not b.mmd_bone.enabled_local_axes and
+                    cls.has_auto_local_axis(b.mmd_bone.name_j)):
+                bone_names.append(b.name)
+        with bpyutils.edit_object(armature) as data:
+            for bone in data.edit_bones:
+                if bone.name not in bone_names:
+                    select = False
+                    continue
+                cls.update_auto_bone_roll(bone)
+                bone.select = True
+
+    @classmethod
+    def update_auto_bone_roll(cls, edit_bone):
+        loc = edit_bone.matrix.to_translation()
+        mmd_x_axis = edit_bone.vector.normalized().xzy
+        mmd_y_axis = mmd_x_axis.copy()
+        if loc.x > 0: # left arm
+            mmd_y_axis.x = -mmd_y_axis.x
+        else:
+            mmd_y_axis.y = -mmd_y_axis.y
+        mmd_z_axis = mmd_x_axis.cross(mmd_y_axis).normalized()
+        cls.update_bone_roll(edit_bone, mmd_x_axis, mmd_z_axis)
+
+    @classmethod
+    def has_auto_local_axis(cls, name_j):
+        if name_j:
+            if (name_j in cls.AUTO_LOCAL_AXIS_ARMS or
+                    name_j in cls.AUTO_LOCAL_AXIS_SEMI_STANDARD_ARMS):
+                return True
+            for finger_name in cls.AUTO_LOCAL_AXIS_FINGERS:
+                if finger_name in name_j:
+                    return True
+        return False
 
     @classmethod
     def clean_additional_transformation(cls, armature):
