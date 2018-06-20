@@ -156,7 +156,6 @@ class FlipPose(Operator):
         arm = context.active_object
 
         for pose_bone in context.selected_pose_bones:
-            print(pose_bone.bone.name, self.__flip_name(pose_bone.bone.name))
             copy_buffer.append({
                 'name': pose_bone.bone.name,
                 'flipped_name': self.__flip_name(pose_bone.bone.name),
