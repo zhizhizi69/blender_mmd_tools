@@ -130,12 +130,15 @@ class FnBone(object):
 
     @classmethod
     def update_auto_bone_roll(cls, edit_bone):
-        y_axis = (edit_bone.tail - edit_bone.head)
-        head_y_aligned = Vector((edit_bone.head.x, edit_bone.tail.y, edit_bone.head.z))
-        y_axis_fix = (edit_bone.tail - head_y_aligned)
-        rot = Quaternion(y_axis_fix).rotation_difference(Quaternion(y_axis))
-        mmd_x_axis = y_axis.normalized().xzy
-        mmd_z_axis = Vector((Quaternion((0, -1, 0)) * rot).to_euler()).normalized().xzy
+        loc = edit_bone.matrix.to_translation()
+        mmd_x_axis = edit_bone.vector.normalized().xzy
+        mmd_y_axis = mmd_x_axis.copy()
+        if loc.x > 0: # left arm
+            mmd_y_axis.x = -mmd_y_axis.x
+            mmd_y_axis.z = -mmd_y_axis.z # <- fix axis issue
+        else:
+            mmd_y_axis.y = -mmd_y_axis.y
+        mmd_z_axis = mmd_x_axis.cross(mmd_y_axis).normalized()
         cls.update_bone_roll(edit_bone, mmd_x_axis, mmd_z_axis)
 
     @classmethod
