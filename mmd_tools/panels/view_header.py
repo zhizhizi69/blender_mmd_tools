@@ -9,8 +9,7 @@ class MMDViewHeader(Header):
     def poll(cls, context):
         return (context.active_object and
                 context.active_object.type == 'ARMATURE' and
-                context.active_object.mode == 'POSE' and
-                getattr(context.active_object, 'mmd_root', None) is not None)
+                context.active_object.mode == 'POSE')
 
     def draw(self, context):
         if self.poll(context):

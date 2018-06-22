@@ -148,8 +148,7 @@ class FlipPose(Operator):
     def poll(cls, context):
         return (context.active_object and
                     context.active_object.type == 'ARMATURE' and
-                    context.active_object.mode == 'POSE' and
-                    getattr(context.active_object, 'mmd_root', None) is not None)
+                    context.active_object.mode == 'POSE')
 
     def execute(self, context):
         copy_buffer = []
