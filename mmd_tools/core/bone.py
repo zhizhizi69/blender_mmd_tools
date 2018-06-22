@@ -4,7 +4,8 @@ import bpy
 from bpy.types import PoseBone
 
 from math import pi
-from mathutils import Vector, Quaternion
+import math
+from mathutils import Vector, Quaternion, Matrix
 from mmd_tools import bpyutils
 from mmd_tools.bpyutils import TransformConstraintOp
 
@@ -130,16 +131,24 @@ class FnBone(object):
 
     @classmethod
     def update_auto_bone_roll(cls, edit_bone):
-        loc = edit_bone.matrix.to_translation()
-        mmd_x_axis = edit_bone.vector.normalized().xzy
-        mmd_y_axis = mmd_x_axis.copy()
-        if loc.x > 0: # left arm
-            mmd_y_axis.x = -mmd_y_axis.x
-            mmd_y_axis.z = -mmd_y_axis.z # <- fix axis issue
-        else:
-            mmd_y_axis.y = -mmd_y_axis.y
-        mmd_z_axis = mmd_x_axis.cross(mmd_y_axis).normalized()
-        cls.update_bone_roll(edit_bone, mmd_x_axis, mmd_z_axis)
+        # make a triangle face (p1,p2,p3)
+        p1 = edit_bone.head.copy()
+        p2 = edit_bone.tail.copy()
+        p3 = p2.copy()
+        # translate p3 in xz plane
+        # the normal vector of the face tracks -Y direction
+        xz = Vector((p2.x - p1.x, p2.z - p1.z))
+        xz.normalize()
+        theta = math.atan2(xz.y, xz.x)
+        norm = edit_bone.vector.length
+        p3.z += norm * math.cos(theta)
+        p3.x -= norm * math.sin(theta)
+        # calculate the normal vector of the face
+        y = (p2 - p1).normalized()
+        z_tmp = (p3 - p1).normalized()
+        x = y.cross(z_tmp) # normal vector
+        # z = x.cross(y)
+        cls.update_bone_roll(edit_bone, y.xzy, x.xzy)
 
     @classmethod
     def has_auto_local_axis(cls, name_j):
