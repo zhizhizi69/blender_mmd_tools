@@ -4,7 +4,8 @@ import bpy
 from bpy.types import PoseBone
 
 from math import pi
-from mathutils import Vector
+import math
+from mathutils import Vector, Quaternion, Matrix
 from mmd_tools import bpyutils
 from mmd_tools.bpyutils import TransformConstraintOp
 
@@ -24,6 +25,9 @@ def remove_edit_bones(edit_bones, bone_names):
 
 
 class FnBone(object):
+    AUTO_LOCAL_AXIS_ARMS = ('左腕', '左ひじ', '左手首', '右腕', '右ひじ', '右手首')
+    AUTO_LOCAL_AXIS_FINGERS = ('親指','人指', '中指', '薬指','小指')
+    AUTO_LOCAL_AXIS_SEMI_STANDARD_ARMS = ('左腕捩', '左手捩', '左ダミー', '右腕捩', '右手捩', '右ダミー')
 
     def __init__(self, pose_bone=None):
         if pose_bone is not None and not isinstance(pose_bone, PoseBone):
@@ -170,6 +174,53 @@ class FnBone(object):
         z_axis = x_axis.cross(y_axis).normalized() # correction
         return (x_axis, y_axis, z_axis)
 
+    @classmethod
+    def apply_auto_bone_roll(cls, armature):
+        bone_names = []
+        for b in armature.pose.bones:
+            if (not b.is_mmd_shadow_bone and
+                    not b.mmd_bone.enabled_local_axes and
+                    cls.has_auto_local_axis(b.mmd_bone.name_j)):
+                bone_names.append(b.name)
+        with bpyutils.edit_object(armature) as data:
+            for bone in data.edit_bones:
+                if bone.name not in bone_names:
+                    select = False
+                    continue
+                cls.update_auto_bone_roll(bone)
+                bone.select = True
+
+    @classmethod
+    def update_auto_bone_roll(cls, edit_bone):
+        # make a triangle face (p1,p2,p3)
+        p1 = edit_bone.head.copy()
+        p2 = edit_bone.tail.copy()
+        p3 = p2.copy()
+        # translate p3 in xz plane
+        # the normal vector of the face tracks -Y direction
+        xz = Vector((p2.x - p1.x, p2.z - p1.z))
+        xz.normalize()
+        theta = math.atan2(xz.y, xz.x)
+        norm = edit_bone.vector.length
+        p3.z += norm * math.cos(theta)
+        p3.x -= norm * math.sin(theta)
+        # calculate the normal vector of the face
+        y = (p2 - p1).normalized()
+        z_tmp = (p3 - p1).normalized()
+        x = y.cross(z_tmp) # normal vector
+        # z = x.cross(y)
+        cls.update_bone_roll(edit_bone, y.xzy, x.xzy)
+
+    @classmethod
+    def has_auto_local_axis(cls, name_j):
+        if name_j:
+            if (name_j in cls.AUTO_LOCAL_AXIS_ARMS or
+                    name_j in cls.AUTO_LOCAL_AXIS_SEMI_STANDARD_ARMS):
+                return True
+            for finger_name in cls.AUTO_LOCAL_AXIS_FINGERS:
+                if finger_name in name_j:
+                    return True
+        return False
 
     @classmethod
     def clean_additional_transformation(cls, armature):

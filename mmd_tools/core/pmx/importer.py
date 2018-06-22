@@ -281,6 +281,8 @@ class PMXImporter:
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
                 if m_bone.localCoordinate is not None:
                     FnBone.update_bone_roll(b_bone, m_bone.localCoordinate.x_axis, m_bone.localCoordinate.z_axis)
+                elif FnBone.has_auto_local_axis(m_bone.name):
+                    FnBone.update_auto_bone_roll(b_bone)
 
         return nameTable, specialTipBones
 
