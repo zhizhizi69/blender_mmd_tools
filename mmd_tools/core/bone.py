@@ -25,9 +25,9 @@ def remove_edit_bones(edit_bones, bone_names):
 
 
 class FnBone(object):
-    AUTO_LOCAL_AXIS_ARMS = ('左腕', '左ひじ', '左手首', '右腕', '右ひじ', '右手首')
+    AUTO_LOCAL_AXIS_ARMS = ('左肩', '左腕', '左ひじ', '左手首', '右腕', '右肩', '右ひじ', '右手首')
     AUTO_LOCAL_AXIS_FINGERS = ('親指','人指', '中指', '薬指','小指')
-    AUTO_LOCAL_AXIS_SEMI_STANDARD_ARMS = ('左腕捩', '左手捩', '左ダミー', '右腕捩', '右手捩', '右ダミー')
+    AUTO_LOCAL_AXIS_SEMI_STANDARD_ARMS = ('左腕捩', '左手捩', '左肩P', '左ダミー', '右腕捩', '右手捩', '右肩P', '右ダミー')
 
     def __init__(self, pose_bone=None):
         if pose_bone is not None and not isinstance(pose_bone, PoseBone):
