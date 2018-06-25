@@ -76,13 +76,18 @@ class FnBone(object):
         for b in cls.get_selected_pose_bones(armature):
             mmd_bone = b.mmd_bone
             mmd_bone.enabled_fixed_axis = enable
+            lock_rotation = b.lock_rotation[:]
             if enable:
                 axes = b.bone.matrix_local.to_3x3().transposed()
-                lock_rotation = b.lock_rotation[:]
                 if lock_rotation.count(False) == 1:
                     mmd_bone.fixed_axis = axes[lock_rotation.index(False)].xzy
                 else:
                     mmd_bone.fixed_axis = axes[1].xzy # Y-axis
+            elif all(b.lock_location) and lock_rotation.count(True) > 1 and \
+                    lock_rotation == (b.lock_ik_x, b.lock_ik_y, b.lock_ik_z):
+                # unlock transform locks if fixed axis was applied
+                b.lock_ik_x, b.lock_ik_y, b.lock_ik_z = b.lock_rotation = (False, False, False)
+                b.lock_location = b.lock_scale = (False, False, False)
 
     @classmethod
     def apply_bone_fixed_axis(cls, armature):
