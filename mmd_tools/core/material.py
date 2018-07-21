@@ -16,6 +16,7 @@ class FnMaterial(object):
     __BASE_TEX_SLOT = 0
     __TOON_TEX_SLOT = 1
     __SPHERE_TEX_SLOT = 2
+    __SPHERE_ALPHA_SLOT = 5
 
     def __init__(self, material=None):
         self.__material = material
@@ -116,7 +117,8 @@ class FnMaterial(object):
     def __load_texture(self, filepath):
         for t in bpy.data.textures:
             if t.type == 'IMAGE' and self.__same_image_file(t.image, filepath):
-                return t
+                if t.use_alpha and t.image.use_alpha:
+                    return t
         tex = bpy.data.textures.new(name=bpy.path.display_name_from_filepath(filepath), type='IMAGE')
         tex.image = self.__load_image(filepath)
         return tex
@@ -178,6 +180,7 @@ class FnMaterial(object):
             self.update_sphere_texture_type()
         else:
             self.__use_texture(self.__SPHERE_TEX_SLOT, use_sphere)
+            self.__use_texture(self.__SPHERE_ALPHA_SLOT, use_sphere)
 
     def create_sphere_texture(self, filepath):
         """ create a texture slot for environment mapping textures of MMD models.
@@ -192,7 +195,12 @@ class FnMaterial(object):
         texture_slot = self.__material.texture_slots.create(self.__SPHERE_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.texture = self.__load_texture(filepath)
-        texture_slot.texture.use_alpha = texture_slot.texture.image.use_alpha = False
+        alpha_slot = self.__material.texture_slots.create(self.__SPHERE_ALPHA_SLOT)
+        alpha_slot.use_map_color_diffuse = False
+        alpha_slot.use_map_alpha = True
+        alpha_slot.texture_coords = 'NORMAL'
+        alpha_slot.texture = texture_slot.texture
+        alpha_slot.blend_type = 'MULTIPLY'
         self.update_sphere_texture_type()
         return texture_slot
 
@@ -212,9 +220,11 @@ class FnMaterial(object):
                 #texture_slot.uv_layer = 'UVMap'
             else:
                 texture_slot.texture_coords = 'NORMAL'
+        self.__use_texture(self.__SPHERE_ALPHA_SLOT, texture_slot.use)
 
     def remove_sphere_texture(self):
         self.__remove_texture(self.__SPHERE_TEX_SLOT)
+        self.__remove_texture(self.__SPHERE_ALPHA_SLOT)
 
 
     def get_toon_texture(self):
@@ -237,7 +247,6 @@ class FnMaterial(object):
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.blend_type = 'MULTIPLY'
         texture_slot.texture = self.__load_texture(filepath)
-        texture_slot.texture.use_alpha = texture_slot.texture.image.use_alpha = False
         texture_slot.texture.extension = 'EXTEND'
         return texture_slot
 
