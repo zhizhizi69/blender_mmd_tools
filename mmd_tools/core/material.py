@@ -89,7 +89,7 @@ class FnMaterial(object):
 
 
     def __same_image_file(self, image, filepath):
-        if image and image.source == 'FILE':
+        if image and image.source == 'FILE' and image.use_alpha:
             img_filepath = bpy.path.abspath(image.filepath) # image.filepath_from_user()
             if img_filepath == filepath:
                 return True
@@ -116,9 +116,8 @@ class FnMaterial(object):
 
     def __load_texture(self, filepath):
         for t in bpy.data.textures:
-            if t.type == 'IMAGE' and self.__same_image_file(t.image, filepath):
-                if t.use_alpha and t.image.use_alpha:
-                    return t
+            if t.type == 'IMAGE' and self.__same_image_file(t.image, filepath) and t.use_alpha:
+                return t
         tex = bpy.data.textures.new(name=bpy.path.display_name_from_filepath(filepath), type='IMAGE')
         tex.image = self.__load_image(filepath)
         return tex
