@@ -122,6 +122,9 @@ class FnMaterial(object):
         tex.image = self.__load_image(filepath)
         return tex
 
+    def __has_alpha_channel(self, texture):
+        return texture.type == 'IMAGE' and getattr(texture.image, 'depth', -1) == 32
+
 
     def get_texture(self):
         return self.__get_texture(self.__BASE_TEX_SLOT)
@@ -146,10 +149,10 @@ class FnMaterial(object):
             bpy.types.MaterialTextureSlot object
         """
         texture_slot = self.__material.texture_slots.create(self.__BASE_TEX_SLOT)
-        texture_slot.use_map_alpha = True
         texture_slot.texture_coords = 'UV'
         texture_slot.blend_type = 'MULTIPLY'
         texture_slot.texture = self.__load_texture(filepath)
+        texture_slot.use_map_alpha = self.__has_alpha_channel(texture_slot.texture)
         return texture_slot
 
     def remove_texture(self):
@@ -194,19 +197,15 @@ class FnMaterial(object):
         texture_slot = self.__material.texture_slots.create(self.__SPHERE_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.texture = self.__load_texture(filepath)
-        alpha_slot = self.__material.texture_slots.create(self.__SPHERE_ALPHA_SLOT)
-        alpha_slot.use_map_color_diffuse = False
-        alpha_slot.use_map_alpha = True
-        alpha_slot.texture_coords = 'NORMAL'
-        alpha_slot.texture = texture_slot.texture
-        alpha_slot.blend_type = 'MULTIPLY'
         self.update_sphere_texture_type()
         return texture_slot
 
     def update_sphere_texture_type(self):
         texture_slot = self.__material.texture_slots[self.__SPHERE_TEX_SLOT]
         if not texture_slot:
+            self.__remove_texture(self.__SPHERE_ALPHA_SLOT)
             return
+
         sphere_texture_type = int(self.__material.mmd_material.sphere_texture_type)
         if sphere_texture_type not in (1, 2, 3):
             texture_slot.use = False
@@ -219,7 +218,22 @@ class FnMaterial(object):
                 #texture_slot.uv_layer = 'UVMap'
             else:
                 texture_slot.texture_coords = 'NORMAL'
-        self.__use_texture(self.__SPHERE_ALPHA_SLOT, texture_slot.use)
+
+        if not texture_slot.use or not self.__has_alpha_channel(texture_slot.texture):
+            self.__remove_texture(self.__SPHERE_ALPHA_SLOT)
+            return
+
+        alpha_slot = self.__material.texture_slots[self.__SPHERE_ALPHA_SLOT]
+        if not alpha_slot:
+            alpha_slot = self.__material.texture_slots.create(self.__SPHERE_ALPHA_SLOT)
+            alpha_slot.use_map_color_diffuse = False
+            alpha_slot.use_map_alpha = True
+            alpha_slot.blend_type = 'MULTIPLY'
+            alpha_slot.texture = texture_slot.texture
+            alpha_slot.alpha_factor = texture_slot.diffuse_color_factor
+        alpha_slot.use = texture_slot.use
+        alpha_slot.texture_coords = texture_slot.texture_coords
+        alpha_slot.uv_layer = texture_slot.uv_layer
 
     def remove_sphere_texture(self):
         self.__remove_texture(self.__SPHERE_TEX_SLOT)
