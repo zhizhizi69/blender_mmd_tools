@@ -177,14 +177,14 @@ class FnMaterial(object):
     def get_sphere_texture(self):
         return self.__get_texture(self.__SPHERE_TEX_SLOT)
 
-    def use_sphere_texture(self, use_sphere):
+    def use_sphere_texture(self, use_sphere, obj=None):
         if use_sphere:
-            self.update_sphere_texture_type()
+            self.update_sphere_texture_type(obj)
         else:
             self.__use_texture(self.__SPHERE_TEX_SLOT, use_sphere)
             self.__use_texture(self.__SPHERE_ALPHA_SLOT, use_sphere)
 
-    def create_sphere_texture(self, filepath):
+    def create_sphere_texture(self, filepath, obj=None):
         """ create a texture slot for environment mapping textures of MMD models.
 
         Args:
@@ -197,10 +197,10 @@ class FnMaterial(object):
         texture_slot = self.__material.texture_slots.create(self.__SPHERE_TEX_SLOT)
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.texture = self.__load_texture(filepath)
-        self.update_sphere_texture_type()
+        self.update_sphere_texture_type(obj)
         return texture_slot
 
-    def update_sphere_texture_type(self):
+    def update_sphere_texture_type(self, obj=None):
         texture_slot = self.__material.texture_slots[self.__SPHERE_TEX_SLOT]
         if not texture_slot:
             self.__remove_texture(self.__SPHERE_ALPHA_SLOT)
@@ -214,8 +214,10 @@ class FnMaterial(object):
             texture_slot.blend_type = ('MULTIPLY', 'ADD', 'MULTIPLY')[sphere_texture_type-1]
             if sphere_texture_type == 3:
                 texture_slot.texture_coords = 'UV'
-                #TODO use UV1 if available
-                #texture_slot.uv_layer = 'UVMap'
+                if obj and obj.type == 'MESH' and self.__material in tuple(obj.data.materials):
+                    uv_layers = (l for l in obj.data.uv_layers if not l.name.startswith('_'))
+                    next(uv_layers, None) # skip base UV
+                    texture_slot.uv_layer = getattr(next(uv_layers, None), 'name', '')
             else:
                 texture_slot.texture_coords = 'NORMAL'
 

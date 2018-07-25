@@ -111,6 +111,8 @@ def convertToCyclesShader(obj):
         shader = i.material.node_tree.nodes.new('ShaderNodeGroup')
         shader.node_tree = mmd_basic_shader_grp
         shader.inputs[0].default_value = list(i.material.diffuse_color) + [1.0]
+        shader.inputs[1].default_value = list(i.material.specular_color) + [1.0]
+        shader.inputs['glossy_rough'].default_value = 1.0/i.material.specular_hardness
         outplug = shader.outputs[0]
 
         node_tex, node_alpha = None, None
@@ -119,7 +121,7 @@ def convertToCyclesShader(obj):
         location.y += 50
         reuse_nodes = {}
         for j in i.material.texture_slots:
-            if j and j.use and isinstance(j.texture, bpy.types.ImageTexture) and getattr(j.texture.image, 'has_data', False):
+            if j and j.use and isinstance(j.texture, bpy.types.ImageTexture) and getattr(j.texture.image, 'depth', 0):
                 if not (j.use_map_color_diffuse or j.use_map_alpha):
                     continue
                 if j.texture_coords not in {'UV', 'NORMAL'}:
@@ -132,6 +134,8 @@ def convertToCyclesShader(obj):
                     tex_img = i.material.node_tree.nodes.new('ShaderNodeTexImage')
                     tex_img.location = location
                     tex_img.image = j.texture.image
+                    if j.texture_coords == 'NORMAL' and j.blend_type == 'ADD':
+                        tex_img.color_space = 'NONE'
                     reuse_nodes[key_node_tex] = tex_img
                     location.x += 250
                     location.y -= 150
