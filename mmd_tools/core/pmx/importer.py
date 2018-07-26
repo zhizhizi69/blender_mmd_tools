@@ -582,6 +582,7 @@ class PMXImporter:
                 texture_slot.diffuse_color_factor = amount
                 if i.sphere_texture_mode == 3 and getattr(pmxModel.header, 'additional_uvs', 0):
                     texture_slot.uv_layer = 'UV1' # for SubTexture
+                    mmd_mat.sphere_texture_type = mmd_mat.sphere_texture_type # re-update
 
     def __importFaces(self):
         pmxModel = self.__model

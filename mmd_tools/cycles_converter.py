@@ -118,7 +118,6 @@ def convertToCyclesShader(obj):
         node_tex, node_alpha = None, None
         location = shader.location.copy()
         location.x -= 1000
-        location.y += 50
         reuse_nodes = {}
         for j in i.material.texture_slots:
             if j and j.use and isinstance(j.texture, bpy.types.ImageTexture) and getattr(j.texture.image, 'depth', 0):
