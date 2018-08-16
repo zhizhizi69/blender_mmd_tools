@@ -54,3 +54,12 @@ class MMDViewPanel(_PanelBase, Panel):
         r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
         r = c.row(align=True)
         r.operator('mmd_tools.reset_shading', text='Reset')
+
+class MMDSDEFPanel(_PanelBase, Panel):
+    bl_idname = 'OBJECT_PT_mmd_tools_sdef'
+    bl_label = 'MMD SDEF Driver'
+
+    def draw(self, context):
+        c = self.layout.column()
+        c.operator('mmd_tools.bind_sdef', 'Bind')
+        c.operator('mmd_tools.unbind_sdef', 'Unbind')
