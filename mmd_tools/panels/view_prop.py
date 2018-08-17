@@ -60,6 +60,6 @@ class MMDSDEFPanel(_PanelBase, Panel):
     bl_label = 'MMD SDEF Driver'
 
     def draw(self, context):
-        c = self.layout.column()
+        c = self.layout.column(align=True)
         c.operator('mmd_tools.bind_sdef', 'Bind')
         c.operator('mmd_tools.unbind_sdef', 'Unbind')

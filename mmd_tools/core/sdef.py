@@ -63,7 +63,6 @@ class FnSDEF():
             sdef_r1 = obj.data.shape_keys.key_blocks['mmd_sdef_r1']
             sd = sdef_c.data
             vd = obj.data.vertices
-            c = 0
 
             for i in range(len(sd)):
                 if vd[i].co != sd[i].co:
@@ -94,6 +93,12 @@ class FnSDEF():
                         vertices[key][2].append((i, w0, w1, vd[i].co-c, (c+r0)/2, (c+r1)/2))
                         vertices[key][3].append(i)
         return vertices
+
+    @classmethod
+    def driver_function_wrap(cls, obj_name, bulk_update, use_skip, use_scale):
+        obj = bpy.data.objects[obj_name]
+        shapekey = obj.data.shape_keys.key_blocks[cls.SHAPEKEY_NAME]
+        return cls.driver_function(shapekey, obj_name, bulk_update, use_skip, use_scale)
 
     @classmethod
     def driver_function(cls, shapekey, obj_name, bulk_update, use_skip, use_scale):
@@ -171,10 +176,12 @@ class FnSDEF():
     def register_driver_function(cls):
         if 'mmd_sdef_driver' not in bpy.app.driver_namespace:
             bpy.app.driver_namespace['mmd_sdef_driver'] = cls.driver_function
+        if 'mmd_sdef_driver_wrap' not in bpy.app.driver_namespace:
+            bpy.app.driver_namespace['mmd_sdef_driver_wrap'] = cls.driver_function_wrap
 
     BENCH_LOOP=10
     @classmethod
-    def __get_fastest_driver_function(cls, obj, shapkey, use_scale, use_skip):
+    def __get_benchmark_result(cls, obj, shapkey, use_scale, use_skip):
         # warmed up
         cls.driver_function(shapkey, obj.name, bulk_update=True, use_skip=False, use_scale=use_scale)
         cls.driver_function(shapkey, obj.name, bulk_update=False, use_skip=False, use_scale=use_scale)
@@ -187,12 +194,12 @@ class FnSDEF():
         for i in range(cls.BENCH_LOOP):
             cls.driver_function(shapkey, obj.name, bulk_update=True, use_skip=False, use_scale=use_scale)
         bulk_time = time.time() - t
-        func = 'mmd_sdef_driver(self, obj, bulk_update={}, use_skip={}, use_scale={})'.format(default_time > bulk_time, use_skip, use_scale)
-        print('FnSDEF:benchmark: default %.4f vs bulk_update %.4f => use `%s`' % (default_time, bulk_time, func))
-        return func
+        result = default_time > bulk_time
+        print('FnSDEF:benchmark: default %.4f vs bulk_update %.4f => bulk_update=%s' % (default_time, bulk_time, result))
+        return result
 
     @classmethod
-    def bind(cls, obj, use_skip=True, use_scale=False):
+    def bind(cls, obj, bulk_update=None, use_skip=True, use_scale=False):
         # Unbind first
         cls.unbind(obj)
         # Create the shapekey for the driver
@@ -209,9 +216,10 @@ class FnSDEF():
                 mod.invert_vertex_group = True
                 break
         cls.register_driver_function()
+        if bulk_update is None:
+            bulk_update = cls.__get_benchmark_result(obj, shapekey, use_scale, use_skip)
         # Add the driver to the shapekey
         f = obj.data.shape_keys.driver_add('key_blocks["'+cls.SHAPEKEY_NAME+'"].value', -1)
-        f.driver.use_self = True
         f.driver.show_debug_info = False
         f.driver.type = 'SCRIPTED'
         ov = f.driver.variables.new()
@@ -219,18 +227,24 @@ class FnSDEF():
         ov.type = 'SINGLE_PROP'
         ov.targets[0].id = obj
         ov.targets[0].data_path = 'name'
-        # Choose the fastest driver setting with benchmark
-        f.driver.expression = cls.__get_fastest_driver_function(obj, shapekey, use_skip=use_skip, use_scale=use_scale)
+        if hasattr(f.driver, 'use_self'): # Blender 2.78+
+            f.driver.use_self = True
+            param = (bulk_update, use_skip, use_scale)
+            f.driver.expression = 'mmd_sdef_driver(self, obj, bulk_update={}, use_skip={}, use_scale={})'.format(*param)
+        else:
+            param = (obj.name, bulk_update, use_skip, use_scale)
+            f.driver.expression = 'mmd_sdef_driver_wrap("{}", bulk_update={}, use_skip={}, use_scale={})'.format(*param)
 
     @classmethod
     def unbind(cls, obj):
+        from mmd_tools.bpyutils import ObjectOp
         if obj.data.shape_keys:
             if obj.data.shape_keys.animation_data:
                 for d in obj.data.shape_keys.animation_data.drivers:
                     if cls.SHAPEKEY_NAME in d.data_path:
                         obj.data.shape_keys.driver_remove(d.data_path, -1)
             if cls.SHAPEKEY_NAME in obj.data.shape_keys.key_blocks:
-                obj.shape_key_remove(obj.data.shape_keys.key_blocks[cls.SHAPEKEY_NAME])
+                ObjectOp(obj).shape_key_remove(obj.data.shape_keys.key_blocks[cls.SHAPEKEY_NAME])
         for mod in obj.modifiers:
             if mod.type == 'ARMATURE' and mod.vertex_group == cls.MASK_NAME:
                 mod.vertex_group = ''

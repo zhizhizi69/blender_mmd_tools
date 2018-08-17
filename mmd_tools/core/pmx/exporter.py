@@ -14,6 +14,7 @@ from mmd_tools.core import pmx
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
 from mmd_tools.core.morph import FnMorph
+from mmd_tools.core.sdef import FnSDEF
 from mmd_tools.core.vmd.importer import BoneConverter, BoneConverterPoseMode
 from mmd_tools import bpyutils
 from mmd_tools.utils import saferelpath
@@ -1078,7 +1079,7 @@ class __PmxExporter:
             for i, kb in enumerate(meshObj.data.shape_keys.key_blocks):
                 if i == 0: # Basis
                     continue
-                if kb.name.startswith('mmd_bind'):
+                if kb.name.startswith('mmd_bind') or kb.name == FnSDEF.SHAPEKEY_NAME:
                     continue
                 if kb.name == 'mmd_sdef_c': # make sure 'mmd_sdef_c' is at first
                     shape_key_list = [(i, kb)] + shape_key_list
