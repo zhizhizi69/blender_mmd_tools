@@ -2,7 +2,8 @@
 
 from bpy.types import Panel
 
-import mmd_tools.core.model as mmd_model
+from mmd_tools.core.model import Model
+from mmd_tools.core.sdef import FnSDEF
 
 class _PanelBase(object):
     bl_space_type = 'VIEW_3D'
@@ -14,13 +15,13 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
 
     @classmethod
     def poll(cls, context):
-        return mmd_model.Model.findRoot(context.active_object)
+        return Model.findRoot(context.active_object)
 
     def draw(self, context):
         layout = self.layout
         obj = context.active_object
 
-        root = mmd_model.Model.findRoot(obj)
+        root = Model.findRoot(obj)
 
         row = layout.row(align=True)
         c = row.column(align=True)
@@ -38,6 +39,9 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
         row.active = context.scene.render.engine in {'BLENDER_RENDER', 'BLENDER_GAME'}
         row.prop(root.mmd_root, 'use_toon_texture', text='Toon Texture')
         row.prop(root.mmd_root, 'use_sphere_texture', text='Sphere Texture')
+
+        row = layout.row(align=True)
+        row.prop(root.mmd_root, 'use_sdef', text='SDEF')
 
 
 class MMDViewPanel(_PanelBase, Panel):
@@ -61,5 +65,8 @@ class MMDSDEFPanel(_PanelBase, Panel):
 
     def draw(self, context):
         c = self.layout.column(align=True)
-        c.operator('mmd_tools.bind_sdef', 'Bind')
-        c.operator('mmd_tools.unbind_sdef', 'Unbind')
+        c.operator('mmd_tools.sdef_bind', text='Bind')
+        c.operator('mmd_tools.sdef_unbind', text='Unbind')
+        row = c.row()
+        row.label('Cache Info: %d data'%(len(FnSDEF.g_verts)), icon='INFO')
+        row.operator('mmd_tools.sdef_cache_reset', text='', icon='X')

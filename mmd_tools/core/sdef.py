@@ -16,82 +16,83 @@ class FnSDEF():
 
     @classmethod
     def __init_cache(cls, obj, shapekey):
-        if obj.name not in cls.g_verts:
-            cls.g_verts[obj.name] = cls.__find_vertices(obj)
-            cls.g_bone_check[obj.name] = {}
+        if hash(obj) not in cls.g_verts:
+            key = hash(obj)
+            cls.g_verts[key] = cls.__find_vertices(obj)
+            cls.g_bone_check[key] = {}
             shapekey_co = np.zeros(len(shapekey.data) * 3, dtype=np.float32)
             shapekey.data.foreach_get('co', shapekey_co)
             shapekey_co = shapekey_co.reshape(len(shapekey.data), 3)
-            cls.g_shapekey_data[obj.name] = shapekey_co
+            cls.g_shapekey_data[key] = shapekey_co
             return True
         return False
 
     @classmethod
     def __check_bone_update(cls, obj, bone0, bone1):
-        key = bone0.name + '::' + bone1.name
-        if obj.name not in cls.g_bone_check:
-            cls.g_bone_check[obj.name] = {}
-        if key not in cls.g_bone_check[obj.name]:
-            cls.g_bone_check[obj.name][key] = (bone0.matrix.copy(), bone0.matrix.copy())
+        check = cls.g_bone_check[hash(obj)]
+        key = (hash(bone0), hash(bone1))
+        if key not in check or (bone0.matrix, bone1.matrix) != check[key]:
+            check[key] = (bone0.matrix.copy(), bone1.matrix.copy())
             return True
-        else:
-            if (bone0.matrix, bone1.matrix) == cls.g_bone_check[obj.name][key]:
-                return False
-            else:
-                cls.g_bone_check[obj.name][key] = (bone0.matrix.copy(), bone1.matrix.copy())
-                return True
+        return False
+
+    @classmethod
+    def __sdef_muted(cls, obj, shapekey):
+        mute = shapekey.mute
+        if mute != cls.g_bone_check[hash(obj)].get('sdef_mute'):
+            mod = obj.modifiers.get('mmd_bone_order_override')
+            if mod and mod.type == 'ARMATURE':
+                if not mute and cls.MASK_NAME not in obj.vertex_groups:
+                    mask = tuple(i[0] for v in cls.g_verts[hash(obj)].values() for i in v[2])
+                    obj.vertex_groups.new(name=cls.MASK_NAME).add(mask, 1, 'REPLACE')
+                mod.vertex_group = '' if mute else cls.MASK_NAME
+                mod.invert_vertex_group = True
+                shapekey.vertex_group = cls.MASK_NAME
+            cls.g_bone_check[hash(obj)]['sdef_mute'] = mute
+        return mute
+
+    @staticmethod
+    def has_sdef_data(obj):
+        mod = obj.modifiers.get('mmd_bone_order_override')
+        if mod and mod.type == 'ARMATURE' and mod.object:
+            kb = getattr(obj.data.shape_keys, 'key_blocks', None)
+            return kb and 'mmd_sdef_c' in kb and 'mmd_sdef_r0' in kb and 'mmd_sdef_r1' in kb
+        return False
 
     @classmethod
     def __find_vertices(cls, obj):
-        vg_map = {}
-        for g in obj.vertex_groups:
-            vg_map[g.index] = g.name
-        arm = None
-        for mod in obj.modifiers:
-            if mod.type == 'ARMATURE' and mod.name == 'mmd_bone_order_override':
-                arm = mod.object
-        assert(arm is not None)
-        pose_bones = arm.pose.bones
+        if not cls.has_sdef_data(obj):
+            return {}
 
         vertices = {}
-        kb = obj.data.shape_keys.key_blocks
-        if ('mmd_sdef_c' in kb and
-                'mmd_sdef_r0' in kb and
-                'mmd_sdef_r1' in kb):
-            sdef_c = obj.data.shape_keys.key_blocks['mmd_sdef_c']
-            sdef_r0 = obj.data.shape_keys.key_blocks['mmd_sdef_r0']
-            sdef_r1 = obj.data.shape_keys.key_blocks['mmd_sdef_r1']
-            sd = sdef_c.data
-            vd = obj.data.vertices
+        pose_bones = obj.modifiers.get('mmd_bone_order_override').object.pose.bones
+        bone_map = {g.index:pose_bones[g.name] for g in obj.vertex_groups if g.name in pose_bones}
+        sdef_c = obj.data.shape_keys.key_blocks['mmd_sdef_c'].data
+        sdef_r0 = obj.data.shape_keys.key_blocks['mmd_sdef_r0'].data
+        sdef_r1 = obj.data.shape_keys.key_blocks['mmd_sdef_r1'].data
+        vd = obj.data.vertices
 
-            for i in range(len(sd)):
-                if vd[i].co != sd[i].co:
-                    bones = []
-                    for g in vd[i].groups:
-                        name = vg_map[g.group]
-                        if name in pose_bones:
-                            bones.append({'index': g.group, 'pose_bone': pose_bones[name], 'weight': g.weight})
-                    bones = sorted(bones, key=lambda x: x['index'])
-                    if len(bones) >= 2:
-                        # preprocessing
-                        w0, w1 = (bones[0]['weight'], bones[1]['weight'])
-                        all_weight = w0 + w1
-                        if all_weight > 0:
-                            # w0 + w1 == 1
-                            w0 = w0 / all_weight
-                            w1 = 1 - w0
-                        c = sdef_c.data[i].co
-                        r0 = sdef_r0.data[i].co
-                        r1 = sdef_r1.data[i].co
-                        rw = r0 * w0 + r1 * w1
-                        r0 = c + r0 - rw
-                        r1 = c + r1 - rw
+        for i in range(len(sdef_c)):
+            if vd[i].co != sdef_c[i].co:
+                bgs = [g for g in vd[i].groups if g.group in bone_map and g.weight] # bone groups
+                if len(bgs) >= 2:
+                    bgs.sort(key=lambda x: x.group)
+                    # preprocessing
+                    w0, w1 = bgs[0].weight, bgs[1].weight
+                    # w0 + w1 == 1
+                    w0 = w0 / (w0 + w1)
+                    w1 = 1 - w0
 
-                        key = bones[0]['pose_bone'].name + '::' + bones[1]['pose_bone'].name
-                        if key not in vertices:
-                            vertices[key] = (bones[0]['pose_bone'], bones[1]['pose_bone'], [], [])
-                        vertices[key][2].append((i, w0, w1, vd[i].co-c, (c+r0)/2, (c+r1)/2))
-                        vertices[key][3].append(i)
+                    c, r0, r1 = sdef_c[i].co, sdef_r0[i].co, sdef_r1[i].co
+                    rw = r0 * w0 + r1 * w1
+                    r0 = c + r0 - rw
+                    r1 = c + r1 - rw
+
+                    key = (hash(bone_map[bgs[0].group]), hash(bone_map[bgs[1].group]))
+                    if key not in vertices:
+                        vertices[key] = (bone_map[bgs[0].group], bone_map[bgs[1].group], [], [])
+                    vertices[key][2].append((i, w0, w1, vd[i].co-c, (c+r0)/2, (c+r1)/2))
+                    vertices[key][3].append(i)
         return vertices
 
     @classmethod
@@ -104,12 +105,14 @@ class FnSDEF():
     def driver_function(cls, shapekey, obj_name, bulk_update, use_skip, use_scale):
         obj = bpy.data.objects[obj_name]
         cls.__init_cache(obj, shapekey)
+        if cls.__sdef_muted(obj, shapekey):
+            return 0.0
 
         if not bulk_update:
             shapekey_data = shapekey.data
             if use_scale:
                 # with scale
-                for bone0, bone1, sdef_data, vids in cls.g_verts[obj.name].values():
+                for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
@@ -126,7 +129,7 @@ class FnSDEF():
                         shapekey_data[vid].co = mat_rot * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1
             else:
                 # default
-                for bone0, bone1, sdef_data, vids in cls.g_verts[obj.name].values():
+                for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
@@ -139,10 +142,10 @@ class FnSDEF():
                         mat_rot = (rot0*w0 + rot1*w1).normalized().to_matrix()
                         shapekey_data[vid].co = mat_rot * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1
         else: # bulk update
-            shapekey_data = cls.g_shapekey_data[obj.name]
+            shapekey_data = cls.g_shapekey_data[hash(obj)]
             if use_scale:
                 # scale & bulk update
-                for bone0, bone1, sdef_data, vids in cls.g_verts[obj.name].values():
+                for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
@@ -158,7 +161,7 @@ class FnSDEF():
                     shapekey_data[vids] = [scale((rot0*w0 + rot1*w1).normalized().to_matrix(), w0, w1) * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1 for vid, w0, w1, pos_c, cr0, cr1 in sdef_data]
             else:
                 # bulk update
-                for bone0, bone1, sdef_data, vids in cls.g_verts[obj.name].values():
+                for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
@@ -202,19 +205,11 @@ class FnSDEF():
     def bind(cls, obj, bulk_update=None, use_skip=True, use_scale=False):
         # Unbind first
         cls.unbind(obj)
+        if not cls.has_sdef_data(obj):
+            return False
         # Create the shapekey for the driver
         shapekey = obj.shape_key_add(name=cls.SHAPEKEY_NAME, from_mix=False)
         cls.__init_cache(obj, obj.data.shape_keys.key_blocks[cls.SHAPEKEY_NAME])
-        # Create the vertex mask for the armature modifier
-        vg = obj.vertex_groups.new(name=cls.MASK_NAME)
-        mask = tuple(i[0] for v in cls.g_verts[obj.name].values() for i in v[2])
-        vg.add(mask, 1, 'REPLACE')
-        for mod in obj.modifiers:
-            if mod.type == 'ARMATURE' and mod.name == 'mmd_bone_order_override':
-                # Disable deformation for SDEF vertices
-                mod.vertex_group = vg.name
-                mod.invert_vertex_group = True
-                break
         cls.register_driver_function()
         if bulk_update is None:
             bulk_update = cls.__get_benchmark_result(obj, shapekey, use_scale, use_skip)
@@ -234,6 +229,7 @@ class FnSDEF():
         else:
             param = (obj.name, bulk_update, use_skip, use_scale)
             f.driver.expression = 'mmd_sdef_driver_wrap("{}", bulk_update={}, use_skip={}, use_scale={})'.format(*param)
+        return True
 
     @classmethod
     def unbind(cls, obj):
@@ -255,14 +251,23 @@ class FnSDEF():
         cls.clear_cache(obj)
 
     @classmethod
-    def clear_cache(cls, obj=None):
-        if obj is not None:
-            if obj.name in cls.g_verts:
-                del cls.g_verts[obj.name]
-            if obj.name in cls.g_shapekey_data:
-                del cls.g_shapekey_data[obj.name]
-            if obj.name in cls.g_bone_check:
-                del cls.g_bone_check[obj.name]
+    def clear_cache(cls, obj=None, unused_only=False):
+        if unused_only:
+            valid_keys = set(hash(i) for i in bpy.data.objects if i.type == 'MESH' and i != obj)
+            for key in (cls.g_verts.keys()-valid_keys):
+                del cls.g_verts[key]
+            for key in (cls.g_shapekey_data.keys()-cls.g_verts.keys()):
+                del cls.g_shapekey_data[key]
+            for key in (cls.g_bone_check.keys()-cls.g_verts.keys()):
+                del cls.g_bone_check[key]
+        elif obj:
+            key = hash(obj)
+            if key in cls.g_verts:
+                del cls.g_verts[key]
+            if key in cls.g_shapekey_data:
+                del cls.g_shapekey_data[key]
+            if key in cls.g_bone_check:
+                del cls.g_bone_check[key]
         else:
             cls.g_verts = {}
             cls.g_bone_check = {}
