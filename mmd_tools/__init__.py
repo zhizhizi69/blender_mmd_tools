@@ -32,7 +32,7 @@ else:
     from . import panels
 
 
-logging.basicConfig(format='%(message)s')
+logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
 
 class MMDToolsAddonPreferences(AddonPreferences):
