@@ -231,18 +231,15 @@ class VMDImporter:
                 continue
             logging.info('(mesh) frames:%5d  name: %s', len(keyFrames), name)
             shapeKey = shapeKeyDict[name]
-            slider_min, slider_max = shapeKey.slider_min, shapeKey.slider_max
-            shapeKey.slider_min, shapeKey.slider_max = -10, 10
-            for i in keyFrames:
-                if i.weight < slider_min:
-                    slider_min = floor(i.weight)
-                elif i.weight > slider_max:
-                    slider_max = ceil(i.weight)
-                shapeKey.value = i.weight
-                shapeKey.keyframe_insert(data_path='value',
-                                         group=name,
-                                         frame=i.frame_number+self.__frame_margin)
-            shapeKey.slider_min, shapeKey.slider_max = slider_min, slider_max
+            fcurve = action.fcurves.new(data_path='key_blocks["%s"].value'%shapeKey.name)
+            fcurve.keyframe_points.add(len(keyFrames))
+            keyFrames.sort(key=lambda x:x.frame_number)
+            for k, v in zip(keyFrames, fcurve.keyframe_points):
+                v.co = (k.frame_number+self.__frame_margin, k.weight)
+                v.interpolation = 'LINEAR'
+            weights = tuple(i.weight for i in keyFrames)
+            shapeKey.slider_min = min(shapeKey.slider_min, floor(min(weights)))
+            shapeKey.slider_max = max(shapeKey.slider_max, ceil(max(weights)))
 
 
     @staticmethod

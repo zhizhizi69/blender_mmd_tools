@@ -153,6 +153,10 @@ class PMXImporter:
             pv_bones = pv.weight.bones
             pv_weights = pv.weight.weights
             if isinstance(pv_weights, pmx.BoneWeightSDEF):
+                if pv_bones[0] > pv_bones[1]:
+                    pv_bones.reverse()
+                    pv_weights.weight = 1.0 - pv_weights.weight
+                    pv_weights.r0, pv_weights.r1 = pv_weights.r1, pv_weights.r0
                 vertex_group_table[pv_bones[0]].add(index=[i], weight=pv_weights.weight, type='ADD')
                 vertex_group_table[pv_bones[1]].add(index=[i], weight=1.0-pv_weights.weight, type='ADD')
                 self.__sdefVertices[i] = pv

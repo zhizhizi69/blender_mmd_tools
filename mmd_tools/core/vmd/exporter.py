@@ -273,7 +273,7 @@ class VMDExporter:
                     return key_blocks[int(key)]
                 except IndexError:
                     return None
-            return key_blocks.get(key[1:-1], None)
+            return key_blocks.get(eval(key), None)
 
         rePath = re.compile(r'^key_blocks\[(.+)\]\.value$')
         for fcurve in animation_data.action.fcurves:

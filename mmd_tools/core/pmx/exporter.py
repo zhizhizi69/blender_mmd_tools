@@ -185,9 +185,10 @@ class __PmxExporter:
                             weight.type = pmx.BoneWeight.SDEF
                             sdef_weights = pmx.BoneWeightSDEF()
                             sdef_weights.weight = weight.weights[0]
-                            sdef_weights.c = v.sdef_data[0]
-                            sdef_weights.r0 = v.sdef_data[1]
-                            sdef_weights.r1 = v.sdef_data[2]
+                            sdef_weights.c, sdef_weights.r0, sdef_weights.r1 = v.sdef_data
+                            if weight.bones[0] > weight.bones[1]:
+                                weight.bones.reverse()
+                                sdef_weights.weight = 1.0 - sdef_weights.weight
                             weight.weights = sdef_weights
                         pv.weight = weight
                     else:
