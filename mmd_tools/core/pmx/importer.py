@@ -791,10 +791,8 @@ class PMXImporter:
             self.__rig.renameBone(i.name, self.__translator.translate(i.name))
 
     def __fixRepeatedMorphName(self):
-        used_names_map = {}
+        used_names = set()
         for m in self.__model.morphs:
-            #used_names = used_names_map.setdefault('all', set())
-            used_names = used_names_map.setdefault(type(m), set())
             m.name = utils.uniqueName(m.name or 'Morph', used_names)
             used_names.add(m.name)
 
