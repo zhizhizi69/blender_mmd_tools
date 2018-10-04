@@ -290,19 +290,28 @@ class ObjectOp:
     def __init__(self, obj):
         self.__obj = obj
 
+    def __clean_drivers(self, key):
+        for d in getattr(key.id_data.animation_data, 'drivers', ()):
+            if d.data_path.startswith(key.path_from_id()):
+                key.id_data.driver_remove(d.data_path, -1)
+
     if bpy.app.version < (2, 75, 0):
         def shape_key_remove(self, key):
+            assert(key.id_data == self.__obj.data.shape_keys)
             obj = self.__obj
             key_blocks = obj.data.shape_keys.key_blocks # key.id_data.key_blocks
             relative_key_map = {k.name:getattr(k.relative_key, 'name', '') for k in key_blocks}
             obj.active_shape_key_index = key_blocks.find(key.name)
             bpy.context.scene.objects.active, last = obj, bpy.context.scene.objects.active
+            self.__clean_drivers(key)
             bpy.ops.object.shape_key_remove()
             bpy.context.scene.objects.active = last
             for k in key_blocks:
                 k.relative_key = key_blocks.get(relative_key_map[k.name], key_blocks[0])
     else:
         def shape_key_remove(self, key):
+            assert(key.id_data == self.__obj.data.shape_keys)
+            self.__clean_drivers(key)
             self.__obj.shape_key_remove(key)
 
 class TransformConstraintOp:

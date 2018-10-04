@@ -424,11 +424,11 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
                 continue
             kb = shape_keys.key_blocks.get(morph.name, None)
             if kb:
-                row = col.row(align=True)
+                found = row = col.row(align=True)
                 row.active = not (i.show_only_shape_key or kb.mute)
                 row.label(i.name, icon='OBJECT_DATA')
                 row.prop(kb, 'value', text=kb.name)
-        if not ('kb' in locals() and kb):
+        if 'found' not in locals():
             col.label(text='Not found', icon='INFO')
 
     def _draw_material_data(self, context, rig, col, morph):

@@ -262,7 +262,7 @@ class FnMaterial(object):
         texture_slot.texture_coords = 'NORMAL'
         texture_slot.blend_type = 'MULTIPLY'
         texture_slot.texture = self.__load_texture(filepath)
-        texture_slot.texture.extension = 'EXTEND'
+        texture_slot.use_map_alpha = self.__has_alpha_channel(texture_slot.texture)
         return texture_slot
 
     def update_toon_texture(self):
@@ -301,6 +301,7 @@ class FnMaterial(object):
         mat.specular_alpha = mmd_mat.alpha
         mat.use_transparency = True
         mat.transparency_method = 'Z_TRANSPARENCY'
+        mat.game_settings.alpha_blend = 'ALPHA'
         self.update_self_shadow_map()
 
     def update_specular_color(self):

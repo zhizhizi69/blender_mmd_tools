@@ -348,8 +348,10 @@ class PMXImporter:
         is_valid_ik = False
         if len(pmx_bone.ik_links) > 0:
             ik_bone_real = pose_bones[pmx_bone.ik_links[0].target]
-            if ik_bone_real == ik_target:
-                ik_bone_real = ik_bone_real.parent
+            if ik_bone_real == ik_target or ik_bone_real.parent == ik_target:
+                ik_bone_real = ik_target.parent
+                del pmx_bone.ik_links[0]
+                logging.warning(' * fix IK settings of IK bone (%s)', target_bone.name)
             is_valid_ik = (ik_bone == ik_bone_real)
             if not is_valid_ik:
                 ik_bone = ik_bone_real
@@ -372,8 +374,6 @@ class PMXImporter:
         ikConst.mute = not is_valid_ik
         ik_bone.mmd_bone.ik_rotation_constraint = pmx_bone.rotationConstraint
         for i in pmx_bone.ik_links:
-            if i.target == pmx_bone.target:
-                ikConst.chain_count -= 1
             if i.maximumAngle is not None:
                 bone = pose_bones[i.target]
                 minimum, maximum = self.convertIKLimitAngles(i.minimumAngle, i.maximumAngle, bone.bone.matrix_local)

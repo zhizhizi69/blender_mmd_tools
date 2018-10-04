@@ -235,10 +235,6 @@ class FnSDEF():
     def unbind(cls, obj):
         from mmd_tools.bpyutils import ObjectOp
         if obj.data.shape_keys:
-            if obj.data.shape_keys.animation_data:
-                for d in obj.data.shape_keys.animation_data.drivers:
-                    if cls.SHAPEKEY_NAME in d.data_path:
-                        obj.data.shape_keys.driver_remove(d.data_path, -1)
             if cls.SHAPEKEY_NAME in obj.data.shape_keys.key_blocks:
                 ObjectOp(obj).shape_key_remove(obj.data.shape_keys.key_blocks[cls.SHAPEKEY_NAME])
         for mod in obj.modifiers:

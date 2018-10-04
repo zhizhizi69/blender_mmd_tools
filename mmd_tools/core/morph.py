@@ -47,11 +47,8 @@ class FnMorph(object):
             return
         if bpy.app.version < (2, 73, 0):
             len_key_blocks = len(key_blocks)
-            for ii, name in enumerate(reversed(shape_key_names)):
-                idx = key_blocks.find(name)
-                if idx < 0:
-                    continue
-                obj.active_shape_key_index = idx
+            for ii, name in enumerate(x for x in reversed(shape_key_names) if x in key_blocks):
+                obj.active_shape_key_index = idx = key_blocks.find(name)
                 offset = (len_key_blocks - 1 - idx) - ii
                 move_type = 'UP' if offset < 0 else 'DOWN'
                 for move in range(abs(offset)):
