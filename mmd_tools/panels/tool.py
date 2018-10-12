@@ -46,7 +46,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
             col.operator('mmd_tools.attach_meshes')
             col.operator('mmd_tools.translate_mmd_model', text='Translation')
 
-            row = layout.split(percentage=0.5, align=False)
+            row = layout.split(percentage=1/3, align=False)
 
             col = row.column(align=True)
             col.label('Bone Constraints:', icon='CONSTRAINT_BONE')
@@ -61,6 +61,10 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
                 sub_row.label(icon='ERROR')
             col.operator('mmd_tools.build_rig', text='Build')
             col.operator('mmd_tools.clean_rig', text='Clean')
+
+            col = row.column(align=True)
+            col.label('Edge Preview:', icon='MATERIAL')
+            col.operator_enum('mmd_tools.edge_preview_setup', 'action')
 
         row = layout.row()
 
