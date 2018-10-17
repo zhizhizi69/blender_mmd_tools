@@ -194,9 +194,6 @@ class EdgePreviewSetup(Operator):
         for i, m in reversed(tuple(enumerate(obj.data.materials))):
             if m and m.name.startswith('mmd_edge.'):
                 obj.data.materials.pop(index=i, update_data=True)
-                if m.node_tree:
-                    m.use_nodes = False
-                    m.node_tree.nodes.clear()
                 if m.users < 1:
                     bpy.data.materials.remove(m)
 
@@ -227,13 +224,14 @@ class EdgePreviewSetup(Operator):
 
     def __create_edge_preview_group(self, obj):
         vertices, materials = obj.data.vertices, obj.data.materials
+        weight_map = {i:m.mmd_material.edge_weight for i, m in enumerate(materials) if m}
         scale_map = {}
         vg_scale_index = obj.vertex_groups.find('mmd_edge_scale')
         if vg_scale_index >= 0:
             scale_map = {v.index:g.weight for v in vertices for g in v.groups if g.group == vg_scale_index}
         vg_edge_preview = obj.vertex_groups.new(name='mmd_edge_preview')
         for i, mi in {v:f.material_index for f in reversed(obj.data.polygons) for v in f.vertices}.items():
-            weight = scale_map.get(i, 1.0) * materials[mi].mmd_material.edge_weight * 0.02
+            weight = scale_map.get(i, 1.0) * weight_map.get(mi, 1.0) * 0.02
             vg_edge_preview.add(index=[i], weight=weight, type='REPLACE')
 
     def __get_edge_material(self, mat_name, edge_color, materials):
@@ -258,7 +256,7 @@ class EdgePreviewSetup(Operator):
         nodes, links = m.node_tree.nodes, m.node_tree.links
 
         node_shader = nodes.get('mmd_edge_preview', None)
-        if node_shader is None:
+        if node_shader is None or not any(s.is_linked for s in node_shader.outputs):
             XPOS, YPOS = 210, 110
             nodes.clear()
             node_shader = nodes.new('ShaderNodeGroup')

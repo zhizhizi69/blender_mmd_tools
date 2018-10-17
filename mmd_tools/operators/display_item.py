@@ -317,10 +317,25 @@ class DisplayItemQuickSetup(Operator):
 
     @staticmethod
     def apply_bone_groups(mmd_root, armature):
-        if bpy.app.version < (2, 72, 0):
-            return
-
         arm_bone_groups = armature.pose.bone_groups
+        if not hasattr(arm_bone_groups, 'remove'): #bpy.app.version < (2, 72, 0):
+            from mmd_tools import bpyutils
+            bpyutils.select_object(armature)
+            bpy.ops.object.mode_set(mode='POSE')
+            class arm_bone_groups:
+                values = armature.pose.bone_groups.values
+                get = armature.pose.bone_groups.get
+                @staticmethod
+                def new(name):
+                    bpy.ops.pose.group_add()
+                    group = armature.pose.bone_groups.active
+                    group.name = name
+                    return group
+                @staticmethod
+                def remove(group):
+                    armature.pose.bone_groups.active = group
+                    bpy.ops.pose.group_remove()
+
         pose_bones = armature.pose.bones
         used_groups = set()
         unassigned_bones = {b.name for b in pose_bones}
@@ -339,7 +354,7 @@ class DisplayItemQuickSetup(Operator):
             pose_bones[name].bone_group = None
 
         # remove unused bone groups
-        for group in arm_bone_groups:
+        for group in arm_bone_groups.values():
             if group.name not in used_groups:
                 arm_bone_groups.remove(group)
 

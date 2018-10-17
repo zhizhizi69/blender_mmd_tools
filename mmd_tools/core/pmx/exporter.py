@@ -96,7 +96,7 @@ class __PmxExporter:
     @staticmethod
     def flipUV_V(uv):
         u, v = uv
-        return [u, 1.0-v]
+        return u, 1.0-v
 
     def __getDefaultMaterial(self):
         if self.__default_material is None:

@@ -69,15 +69,7 @@ class PMXImporter:
     @staticmethod
     def flipUV_V(uv):
         u, v = uv
-        return [u, 1.0-v]
-
-    def __getMaterialIndexFromFaceIndex(self, face_index):
-        count = 0
-        for i, c in enumerate(self.__materialFaceCountTable):
-            if face_index < count + c:
-                return i
-            count += c
-        raise Exception('invalid face index.')
+        return u, 1.0-v
 
     def __createObjects(self):
         """ Create main objects and link them to scene.
@@ -537,13 +529,6 @@ class PMXImporter:
             mat = bpy.data.materials.new(name=i.name)
             self.__materialTable.append(mat)
             mmd_mat = mat.mmd_material
-            mat.diffuse_color = i.diffuse[0:3]
-            mat.alpha = i.diffuse[3]
-            mat.specular_color = i.specular
-            if mat.alpha < 1.0 or mat.specular_alpha < 1.0 or i.texture != -1:
-                mat.use_transparency = True
-                mat.transparency_method = 'Z_TRANSPARENCY'
-
             mmd_mat.name_j = i.name
             mmd_mat.name_e = i.name_e
             mmd_mat.ambient_color = i.ambient
@@ -595,56 +580,43 @@ class PMXImporter:
 
         mesh.tessfaces.add(len(pmxModel.faces))
         uvLayer = mesh.tessface_uv_textures.new()
-        for i, f in enumerate(pmxModel.faces):
-            bf = mesh.tessfaces[i]
-            bf.vertices_raw = list(vertex_map[x][1] for x in f)+[0] if vertex_map else list(f)+[0]
+        uv_table = {vi:self.flipUV_V(v.uv) for vi, v in enumerate(pmxModel.vertices)}
+        material_indices = (i for i, c in enumerate(self.__materialFaceCountTable) for x in range(c))
+        for bf, uv, f, mi in zip(mesh.tessfaces, uvLayer.data, pmxModel.faces, material_indices):
+            bf.vertices_raw = tuple(vertex_map[x][1] for x in f)+(0,) if vertex_map else tuple(f)+(0,)
+            bf.material_index = mi
             bf.use_smooth = True
-
-            uv = uvLayer.data[i]
-            uv.uv1 = self.flipUV_V(pmxModel.vertices[f[0]].uv)
-            uv.uv2 = self.flipUV_V(pmxModel.vertices[f[1]].uv)
-            uv.uv3 = self.flipUV_V(pmxModel.vertices[f[2]].uv)
-
-            bf.material_index = self.__getMaterialIndexFromFaceIndex(i)
+            uv.uv1, uv.uv2, uv.uv3 = (uv_table[x] for x in f)
             uv.image = self.__imageTable.get(bf.material_index, None)
 
         if pmxModel.header and pmxModel.header.additional_uvs:
             logging.info('Importing %d additional uvs', pmxModel.header.additional_uvs)
             zw_data_map = collections.OrderedDict()
+            split_uvzw = lambda uvi: (self.flipUV_V(uvi[:2]), uvi[2:])
             for i in range(pmxModel.header.additional_uvs):
                 add_uv = mesh.tessface_uv_textures.new('UV'+str(i+1))
                 logging.info(' - %s...(uv channels)', add_uv.name)
-                zw_data = []
-                has_zw = False
+                uv_table = {vi:split_uvzw(v.additional_uvs[i]) for vi, v in enumerate(pmxModel.vertices)}
                 for uv, f in zip(add_uv.data, pmxModel.faces):
-                    uvs = [pmxModel.vertices[x].additional_uvs[i] for x in f]
-                    uv.uv1 = self.flipUV_V(uvs[0][:2])
-                    uv.uv2 = self.flipUV_V(uvs[1][:2])
-                    uv.uv3 = self.flipUV_V(uvs[2][:2])
-                    zws = tuple(x[2:] for x in uvs)
-                    zw_data.append(zws)
-                    has_zw = has_zw or any(any(x) for x in zws)
-                if not has_zw:
+                    uv.uv1, uv.uv2, uv.uv3 = (uv_table[x][0] for x in f)
+                if not any(any(s[1]) for s in uv_table.values()):
                     logging.info('\t- zw are all zeros: %s', add_uv.name)
                 else:
-                    zw_data_map['_'+add_uv.name] = zw_data
-            for name, zw_seq in zw_data_map.items():
+                    zw_data_map['_'+add_uv.name] = {k:self.flipUV_V(v[1]) for k, v in uv_table.items()}
+            for name, zw_table in zw_data_map.items():
                 logging.info(' - %s...(zw channels of %s)', name, name[1:])
                 add_zw = mesh.tessface_uv_textures.new(name)
                 if add_zw is None:
                     logging.warning('\t* Lost zw channels')
                     continue
-                for uv, zws in zip(add_zw.data, zw_seq):
-                    uv.uv1 = self.flipUV_V(zws[0])
-                    uv.uv2 = self.flipUV_V(zws[1])
-                    uv.uv3 = self.flipUV_V(zws[2])
+                for uv, zws in zip(add_zw.data, ((zw_table[x] for x in f) for f in pmxModel.faces)):
+                    uv.uv1, uv.uv2, uv.uv3 = zws
 
     def __importVertexMorphs(self):
-        pmxModel = self.__model
         mmd_root = self.__root.mmd_root
-        self.__createBasisShapeKey()
         categories = self.CATEGORIES
-        for morph in filter(lambda x: isinstance(x, pmx.VertexMorph), pmxModel.morphs):
+        self.__createBasisShapeKey()
+        for morph in (x for x in self.__model.morphs if isinstance(x, pmx.VertexMorph)):
             shapeKey = self.__meshObj.shape_key_add(morph.name)
             vtx_morph = mmd_root.vertex_morphs.add()
             vtx_morph.name = morph.name
@@ -658,7 +630,7 @@ class PMXImporter:
     def __importMaterialMorphs(self):
         mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
-        for morph in [x for x in self.__model.morphs if isinstance(x, pmx.MaterialMorph)]:
+        for morph in (x for x in self.__model.morphs if isinstance(x, pmx.MaterialMorph)):
             mat_morph = mmd_root.material_morphs.add()
             mat_morph.name = morph.name
             mat_morph.name_e = morph.name_e
@@ -682,7 +654,7 @@ class PMXImporter:
     def __importBoneMorphs(self):
         mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
-        for morph in [x for x in self.__model.morphs if isinstance(x, pmx.BoneMorph)]:
+        for morph in (x for x in self.__model.morphs if isinstance(x, pmx.BoneMorph)):
             bone_morph = mmd_root.bone_morphs.add()
             bone_morph.name = morph.name
             bone_morph.name_e = morph.name_e
@@ -702,7 +674,7 @@ class PMXImporter:
         categories = self.CATEGORIES
         __OffsetData = collections.namedtuple('OffsetData', 'index, offset')
         __convert_offset = lambda x: (x[0], -x[1], x[2], -x[3])
-        for morph in [x for x in self.__model.morphs if isinstance(x, pmx.UVMorph)]:
+        for morph in (x for x in self.__model.morphs if isinstance(x, pmx.UVMorph)):
             uv_morph = mmd_root.uv_morphs.add()
             uv_morph.name = morph.name
             uv_morph.name_e = morph.name_e
@@ -718,7 +690,7 @@ class PMXImporter:
         categories = self.CATEGORIES
         morph_types = self.MORPH_TYPES
         pmx_morphs = self.__model.morphs
-        for morph in [x for x in pmx_morphs if isinstance(x, pmx.GroupMorph)]:
+        for morph in (x for x in pmx_morphs if isinstance(x, pmx.GroupMorph)):
             group_morph = mmd_root.group_morphs.add()
             group_morph.name = morph.name
             group_morph.name_e = morph.name_e
