@@ -609,8 +609,8 @@ class PMXImporter:
                 if add_zw is None:
                     logging.warning('\t* Lost zw channels')
                     continue
-                for uv, zws in zip(add_zw.data, ((zw_table[x] for x in f) for f in pmxModel.faces)):
-                    uv.uv1, uv.uv2, uv.uv3 = zws
+                for uv, f in zip(add_zw.data, pmxModel.faces):
+                    uv.uv1, uv.uv2, uv.uv3 = (zw_table[x] for x in f)
 
     def __importVertexMorphs(self):
         mmd_root = self.__root.mmd_root

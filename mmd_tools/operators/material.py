@@ -241,6 +241,7 @@ class EdgePreviewSetup(Operator):
         if mat is None:
             mat = bpy.data.materials.new(mat_name)
         mmd_mat = mat.mmd_material
+        # note: edge affects ground shadow
         mmd_mat.is_double_sided = mmd_mat.enabled_drop_shadow = False
         mmd_mat.enabled_self_shadow_map = mmd_mat.enabled_self_shadow = False
         #mmd_mat.enabled_self_shadow_map = True # for blender 2.78+ BI viewport only
