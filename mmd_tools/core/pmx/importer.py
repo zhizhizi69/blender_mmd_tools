@@ -20,11 +20,6 @@ from mmd_tools.operators.misc import MoveObject
 
 
 class PMXImporter:
-    TO_BLE_MATRIX = mathutils.Matrix([
-        [1.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0]])
     CATEGORIES = {
         0: 'SYSTEM',
         1: 'EYEBROW',
@@ -117,51 +112,48 @@ class PMXImporter:
         self.__importVertexGroup()
 
         pmxModel = self.__model
-        vertex_count = len(pmxModel.vertices)
-        if vertex_count < 1:
-            return
-
-        mesh = self.__meshObj.data
-        vg_edge_scale = self.__meshObj.vertex_groups.new(name='mmd_edge_scale')
-        vg_vertex_order = self.__meshObj.vertex_groups.new(name='mmd_vertex_order')
-
         pmx_vertices = pmxModel.vertices
+        vertex_count = len(pmx_vertices)
         vertex_map = self.__vertex_map
         if vertex_map:
             indices = collections.OrderedDict(vertex_map).keys()
             pmx_vertices = (pmxModel.vertices[x] for x in indices)
             vertex_count = len(indices)
+        if vertex_count < 1:
+            return
+
+        Vector = mathutils.Vector
+        mesh = self.__meshObj.data
+        mesh.vertices.add(count=vertex_count)
+        mesh.vertices.foreach_set('co', tuple(i for pv in pmx_vertices for i in (Vector(pv.co).xzy * self.__scale)))
 
         vertex_group_table = self.__vertexGroupTable
-        mesh.vertices.add(count=vertex_count)
+        vg_edge_scale = self.__meshObj.vertex_groups.new(name='mmd_edge_scale')
+        vg_vertex_order = self.__meshObj.vertex_groups.new(name='mmd_vertex_order')
         for i, pv in enumerate(pmx_vertices):
-            bv = mesh.vertices[i]
+            pv_bones, pv_weights, idx = pv.weight.bones, pv.weight.weights, (i,)
 
-            bv.co = mathutils.Vector(pv.co) * self.TO_BLE_MATRIX * self.__scale
-            #bv.normal = pv.normal # no effect
-            vg_edge_scale.add(index=[i], weight=pv.edge_scale, type='REPLACE')
-            vg_vertex_order.add(index=[i], weight=i/vertex_count, type='REPLACE')
+            vg_edge_scale.add(index=idx, weight=pv.edge_scale, type='REPLACE')
+            vg_vertex_order.add(index=idx, weight=i/vertex_count, type='REPLACE')
 
-            pv_bones = pv.weight.bones
-            pv_weights = pv.weight.weights
             if isinstance(pv_weights, pmx.BoneWeightSDEF):
                 if pv_bones[0] > pv_bones[1]:
                     pv_bones.reverse()
                     pv_weights.weight = 1.0 - pv_weights.weight
                     pv_weights.r0, pv_weights.r1 = pv_weights.r1, pv_weights.r0
-                vertex_group_table[pv_bones[0]].add(index=[i], weight=pv_weights.weight, type='ADD')
-                vertex_group_table[pv_bones[1]].add(index=[i], weight=1.0-pv_weights.weight, type='ADD')
+                vertex_group_table[pv_bones[0]].add(index=idx, weight=pv_weights.weight, type='ADD')
+                vertex_group_table[pv_bones[1]].add(index=idx, weight=1.0-pv_weights.weight, type='ADD')
                 self.__sdefVertices[i] = pv
             elif len(pv_bones) == 1:
                 bone_index = pv_bones[0]
                 if bone_index >= 0:
-                    vertex_group_table[bone_index].add(index=[i], weight=1.0, type='ADD')
+                    vertex_group_table[bone_index].add(index=idx, weight=1.0, type='ADD')
             elif len(pv_bones) == 2:
-                vertex_group_table[pv_bones[0]].add(index=[i], weight=pv_weights[0], type='ADD')
-                vertex_group_table[pv_bones[1]].add(index=[i], weight=1.0-pv_weights[0], type='ADD')
+                vertex_group_table[pv_bones[0]].add(index=idx, weight=pv_weights[0], type='ADD')
+                vertex_group_table[pv_bones[1]].add(index=idx, weight=1.0-pv_weights[0], type='ADD')
             elif len(pv_bones) == 4:
                 for bone, weight in zip(pv_bones, pv_weights):
-                    vertex_group_table[bone].add(index=[i], weight=weight, type='ADD')
+                    vertex_group_table[bone].add(index=idx, weight=weight, type='ADD')
             else:
                 raise Exception('unkown bone weight type.')
 
@@ -172,18 +164,16 @@ class PMXImporter:
         if len(self.__sdefVertices) < 1:
             return
 
+        Vector = mathutils.Vector
         self.__createBasisShapeKey()
-        sdefC = self.__meshObj.shape_key_add('mmd_sdef_c')
-        sdefR0 = self.__meshObj.shape_key_add('mmd_sdef_r0')
-        sdefR1 = self.__meshObj.shape_key_add('mmd_sdef_r1')
+        sdefC = self.__meshObj.shape_key_add(name='mmd_sdef_c')
+        sdefR0 = self.__meshObj.shape_key_add(name='mmd_sdef_r0')
+        sdefR1 = self.__meshObj.shape_key_add(name='mmd_sdef_r1')
         for i, pv in self.__sdefVertices.items():
             w = pv.weight.weights
-            shapeKeyPoint = sdefC.data[i]
-            shapeKeyPoint.co = mathutils.Vector(w.c) * self.TO_BLE_MATRIX * self.__scale
-            shapeKeyPoint = sdefR0.data[i]
-            shapeKeyPoint.co = mathutils.Vector(w.r0) * self.TO_BLE_MATRIX * self.__scale
-            shapeKeyPoint = sdefR1.data[i]
-            shapeKeyPoint.co = mathutils.Vector(w.r1) * self.TO_BLE_MATRIX * self.__scale
+            sdefC.data[i].co = Vector(w.c).xzy * self.__scale
+            sdefR0.data[i].co = Vector(w.r0).xzy * self.__scale
+            sdefR1.data[i].co = Vector(w.r1).xzy * self.__scale
         logging.info('Stored %d SDEF vertices', len(self.__sdefVertices))
 
     def __importTextures(self):
@@ -208,10 +198,11 @@ class PMXImporter:
         #            if p_bone.parent == t.parent:
         #                dependency_cycle_ik_bones.append(i)
 
+        Vector = mathutils.Vector
         with bpyutils.edit_object(obj) as data:
             for i in pmx_bones:
                 bone = data.edit_bones.new(name=i.name)
-                loc = mathutils.Vector(i.location) * self.__scale * self.TO_BLE_MATRIX
+                loc = Vector(i.location).xzy * self.__scale
                 bone.head = loc
                 editBoneTable.append(bone)
                 nameTable.append(bone.name)
@@ -230,7 +221,7 @@ class PMXImporter:
                     else:
                         b_bone.tail = b_bone.head
                 else:
-                    loc = mathutils.Vector(m_bone.displayConnection) * self.TO_BLE_MATRIX * self.__scale
+                    loc = Vector(m_bone.displayConnection).xzy * self.__scale
                     b_bone.tail = b_bone.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
@@ -260,16 +251,13 @@ class PMXImporter:
                 # Set the length of too short bones to 1 because Blender delete them.
                 if b_bone.length < 0.001:
                     if not self.__apply_bone_fixed_axis and m_bone.axis is not None:
-                        fixed_axis = mathutils.Vector(m_bone.axis)
+                        fixed_axis = Vector(m_bone.axis)
                         if fixed_axis.length:
-                            loc = (fixed_axis * self.TO_BLE_MATRIX).normalized() * self.__scale
-                            b_bone.tail = b_bone.head + loc
+                            b_bone.tail = b_bone.head + fixed_axis.xzy.normalized() * self.__scale
                         else:
-                            loc = mathutils.Vector([0, 0, 1]) * self.__scale
-                            b_bone.tail = b_bone.head + loc
+                            b_bone.tail = b_bone.head + Vector((0, 0, 1)) * self.__scale
                     else:
-                        loc = mathutils.Vector([0, 0, 1]) * self.__scale
-                        b_bone.tail = b_bone.head + loc
+                        b_bone.tail = b_bone.head + Vector((0, 0, 1)) * self.__scale
                     if m_bone.displayConnection != -1 and m_bone.displayConnection != [0.0, 0.0, 0.0]:
                         logging.debug(' * special tip bone %s, display %s', b_bone.name, str(m_bone.displayConnection))
                         specialTipBones.append(b_bone.name)
@@ -458,14 +446,12 @@ class PMXImporter:
     def __importRigids(self):
         start_time = time.time()
         self.__rigidTable = {}
+        Vector = mathutils.Vector
         rigid_pool = self.__rig.createRigidBodyPool(len(self.__model.rigids))
         for i, (rigid, rigid_obj) in enumerate(zip(self.__model.rigids, rigid_pool)):
-            loc = mathutils.Vector(rigid.location) * self.TO_BLE_MATRIX * self.__scale
-            rot = mathutils.Vector(rigid.rotation) * self.TO_BLE_MATRIX * -1
-            if rigid.type == pmx.Rigid.TYPE_BOX:
-                size = mathutils.Vector(rigid.size) * self.TO_BLE_MATRIX
-            else:
-                size = mathutils.Vector(rigid.size)
+            loc = Vector(rigid.location).xzy * self.__scale
+            rot = Vector(rigid.rotation).xzy * -1
+            size = Vector(rigid.size).xzy if rigid.type == pmx.Rigid.TYPE_BOX else Vector(rigid.size)
 
             obj = self.__rig.createRigidBody(
                 obj = rigid_obj,
@@ -494,10 +480,11 @@ class PMXImporter:
 
     def __importJoints(self):
         start_time = time.time()
+        Vector = mathutils.Vector
         joint_pool = self.__rig.createJointPool(len(self.__model.joints))
         for i, (joint, joint_obj) in enumerate(zip(self.__model.joints, joint_pool)):
-            loc = mathutils.Vector(joint.location) * self.TO_BLE_MATRIX * self.__scale
-            rot = mathutils.Vector(joint.rotation) * self.TO_BLE_MATRIX * -1
+            loc = Vector(joint.location).xzy * self.__scale
+            rot = Vector(joint.rotation).xzy * -1
 
             obj = self.__rig.createJoint(
                 obj = joint_obj,
@@ -507,12 +494,12 @@ class PMXImporter:
                 rotation = rot,
                 rigid_a = self.__rigidTable.get(joint.src_rigid, None),
                 rigid_b = self.__rigidTable.get(joint.dest_rigid, None),
-                maximum_location = mathutils.Vector(joint.maximum_location) * self.TO_BLE_MATRIX * self.__scale,
-                minimum_location = mathutils.Vector(joint.minimum_location) * self.TO_BLE_MATRIX * self.__scale,
-                maximum_rotation = mathutils.Vector(joint.minimum_rotation) * self.TO_BLE_MATRIX * -1,
-                minimum_rotation = mathutils.Vector(joint.maximum_rotation) * self.TO_BLE_MATRIX * -1,
-                spring_linear = mathutils.Vector(joint.spring_constant) * self.TO_BLE_MATRIX,
-                spring_angular = mathutils.Vector(joint.spring_rotation_constant) * self.TO_BLE_MATRIX,
+                maximum_location = Vector(joint.maximum_location).xzy * self.__scale,
+                minimum_location = Vector(joint.minimum_location).xzy * self.__scale,
+                maximum_rotation = Vector(joint.minimum_rotation).xzy * -1,
+                minimum_rotation = Vector(joint.maximum_rotation).xzy * -1,
+                spring_linear = Vector(joint.spring_constant).xzy,
+                spring_angular = Vector(joint.spring_rotation_constant).xzy,
                 )
             obj.hide = True
             MoveObject.set_index(obj, i)
@@ -578,54 +565,63 @@ class PMXImporter:
         mesh = self.__meshObj.data
         vertex_map = self.__vertex_map
 
-        mesh.tessfaces.add(len(pmxModel.faces))
-        uvLayer = mesh.tessface_uv_textures.new()
+        loop_indices_orig = tuple(i for f in pmxModel.faces for i in f)
+        loop_indices = tuple(vertex_map[i][1] for i in loop_indices_orig) if vertex_map else loop_indices_orig
+        material_indices = tuple(i for i, c in enumerate(self.__materialFaceCountTable) for x in range(c))
+
+        mesh.loops.add(len(pmxModel.faces)*3)
+        mesh.loops.foreach_set('vertex_index', loop_indices)
+
+        mesh.polygons.add(len(pmxModel.faces))
+        mesh.polygons.foreach_set('loop_start', tuple(range(0, len(mesh.loops), 3)))
+        mesh.polygons.foreach_set('loop_total', (3,)*len(pmxModel.faces))
+        mesh.polygons.foreach_set('use_smooth', (True,)*len(pmxModel.faces))
+        mesh.polygons.foreach_set('material_index', material_indices)
+
+        uvTex = mesh.uv_textures.new()
+        uvLayer = mesh.uv_layers[uvTex.name]
         uv_table = {vi:self.flipUV_V(v.uv) for vi, v in enumerate(pmxModel.vertices)}
-        material_indices = (i for i, c in enumerate(self.__materialFaceCountTable) for x in range(c))
-        for bf, uv, f, mi in zip(mesh.tessfaces, uvLayer.data, pmxModel.faces, material_indices):
-            bf.vertices_raw = tuple(vertex_map[x][1] for x in f)+(0,) if vertex_map else tuple(f)+(0,)
-            bf.material_index = mi
-            bf.use_smooth = True
-            uv.uv1, uv.uv2, uv.uv3 = (uv_table[x] for x in f)
-            uv.image = self.__imageTable.get(bf.material_index, None)
+        uvLayer.data.foreach_set('uv', tuple(v for i in loop_indices_orig for v in uv_table[i]))
+
+        for bf, mi in zip(uvTex.data, material_indices):
+            bf.image = self.__imageTable.get(mi, None)
 
         if pmxModel.header and pmxModel.header.additional_uvs:
             logging.info('Importing %d additional uvs', pmxModel.header.additional_uvs)
             zw_data_map = collections.OrderedDict()
             split_uvzw = lambda uvi: (self.flipUV_V(uvi[:2]), uvi[2:])
             for i in range(pmxModel.header.additional_uvs):
-                add_uv = mesh.tessface_uv_textures.new('UV'+str(i+1))
+                add_uv = mesh.uv_layers[mesh.uv_textures.new(name='UV'+str(i+1)).name]
                 logging.info(' - %s...(uv channels)', add_uv.name)
                 uv_table = {vi:split_uvzw(v.additional_uvs[i]) for vi, v in enumerate(pmxModel.vertices)}
-                for uv, f in zip(add_uv.data, pmxModel.faces):
-                    uv.uv1, uv.uv2, uv.uv3 = (uv_table[x][0] for x in f)
+                add_uv.data.foreach_set('uv', tuple(v for i in loop_indices_orig for v in uv_table[i][0]))
                 if not any(any(s[1]) for s in uv_table.values()):
                     logging.info('\t- zw are all zeros: %s', add_uv.name)
                 else:
                     zw_data_map['_'+add_uv.name] = {k:self.flipUV_V(v[1]) for k, v in uv_table.items()}
             for name, zw_table in zw_data_map.items():
                 logging.info(' - %s...(zw channels of %s)', name, name[1:])
-                add_zw = mesh.tessface_uv_textures.new(name)
+                add_zw = mesh.uv_textures.new(name=name)
                 if add_zw is None:
                     logging.warning('\t* Lost zw channels')
                     continue
-                for uv, f in zip(add_zw.data, pmxModel.faces):
-                    uv.uv1, uv.uv2, uv.uv3 = (zw_table[x] for x in f)
+                add_zw = mesh.uv_layers[add_zw.name]
+                add_zw.data.foreach_set('uv', tuple(v for i in loop_indices_orig for v in zw_table[i]))
 
     def __importVertexMorphs(self):
         mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
+        Vector = mathutils.Vector
         self.__createBasisShapeKey()
         for morph in (x for x in self.__model.morphs if isinstance(x, pmx.VertexMorph)):
-            shapeKey = self.__meshObj.shape_key_add(morph.name)
+            shapeKey = self.__meshObj.shape_key_add(name=morph.name)
             vtx_morph = mmd_root.vertex_morphs.add()
             vtx_morph.name = morph.name
             vtx_morph.name_e = morph.name_e
             vtx_morph.category = categories.get(morph.category, 'OTHER')
             for md in morph.offsets:
                 shapeKeyPoint = shapeKey.data[md.index]
-                offset = mathutils.Vector(md.offset) * self.TO_BLE_MATRIX
-                shapeKeyPoint.co = shapeKeyPoint.co + offset * self.__scale
+                shapeKeyPoint.co += Vector(md.offset).xzy * self.__scale
 
     def __importMaterialMorphs(self):
         mmd_root = self.__root.mmd_root
@@ -733,7 +729,8 @@ class PMXImporter:
         armModifier = meshObj.modifiers.new(name='Armature', type='ARMATURE')
         armModifier.object = armObj
         armModifier.use_vertex_groups = True
-        armModifier.name='mmd_bone_order_override'
+        armModifier.name = 'mmd_bone_order_override'
+        armModifier.show_render = armModifier.show_viewport = (len(meshObj.data.vertices) > 0)
 
     def __assignCustomNormals(self):
         mesh = self.__meshObj.data
@@ -741,12 +738,13 @@ class PMXImporter:
             logging.info(' * No support for custom normals!!')
             return
         logging.info('Setting custom normals...')
+        Vector = mathutils.Vector
         if self.__vertex_map:
             verts, faces = self.__model.vertices, self.__model.faces
-            custom_normals = [(mathutils.Vector(verts[i].normal).xzy).normalized() for f in faces for i in f]
+            custom_normals = [(Vector(verts[i].normal).xzy).normalized() for f in faces for i in f]
             mesh.normals_split_custom_set(custom_normals)
         else:
-            custom_normals = [(mathutils.Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
+            custom_normals = [(Vector(v.normal).xzy).normalized() for v in self.__model.vertices]
             mesh.normals_split_custom_set_from_vertices(custom_normals)
         mesh.use_auto_smooth = True
         logging.info('   - Done!!')

@@ -70,11 +70,6 @@ class _DefaultMaterial:
 
 
 class __PmxExporter:
-    TO_PMX_MATRIX = mathutils.Matrix([
-        [1.0, 0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 1.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0]])
     CATEGORIES = {
         'SYSTEM': pmx.Morph.CATEGORY_SYSTEM,
         'EYEBROW': pmx.Morph.CATEGORY_EYEBROW,
@@ -352,14 +347,16 @@ class __PmxExporter:
         sorted_bones = sorted(pose_bones, key=lambda x: vtx_grps.get(x.name, _Dummy).index)
         #sorted_bones = sorted(pose_bones, key=self.__countBoneDepth)
 
-        pmx_matrix = self.TO_PMX_MATRIX * world_mat * self.__scale
+        Vector = mathutils.Vector
+        pmx_matrix = world_mat * self.__scale
+        pmx_matrix[1], pmx_matrix[2] = pmx_matrix[2].copy(), pmx_matrix[1].copy()
         def __to_pmx_location(loc):
-            return pmx_matrix * mathutils.Vector(loc)
+            return pmx_matrix * Vector(loc)
 
         pmx_matrix_rot = pmx_matrix.to_3x3()
         def __to_pmx_axis(axis, pose_bone):
             m = (pose_bone.matrix * pose_bone.bone.matrix_local.inverted()).to_3x3()
-            return (pmx_matrix_rot * m * mathutils.Vector(axis).xzy).normalized()
+            return (pmx_matrix_rot * m * Vector(axis).xzy).normalized()
 
         if True: # no need to enter edit mode
             for p_bone in sorted_bones:
@@ -817,6 +814,7 @@ class __PmxExporter:
     def __exportRigidBodies(self, rigid_bodies, bone_map):
         rigid_map = {}
         rigid_cnt = 0
+        Vector = mathutils.Vector
         for obj in rigid_bodies:
             t, r, s = obj.matrix_world.decompose()
             r = r.to_euler('YXZ')
@@ -828,18 +826,18 @@ class __PmxExporter:
             mmd_rigid = obj.mmd_rigid
             p_rigid.name = mmd_rigid.name_j or MoveObject.get_name(obj)
             p_rigid.name_e = mmd_rigid.name_e
-            p_rigid.location = mathutils.Vector(t) * self.TO_PMX_MATRIX * self.__scale
-            p_rigid.rotation = mathutils.Vector(r) * self.TO_PMX_MATRIX * -1
+            p_rigid.location = Vector(t).xzy * self.__scale
+            p_rigid.rotation = Vector(r).xzy * -1
             p_rigid.mode = int(mmd_rigid.type)
 
             rigid_shape = mmd_rigid.shape
-            shape_size = mathutils.Vector(mmd_rigid.size) * (sum(s) / 3)
+            shape_size = Vector(mmd_rigid.size) * (sum(s) / 3)
             if rigid_shape == 'SPHERE':
                 p_rigid.type = 0
                 p_rigid.size = shape_size * self.__scale
             elif rigid_shape == 'BOX':
                 p_rigid.type = 1
-                p_rigid.size = shape_size * self.__scale * self.TO_PMX_MATRIX
+                p_rigid.size = shape_size.xzy * self.__scale
             elif rigid_shape == 'CAPSULE':
                 p_rigid.type = 2
                 p_rigid.size = shape_size * self.__scale
@@ -866,6 +864,7 @@ class __PmxExporter:
         return rigid_map
 
     def __exportJoints(self, joints, rigid_map):
+        Vector = mathutils.Vector
         for joint in joints:
             t, r, s = joint.matrix_world.decompose()
             r = r.to_euler('YXZ')
@@ -877,33 +876,16 @@ class __PmxExporter:
             mmd_joint = joint.mmd_joint
             p_joint.name = mmd_joint.name_j or MoveObject.get_name(joint, 'J.')
             p_joint.name_e = mmd_joint.name_e
-            p_joint.location = mathutils.Vector(t) * self.TO_PMX_MATRIX * self.__scale
-            p_joint.rotation = mathutils.Vector(r) * self.TO_PMX_MATRIX * -1
+            p_joint.location = Vector(t).xzy * self.__scale
+            p_joint.rotation = Vector(r).xzy * -1
             p_joint.src_rigid = rigid_map.get(rbc.object1, -1)
             p_joint.dest_rigid = rigid_map.get(rbc.object2, -1)
-            p_joint.maximum_location = (mathutils.Vector([
-                rbc.limit_lin_x_upper,
-                rbc.limit_lin_y_upper,
-                rbc.limit_lin_z_upper,
-                ]) * self.TO_PMX_MATRIX * self.__scale).xyz
-            p_joint.minimum_location =(mathutils.Vector([
-                rbc.limit_lin_x_lower,
-                rbc.limit_lin_y_lower,
-                rbc.limit_lin_z_lower,
-                ]) * self.TO_PMX_MATRIX * self.__scale).xyz
-            p_joint.maximum_rotation = (mathutils.Vector([
-                rbc.limit_ang_x_lower,
-                rbc.limit_ang_y_lower,
-                rbc.limit_ang_z_lower,
-                ]) * self.TO_PMX_MATRIX * -1).xyz
-            p_joint.minimum_rotation = (mathutils.Vector([
-                rbc.limit_ang_x_upper,
-                rbc.limit_ang_y_upper,
-                rbc.limit_ang_z_upper,
-                ]) * self.TO_PMX_MATRIX * -1).xyz
-
-            p_joint.spring_constant = (mathutils.Vector(mmd_joint.spring_linear) * self.TO_PMX_MATRIX).xyz
-            p_joint.spring_rotation_constant = (mathutils.Vector(mmd_joint.spring_angular) * self.TO_PMX_MATRIX).xyz
+            p_joint.maximum_location = Vector((rbc.limit_lin_x_upper, rbc.limit_lin_z_upper, rbc.limit_lin_y_upper)) * self.__scale
+            p_joint.minimum_location = Vector((rbc.limit_lin_x_lower, rbc.limit_lin_z_lower, rbc.limit_lin_y_lower)) * self.__scale
+            p_joint.maximum_rotation = Vector((rbc.limit_ang_x_lower, rbc.limit_ang_z_lower, rbc.limit_ang_y_lower)) * -1
+            p_joint.minimum_rotation = Vector((rbc.limit_ang_x_upper, rbc.limit_ang_z_upper, rbc.limit_ang_y_upper)) * -1
+            p_joint.spring_constant = Vector(mmd_joint.spring_linear).xzy
+            p_joint.spring_rotation_constant = Vector(mmd_joint.spring_angular).xzy
             self.__model.joints.append(p_joint)
 
 
@@ -1010,7 +992,8 @@ class __PmxExporter:
         vg_edge_scale = meshObj.vertex_groups.get('mmd_edge_scale', None)
         vg_vertex_order = meshObj.vertex_groups.get('mmd_vertex_order', None)
 
-        pmx_matrix = self.TO_PMX_MATRIX * meshObj.matrix_world * self.__scale
+        pmx_matrix = meshObj.matrix_world * self.__scale
+        pmx_matrix[1], pmx_matrix[2] = pmx_matrix[2].copy(), pmx_matrix[1].copy()
         sx, sy, sz = meshObj.matrix_world.to_scale()
         normal_matrix = pmx_matrix.to_3x3()
         if not (sx == sy == sz):

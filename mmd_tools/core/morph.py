@@ -33,7 +33,7 @@ class FnMorph(object):
         key_blocks = obj.data.shape_keys.key_blocks
         for name in shape_key_names:
             if name not in key_blocks:
-                obj.shape_key_add(name)
+                obj.shape_key_add(name=name)
             elif len(key_blocks) > 1:
                 __move_to_bottom(key_blocks, name)
 
@@ -103,7 +103,7 @@ class FnMorph(object):
                 ObjectOp(obj).shape_key_remove(key_blocks[dest_name])
             obj.active_shape_key_index = key_blocks.find(src_name)
             obj.show_only_shape_key, last = True, obj.show_only_shape_key
-            obj.shape_key_add(dest_name, from_mix=True)
+            obj.shape_key_add(name=dest_name, from_mix=True)
             obj.show_only_shape_key = last
             obj.active_shape_key_index = key_blocks.find(dest_name)
 
@@ -223,7 +223,7 @@ class _MorphSlider:
             obj.parent = root
             bpy.context.scene.objects.link(obj)
         if obj and obj.data.shape_keys is None:
-            key = obj.shape_key_add('--- morph sliders ---')
+            key = obj.shape_key_add(name='--- morph sliders ---')
             key.mute = True
         return obj
 
@@ -261,7 +261,7 @@ class _MorphSlider:
             #if name[-1] == '\\': # fix driver's bug???
             #    m.name = name = name + ' '
             if name and name not in morph_key_blocks:
-                obj.shape_key_add(name)
+                obj.shape_key_add(name=name)
 
 
     @staticmethod
@@ -343,7 +343,7 @@ class _MorphSlider:
 
                 name_bind = 'mmd_bind%s'%hash(morph_key_blocks[kb_name])
                 if name_bind not in key_blocks:
-                    mesh.shape_key_add(name_bind)
+                    mesh.shape_key_add(name=name_bind)
                 kb_bind = key_blocks[name_bind]
                 kb_bind.relative_key = kb
                 kb_bind.slider_min = -10
