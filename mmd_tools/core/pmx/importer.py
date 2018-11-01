@@ -117,7 +117,7 @@ class PMXImporter:
         vertex_map = self.__vertex_map
         if vertex_map:
             indices = collections.OrderedDict(vertex_map).keys()
-            pmx_vertices = (pmxModel.vertices[x] for x in indices)
+            pmx_vertices = tuple(pmxModel.vertices[x] for x in indices)
             vertex_count = len(indices)
         if vertex_count < 1:
             return
