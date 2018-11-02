@@ -5,7 +5,7 @@ import bpy
 
 class MMDLamp:
     def __init__(self, obj):
-        if obj.type == 'LAMP':
+        if MMDLamp.isLamp(obj):
             obj = obj.parent
         if obj and obj.type == 'EMPTY' and obj.mmd_type == 'LIGHT':
             self.__emptyObj = obj
@@ -14,8 +14,12 @@ class MMDLamp:
 
 
     @staticmethod
+    def isLamp(obj):
+        return obj and obj.type == 'LAMP'
+
+    @staticmethod
     def isMMDLamp(obj):
-        if obj.type == 'LAMP':
+        if MMDLamp.isLamp(obj):
             obj = obj.parent
         return obj and obj.type == 'EMPTY' and obj.mmd_type == 'LIGHT'
 
@@ -54,7 +58,7 @@ class MMDLamp:
 
     def lamp(self):
         for i in self.__emptyObj.children:
-            if i.type == 'LAMP':
+            if MMDLamp.isLamp(i):
                 return i
         raise Exception
 

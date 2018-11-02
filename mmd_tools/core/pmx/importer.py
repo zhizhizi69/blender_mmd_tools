@@ -361,23 +361,15 @@ class PMXImporter:
                 bone.use_ik_limit_x = True
                 bone.use_ik_limit_y = True
                 bone.use_ik_limit_z = True
-                bone.ik_max_x = maximum[0]
-                bone.ik_max_y = maximum[1]
-                bone.ik_max_z = maximum[2]
-                bone.ik_min_x = minimum[0]
-                bone.ik_min_y = minimum[1]
-                bone.ik_min_z = minimum[2]
+                bone.ik_max_x, bone.ik_max_y, bone.ik_max_z = maximum
+                bone.ik_min_x, bone.ik_min_y, bone.ik_min_z = minimum
 
                 c = bone.constraints.new(type='LIMIT_ROTATION')
                 c.mute = not is_valid_ik
                 c.name = 'mmd_ik_limit_override'
                 c.owner_space = 'POSE' # WORLD/POSE/LOCAL
-                c.max_x = maximum[0]
-                c.max_y = maximum[1]
-                c.max_z = maximum[2]
-                c.min_x = minimum[0]
-                c.min_y = minimum[1]
-                c.min_z = minimum[2]
+                c.max_x, c.max_y, c.max_z = maximum
+                c.min_x, c.min_y, c.min_z = minimum
                 c.use_limit_x = bone.ik_max_x != c.max_x or bone.ik_min_x != c.min_x
                 c.use_limit_y = bone.ik_max_y != c.max_y or bone.ik_min_y != c.min_y
                 c.use_limit_z = bone.ik_max_z != c.max_z or bone.ik_min_z != c.min_z
@@ -711,7 +703,7 @@ class PMXImporter:
             frame.name_e = i.name_e
             frame.is_special = i.isSpecial
             for disp_type, index in i.data:
-                item = frame.items.add()
+                item = frame.data.add()
                 if disp_type == 0:
                     item.type = 'BONE'
                     item.name = self.__boneTable[index].name

@@ -41,7 +41,7 @@ class RemoveDisplayItemFrame(Operator):
         frames = mmd_root.display_item_frames
         frame = ItemOp.get_by_index(frames, index)
         if frame and frame.is_special:
-            frame.items.clear()
+            frame.data.clear()
             frame.active_item = 0
         else:
             frames.remove(index)
@@ -92,7 +92,7 @@ class AddDisplayItem(Operator):
         return {'FINISHED'}
 
     def _add_item(self, frame, item_type, item_name, morph_type=None):
-        items = frame.items
+        items = frame.data
         item, index = ItemOp.add_after(items, frame.active_item)
         item.type = item_type
         item.name = item_name
@@ -121,10 +121,10 @@ class RemoveDisplayItem(Operator):
         if frame is None:
             return {'CANCELLED'}
         if self.all:
-            frame.items.clear()
+            frame.data.clear()
             frame.active_item = 0
         else:
-            frame.items.remove(frame.active_item)
+            frame.data.remove(frame.active_item)
             frame.active_item = max(0, frame.active_item-1)
         return {'FINISHED'}
 
@@ -141,7 +141,7 @@ class MoveDisplayItem(Operator, ItemMoveOp):
         frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
         if frame is None:
             return {'CANCELLED'}
-        frame.active_item = self.move(frame.items, frame.active_item, self.type)
+        frame.active_item = self.move(frame.data, frame.active_item, self.type)
         return {'FINISHED'}
 
 class FindDisplayItem(Operator):
@@ -186,7 +186,7 @@ class FindDisplayItem(Operator):
 
     def _find_display_item(self, mmd_root, check_func=None):
         for i, frame in enumerate(mmd_root.display_item_frames):
-            for j, item in enumerate(frame.items):
+            for j, item in enumerate(frame.data):
                 if check_func(item):
                     mmd_root.active_display_item_frame = i
                     frame.active_item = j
@@ -205,7 +205,7 @@ class SelectCurrentDisplayItem(Operator):
         frame = ItemOp.get_by_index(mmd_root.display_item_frames, mmd_root.active_display_item_frame)
         if frame is None:
             return {'CANCELLED'}
-        item = ItemOp.get_by_index(frame.items, frame.active_item)
+        item = ItemOp.get_by_index(frame.data, frame.active_item)
         if item is None:
             return {'CANCELLED'}
 
@@ -264,7 +264,7 @@ class DisplayItemQuickSetup(Operator):
 
         frames = mmd_root.display_item_frames
         frame = frames[u'表情']
-        facial_items = frame.items
+        facial_items = frame.data
         mmd_root.active_display_item_frame = frames.find(frame.name)
 
         # keep original item order
@@ -297,7 +297,7 @@ class DisplayItemQuickSetup(Operator):
                 frame.name_e = group_name
             used_index.add(frames.find(group_name))
 
-            items = frame.items
+            items = frame.data
             ItemOp.resize(items, len(bone_names))
             for item, name in zip(items, bone_names):
                 item.type = 'BONE'
@@ -310,7 +310,7 @@ class DisplayItemQuickSetup(Operator):
                 frame = frames[i]
                 if frame.is_special:
                     if frame.name != u'表情':
-                        frame.items.clear()
+                        frame.data.clear()
                 else:
                     frames.remove(i)
         mmd_root.active_display_item_frame = 0
@@ -340,7 +340,7 @@ class DisplayItemQuickSetup(Operator):
         used_groups = set()
         unassigned_bones = {b.name for b in pose_bones}
         for frame in mmd_root.display_item_frames:
-            for item in frame.items:
+            for item in frame.data:
                 if item.type == 'BONE' and item.name in unassigned_bones:
                     unassigned_bones.remove(item.name)
                     group_name = frame.name

@@ -211,7 +211,7 @@ class MMDDisplayItemFrame(PropertyGroup):
         )
 
     ## 表示項目のリスト
-    items = CollectionProperty(
+    data = CollectionProperty(
         name='Display Items',
         type=MMDDisplayItem,
         )

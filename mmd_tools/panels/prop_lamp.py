@@ -14,7 +14,7 @@ class MMDLampPanel(Panel):
     @classmethod
     def poll(cls, context):
         obj = context.active_object
-        return obj and (obj.type == 'LAMP' or MMDLamp.isMMDLamp(obj))
+        return obj and (MMDLamp.isLamp(obj) or MMDLamp.isMMDLamp(obj))
 
     def draw(self, context):
         obj = context.active_object
@@ -30,5 +30,5 @@ class MMDLampPanel(Panel):
             c.prop(lamp.data, 'color')
             c.prop(lamp, 'location', text='Light Source')
         else:
-            layout.operator('mmd_tools.convert_to_mmd_lamp', 'Convert')
+            layout.operator('mmd_tools.convert_to_mmd_lamp', text='Convert')
 

@@ -249,7 +249,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         row.template_list(
             "MMD_ROOT_UL_display_items",
             "",
-            frame, "items",
+            frame, "data",
             frame, "active_item",
             )
         tb = row.column()
@@ -280,7 +280,7 @@ class UL_Morphs(UIList):
             row = row.row(align=True)
             row.prop(item, 'category', text='', emboss=False)
             frame_facial = mmd_root.display_item_frames.get(u'表情')
-            morph_item = frame_facial.items.get(item.name) if frame_facial else None
+            morph_item = frame_facial.data.get(item.name) if frame_facial else None
             if morph_item is None:
                 row.label(icon='INFO')
             elif morph_item.morph_type != mmd_root.active_morph_type:

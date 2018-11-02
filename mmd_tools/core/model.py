@@ -125,8 +125,8 @@ class Model:
         frame_facial.is_special = True
 
         arm = self.armature()
-        if arm and len(arm.data.bones) and len(frame_root.items) < 1:
-            item = frame_root.items.add()
+        if arm and len(arm.data.bones) and len(frame_root.data) < 1:
+            item = frame_root.data.add()
             item.type = 'BONE'
             item.name = arm.data.bones[0].name
 
@@ -524,7 +524,7 @@ class Model:
 
         mmd_root = self.rootObject().mmd_root
         for frame in mmd_root.display_item_frames:
-            for item in frame.items:
+            for item in frame.data:
                 if item.type == 'BONE' and item.name == old_bone_name:
                     item.name = new_bone_name
         for mesh in self.meshes():

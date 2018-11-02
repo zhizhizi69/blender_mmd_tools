@@ -38,4 +38,4 @@ class MMDCameraPanel(Panel):
             layout.prop(empty.mmd_camera, 'angle')
             layout.prop(empty.mmd_camera, 'is_perspective')
         else:
-            layout.operator('mmd_tools.convert_to_mmd_camera', 'Convert')
+            layout.operator('mmd_tools.convert_to_mmd_camera', text='Convert')

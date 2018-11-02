@@ -19,8 +19,7 @@ class ConvertToMMDLamp(Operator):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        return obj and obj.type == 'LAMP'
+        return MMDLamp.isLamp(context.active_object)
 
     def invoke(self, context, event):
         vm = context.window_manager

@@ -22,11 +22,10 @@ from mmd_tools.operators.misc import MoveObject
 
 
 class _Vertex:
-    def __init__(self, co, groups, offsets, old_index, edge_scale, vertex_order, uv_offsets):
+    def __init__(self, co, groups, offsets, edge_scale, vertex_order, uv_offsets):
         self.co = co
         self.groups = groups # [(group_number, weight), ...]
         self.offsets = offsets
-        self.old_index = old_index # used for exporting uv morphs
         self.edge_scale = edge_scale
         self.vertex_order = vertex_order # used for controlling vertex order
         self.uv_offsets = uv_offsets
@@ -82,7 +81,6 @@ class __PmxExporter:
         self.__bone_name_table = []
         self.__material_name_table = []
         self.__exported_vertices = []
-        self.__vertex_index_map = {} # used for exporting uv morphs
         self.__default_material = None
         self.__vertex_order_map = None # used for controlling vertex order
         self.__disable_specular = False
@@ -107,10 +105,8 @@ class __PmxExporter:
 
         # update indices
         index_map = {x:i for i, x in enumerate(sorted_indices)}
-        for v in self.__vertex_order_map.values(): # for vertex morphs
+        for v in self.__vertex_order_map.values():
             v.index = index_map[v.index]
-        for v in self.__vertex_index_map.values(): # for uv morphs
-            v[:] = [index_map[i] for i in v]
         for f in self.__model.faces:
             f[:] = [index_map[i] for i in f]
         logging.debug('   - Done (count:%d)', len(self.__vertex_order_map))
@@ -141,8 +137,6 @@ class __PmxExporter:
                         continue
 
                     v.index = len(self.__model.vertices)
-                    if v.old_index is not None:
-                        self.__vertex_index_map[v.old_index].append(v.index)
                     if sort_vertices:
                         self.__vertex_order_map[v.index] = v
 
@@ -437,6 +431,7 @@ class __PmxExporter:
                 pmx_bones.append(pmx_bone)
 
             self.__model.bones = pmx_bones
+        self.__exportIK(r)
         return r
 
     def __exportIKLinks(self, pose_bone, count, bone_map, ik_links):
@@ -723,16 +718,7 @@ class __PmxExporter:
             if morph.data_type == 'VERTEX_GROUP':
                 append_table_vg[morph.name] = uv_morph.offsets.append
                 continue
-            offsets = []
-            for data in morph.data:
-                dx, dy, dz, dw = data.offset
-                offset = (dx, -dy, dz, -dw)
-                for idx in self.__vertex_index_map.get(data.index, []):
-                    morph_data = pmx.UVMorphOffset()
-                    morph_data.index = idx
-                    morph_data.offset = offset
-                    offsets.append(morph_data)
-            uv_morph.offsets = sorted(offsets, key=lambda x: x.index)
+            logging.warning(' * Deprecated UV morph "%s", please convert it to vertex groups', morph.name)
 
         if append_table_vg:
             incompleted = set()
@@ -786,7 +772,7 @@ class __PmxExporter:
             d.name_e = i.name_e
             d.isSpecial = i.is_special
             items = []
-            for j in i.items:
+            for j in i.data:
                 if j.type == 'BONE' and j.name in bone_map:
                     items.append((0, bone_map[j.name]))
                 elif j.type == 'MORPH' and (j.morph_type, j.name) in morph_map:
@@ -1006,12 +992,6 @@ class __PmxExporter:
         base_mesh.transform(pmx_matrix)
         base_mesh.update(calc_tessface=True)
 
-        sort_vertices = self.__vertex_order_map is not None
-        has_uv_morphs = self.__vertex_index_map is None # currently support for first mesh only
-        if has_uv_morphs:
-            self.__vertex_index_map = dict([(v.index, []) for v in base_mesh.vertices])
-
-
         def _get_weight(vertex_group, vertex, default_weight):
             for i in vertex.groups:
                 if i.group == vertex_group.index:
@@ -1025,7 +1005,7 @@ class __PmxExporter:
             get_edge_scale = lambda x: 1
 
         get_vertex_order = None
-        if sort_vertices:
+        if self.__vertex_order_map: # sort vertices
             mesh_id = self.__vertex_order_map.setdefault('mesh_id', 0)
             self.__vertex_order_map['mesh_id'] += 1
             if vg_vertex_order and self.__vertex_order_map['method'] == 'CUSTOM':
@@ -1051,7 +1031,6 @@ class __PmxExporter:
                 v.co,
                 [(x.group, x.weight) for x in v.groups if x.weight > 0 and x.group in vertex_group_names],
                 {},
-                v.index if has_uv_morphs else None,
                 get_edge_scale(v),
                 get_vertex_order(v),
                 get_uv_offsets(v),
@@ -1221,8 +1200,6 @@ class __PmxExporter:
             txt = bpy.data.texts.get(root.mmd_root.comment_e_text, None)
             if txt:
                 self.__model.comment_e = txt.as_string().replace('\n', '\r\n')
-            if len(root.mmd_root.uv_morphs) > 0:
-                self.__vertex_index_map = None # has_uv_morphs = True
 
         self.__armature = args.get('armature', None)
         meshes = sorted(args.get('meshes', []), key=lambda x: x.name)
@@ -1230,26 +1207,21 @@ class __PmxExporter:
         joints = sorted(args.get('joints', []), key=lambda x: x.name)
 
         self.__scale = args.get('scale', 1.0)
-        copy_textures = args.get('copy_textures', False)
-        sort_materials = args.get('sort_materials', False)
+        self.__disable_specular = args.get('disable_specular', False)
         sort_vertices = args.get('sort_vertices', 'NONE')
         if sort_vertices != 'NONE':
             self.__vertex_order_map = {'method':sort_vertices}
 
         nameMap = self.__exportBones(meshes)
-        self.__exportIK(nameMap)
 
         mesh_data = []
         for i in meshes:
             mesh_data.append(self.__loadMeshData(i, nameMap))
-
-        self.__disable_specular = args.get('disable_specular', False)
         self.__exportMeshes(mesh_data, nameMap)
-        self.__exportVertexMorphs(mesh_data, root)
-        if sort_materials:
+        if args.get('sort_materials', False):
             self.__sortMaterials()
-        rigid_map = self.__exportRigidBodies(rigids, nameMap)
-        self.__exportJoints(joints, rigid_map)
+
+        self.__exportVertexMorphs(mesh_data, root)
         if root is not None:
             self.__export_bone_morphs(root)
             self.__export_material_morphs(root)
@@ -1257,7 +1229,10 @@ class __PmxExporter:
             self.__export_group_morphs(root)
             self.__exportDisplayItems(root, nameMap)
 
-        if copy_textures:
+        rigid_map = self.__exportRigidBodies(rigids, nameMap)
+        self.__exportJoints(joints, rigid_map)
+
+        if args.get('copy_textures', False):
             output_dir = os.path.dirname(filepath)
             import_folder = root.get('import_folder', '') if root else ''
             base_folder = bpyutils.addon_preferences('base_texture_folder', '')
