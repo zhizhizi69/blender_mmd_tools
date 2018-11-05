@@ -4,14 +4,13 @@ from bpy.types import Panel, UIList
 
 from mmd_tools.core.model import Model
 from mmd_tools.panels.tool import TRIA_UP_BAR, TRIA_DOWN_BAR
-
 from mmd_tools.panels.tool import _PanelBase
 
 class UL_Materials(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT'}:    
-            if item:        
+        if self.layout_type in {'DEFAULT'}:
+            if item:
                 row = layout.row(align=True)
                 item_prop = getattr(item, 'mmd_material')
                 row.prop(item_prop, 'name_j', text='', emboss=False, icon='MATERIAL')
@@ -38,7 +37,7 @@ class MMDMaterialSorter(_PanelBase, Panel):
         active_obj = context.active_object
         if (active_obj is None or active_obj.type != 'MESH' or
             active_obj.mmd_type != 'NONE'):
-            layout.label("Select a mesh object")
+            layout.label(text='Select a mesh object')
             return
 
         col = layout.column(align=True)
@@ -47,14 +46,14 @@ class MMDMaterialSorter(_PanelBase, Panel):
                           active_obj.data, "materials",
                           active_obj, "active_material_index")
         tb = row.column()
-        tbl = tb.column(align=True)
-        tbl.operator('mmd_tools.move_material_up', text='', icon='TRIA_UP')
-        tbl.operator('mmd_tools.move_material_down', text='', icon='TRIA_DOWN')
+        tb1 = tb.column(align=True)
+        tb1.operator('mmd_tools.move_material_up', text='', icon='TRIA_UP')
+        tb1.operator('mmd_tools.move_material_down', text='', icon='TRIA_DOWN')
 
 class UL_ModelMeshes(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT'}:           
+        if self.layout_type in {'DEFAULT'}:
             layout.label(text=item.name, translate=False, icon='OBJECT_DATA')
         elif self.layout_type in {'COMPACT'}:
             pass
@@ -103,7 +102,7 @@ class MMDMeshSorter(_PanelBase, Panel):
         active_obj = context.active_object
         root = Model.findRoot(active_obj)
         if root is None:
-            layout.label("Select a MMD Model")
+            layout.label(text='Select a MMD Model')
             return
 
         col = layout.column(align=True)

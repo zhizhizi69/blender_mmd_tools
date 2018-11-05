@@ -22,7 +22,7 @@ class MMDBonePanel(Panel):
 
         layout = self.layout
         if pose_bone.is_mmd_shadow_bone:
-            layout.label('MMD Shadow Bone!', icon='INFO')
+            layout.label(text='MMD Shadow Bone!', icon='INFO')
             return
 
         mmd_bone = pose_bone.mmd_bone

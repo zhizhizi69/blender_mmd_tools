@@ -596,8 +596,8 @@ class EditUVMorph(Operator):
         obj = context.active_object
         if obj.type != 'MESH':
             return False
-        uv_textures = obj.data.uv_textures
-        return uv_textures.active and uv_textures.active.name.startswith('__uv.')
+        active_uv_layer = obj.data.uv_layers.active
+        return active_uv_layer and active_uv_layer.name.startswith('__uv.')
 
     def execute(self, context):
         obj = context.active_object
@@ -634,8 +634,8 @@ class ApplyUVMorph(Operator):
         obj = context.active_object
         if obj.type != 'MESH':
             return False
-        uv_textures = obj.data.uv_textures
-        return uv_textures.active and uv_textures.active.name.startswith('__uv.')
+        active_uv_layer = obj.data.uv_layers.active
+        return active_uv_layer and active_uv_layer.name.startswith('__uv.')
 
     def execute(self, context):
         obj = context.active_object
@@ -649,7 +649,7 @@ class ApplyUVMorph(Operator):
             morph = mmd_root.uv_morphs[mmd_root.active_morph]
             mesh = meshObj.data
 
-            base_uv_name = mesh.uv_textures.active.name[5:]
+            base_uv_name = mesh.uv_layers.active.name[5:]
             if base_uv_name not in mesh.uv_layers:
                 self.report({'ERROR'}, ' * UV map "%s" not found'%base_uv_name)
                 return {'CANCELLED'}

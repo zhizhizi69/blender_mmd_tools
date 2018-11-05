@@ -1214,9 +1214,7 @@ class __PmxExporter:
 
         nameMap = self.__exportBones(meshes)
 
-        mesh_data = []
-        for i in meshes:
-            mesh_data.append(self.__loadMeshData(i, nameMap))
+        mesh_data = [self.__loadMeshData(i, nameMap) for i in meshes]
         self.__exportMeshes(mesh_data, nameMap)
         if args.get('sort_materials', False):
             self.__sortMaterials()

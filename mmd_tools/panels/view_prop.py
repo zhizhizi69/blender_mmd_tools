@@ -51,8 +51,7 @@ class MMDViewPanel(_PanelBase, Panel):
     def draw(self, context):
         layout = self.layout
 
-        col = layout.column()
-        c = col.column(align=True)
+        c = layout.column(align=True)
         r = c.row(align=True)
         r.operator('mmd_tools.set_glsl_shading', text='GLSL')
         r.operator('mmd_tools.set_shadeless_glsl_shading', text='Shadeless')
@@ -68,5 +67,5 @@ class MMDSDEFPanel(_PanelBase, Panel):
         c.operator('mmd_tools.sdef_bind', text='Bind')
         c.operator('mmd_tools.sdef_unbind', text='Unbind')
         row = c.row()
-        row.label('Cache Info: %d data'%(len(FnSDEF.g_verts)), icon='INFO')
+        row.label(text='Cache Info: %d data'%(len(FnSDEF.g_verts)), icon='INFO')
         row.operator('mmd_tools.sdef_cache_reset', text='', icon='X')

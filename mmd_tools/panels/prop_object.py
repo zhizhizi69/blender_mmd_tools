@@ -87,7 +87,7 @@ class MMDRigidPanel(_PanelBase, Panel):
         c = layout.column()
         #c.prop(obj.mmd_rigid, 'collision_group_mask')
         col = c.column(align=True)
-        col.label('Collision Group Mask:')
+        col.label(text='Collision Group Mask:')
         row = col.row(align=True)
         for i in range(0, 8):
             row.prop(obj.mmd_rigid, 'collision_group_mask', index=i, text=str(i), toggle=True)
@@ -96,7 +96,7 @@ class MMDRigidPanel(_PanelBase, Panel):
             row.prop(obj.mmd_rigid, 'collision_group_mask', index=i, text=str(i), toggle=True)
 
         c = layout.column()
-        c.label('Damping')
+        c.label(text='Damping')
         row = c.row()
         row.prop(obj.rigid_body, 'linear_damping')
         row.prop(obj.rigid_body, 'angular_damping')
@@ -132,9 +132,9 @@ class MMDJointPanel(_PanelBase, Panel):
 
             row = layout.row(align=True)
             col = row.column(align=True)
-            col.label('X-Axis:')
-            col.label('Y-Axis:')
-            col.label('Z-Axis:')
+            col.label(text='X-Axis:')
+            col.label(text='Y-Axis:')
+            col.label(text='Z-Axis:')
             col = row.column(align=True)
             row = col.row(align=True)
             row.prop(rbc, 'limit_lin_x_lower')
@@ -148,9 +148,9 @@ class MMDJointPanel(_PanelBase, Panel):
 
             row = layout.row(align=True)
             col = row.column(align=True)
-            col.label('X-Axis:')
-            col.label('Y-Axis:')
-            col.label('Z-Axis:')
+            col.label(text='X-Axis:')
+            col.label(text='Y-Axis:')
+            col.label(text='Z-Axis:')
             col = row.column(align=True)
             row = col.row(align=True)
             row.prop(rbc, 'limit_ang_x_lower')
@@ -162,8 +162,7 @@ class MMDJointPanel(_PanelBase, Panel):
             row.prop(rbc, 'limit_ang_z_lower')
             row.prop(rbc, 'limit_ang_z_upper')
 
-        col = layout.column()
-        row = col.row()
+        row = layout.row()
         row.column(align=True).prop(obj.mmd_joint, 'spring_linear')
         row.column(align=True).prop(obj.mmd_joint, 'spring_angular')
 

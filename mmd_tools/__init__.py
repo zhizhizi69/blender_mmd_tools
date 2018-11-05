@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-bl_info= {
+bl_info = {
     "name": "mmd_tools",
     "author": "sugiany",
     "version": (0, 6, 0),
@@ -10,7 +10,8 @@ bl_info= {
     "warning": "",
     "wiki_url": "https://github.com/powroupi/blender_mmd_tools/wiki",
     "tracker_url": "https://github.com/powroupi/blender_mmd_tools/issues",
-    "category": "Object"}
+    "category": "Object",
+    }
 
 if "bpy" in locals():
     if bpy.app.version < (2, 71, 0):

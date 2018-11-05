@@ -49,37 +49,37 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
             row = layout.split(percentage=1/3, align=False)
 
             col = row.column(align=True)
-            col.label('Bone Constraints:', icon='CONSTRAINT_BONE')
+            col.label(text='Bone Constraints:', icon='CONSTRAINT_BONE')
             col.operator('mmd_tools.apply_additional_transform', text='Apply')
             col.operator('mmd_tools.clean_additional_transform', text='Clean')
 
             col = row.column(align=True)
             col.active = context.scene.rigidbody_world is not None and context.scene.rigidbody_world.enabled
             sub_row = col.row(align=True)
-            sub_row.label('Physics:', icon='PHYSICS')
+            sub_row.label(text='Physics:', icon='PHYSICS')
             if not root.mmd_root.is_built:
                 sub_row.label(icon='ERROR')
             col.operator('mmd_tools.build_rig', text='Build')
             col.operator('mmd_tools.clean_rig', text='Clean')
 
             col = row.column(align=True)
-            col.label('Edge Preview:', icon='MATERIAL')
+            col.label(text='Edge Preview:', icon='MATERIAL')
             col.operator_enum('mmd_tools.edge_preview_setup', 'action')
 
         row = layout.row()
 
         col = row.column(align=True)
-        col.label('Model:', icon='OUTLINER_OB_ARMATURE')
+        col.label(text='Model:', icon='OUTLINER_OB_ARMATURE')
         col.operator('mmd_tools.import_model', text='Import')
         col.operator('mmd_tools.export_pmx', text='Export')
 
         col = row.column(align=True)
-        col.label('Motion:', icon='ANIM')
+        col.label(text='Motion:', icon='ANIM')
         col.operator('mmd_tools.import_vmd', text='Import')
         col.operator('mmd_tools.export_vmd', text='Export')
 
         col = row.column(align=True)
-        col.label('Pose:', icon='POSE_HLT')
+        col.label(text='Pose:', icon='POSE_HLT')
         col.operator('mmd_tools.import_vpd', text='Import')
         col.operator('mmd_tools.export_vpd', text='Export')
 
@@ -217,8 +217,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         active_obj = context.active_object
         root = mmd_model.Model.findRoot(active_obj)
         if root is None:
-            c = self.layout.column()
-            c.label('Select a MMD Model')
+            self.layout.label(text='Select a MMD Model')
             return
 
         mmd_root = root.mmd_root
@@ -367,8 +366,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         active_obj = context.active_object
         root = mmd_model.Model.findRoot(active_obj)
         if root is None:
-            c = self.layout.column()
-            c.label('Select a MMD Model')
+            self.layout.label(text='Select a MMD Model')
             return
 
         rig = mmd_model.Model(root)
@@ -430,16 +428,14 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             if kb:
                 found = row = col.row(align=True)
                 row.active = not (i.show_only_shape_key or kb.mute)
-                row.label(i.name, icon='OBJECT_DATA')
+                row.label(text=i.name, icon='OBJECT_DATA')
                 row.prop(kb, 'value', text=kb.name)
         if 'found' not in locals():
             col.label(text='Not found', icon='INFO')
 
     def _draw_material_data(self, context, rig, col, morph):
-        c = col.column(align=True)
-        c.label('Material Offsets (%d)'%len(morph.data))
-
-        data = self._template_morph_offset_list(c, morph, 'UL_MaterialMorphOffsets')
+        col.label(text='Material Offsets (%d)'%len(morph.data))
+        data = self._template_morph_offset_list(col, morph, 'UL_MaterialMorphOffsets')
         if data is None:
             return
 
@@ -451,22 +447,20 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
         base_mat_name = data.material
         if '_temp' in base_mat_name:
-            c = col.column(align=True)
-            c.label('This is not a valid base material', icon='ERROR')
+            col.label(text='This is not a valid base material', icon='ERROR')
             return
 
         work_mat = bpy.data.materials.get(base_mat_name + '_temp', None)
         use_work_mat = work_mat and related_mesh and work_mat.name in related_mesh.materials
         if not use_work_mat:
-            c = col.column(align=True)
+            c = col.column()
             row = c.row(align=True)
             if base_mat_name == '':
-                row.label('This offset affects all materials', icon='INFO')
+                row.label(text='This offset affects all materials', icon='INFO')
             else:
                 row.operator(operators.morph.CreateWorkMaterial.bl_idname)
                 row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
 
-            c = col.column()
             row = c.row()
             row.prop(data, 'offset_type')
             row = c.row()
@@ -485,12 +479,11 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.column(align=True).prop(data, 'toon_texture_factor', expand=True, slider=True)
         else:
             c_mat.enabled = False
-            c = col.column(align=True)
+            c = col.column()
             row = c.row(align=True)
             row.operator(operators.morph.ApplyMaterialOffset.bl_idname, text='Apply')
             row.operator(operators.morph.ClearTempMaterials.bl_idname, text='Clear')
 
-            c = col.column()
             row = c.row()
             row.prop(data, 'offset_type')
             row = c.row()
@@ -513,24 +506,20 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
     def _draw_bone_data(self, context, rig, col, morph):
         armature = rig.armature()
         if armature is None:
-            c = col.column(align=True)
-            c.label('Armature not found', icon='ERROR')
+            col.label(text='Armature not found', icon='ERROR')
             return
 
-        c = col.column(align=True)
-        row = c.row(align=True)
+        row = col.row(align=True)
         row.operator(operators.morph.ViewBoneMorph.bl_idname, text='View')
         row.operator('mmd_tools.apply_bone_morph', text='Apply')
         row.operator('pose.transforms_clear', text='Clear')
 
-        c = col.column(align=True)
-        c.label('Bone Offsets (%d)'%len(morph.data))
-
-        data = self._template_morph_offset_list(c, morph, 'UL_BoneMorphOffsets')
+        col.label(text='Bone Offsets (%d)'%len(morph.data))
+        data = self._template_morph_offset_list(col, morph, 'UL_BoneMorphOffsets')
         if data is None:
             return
 
-        row = c.row(align=True)
+        row = col.row(align=True)
         row.prop_search(data, 'bone', armature.pose, 'bones')
         if data.bone:
             row = col.row(align=True)
@@ -538,8 +527,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             row.operator(operators.morph.EditBoneOffset.bl_idname, text='Edit')
             row.operator(operators.morph.ApplyBoneOffset.bl_idname, text='Update')
 
-        c = col.column(align=True)
-        row = c.row()
+        row = col.row()
         row.column(align=True).prop(data, 'location')
         row.column(align=True).prop(data, 'rotation')
 
@@ -560,16 +548,14 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         if morph.data_type == 'VERTEX_GROUP':
             row.prop(morph, 'vertex_group_scale', text='Scale')
         else:
-            row.label('UV Offsets (%d)'%len(morph.data))
+            row.label(text='UV Offsets (%d)'%len(morph.data))
             #self._template_morph_offset_list(c, morph, 'UL_UVMorphOffsets')
         row.prop(morph, 'uv_index')
         row.operator('mmd_tools.morph_offset_remove', text='', icon='X').all = True
 
     def _draw_group_data(self, context, rig, col, morph):
-        c = col.column(align=True)
-        c.label('Group Offsets (%d)'%len(morph.data))
-
-        item = self._template_morph_offset_list(c, morph, 'UL_GroupMorphOffsets')
+        col.label(text='Group Offsets (%d)'%len(morph.data))
+        item = self._template_morph_offset_list(col, morph, 'UL_GroupMorphOffsets')
         if item is None:
             return
 
@@ -682,8 +668,7 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         active_obj = context.active_object
         root = mmd_model.Model.findRoot(active_obj)
         if root is None:
-            c = self.layout.column()
-            c.label('Select a MMD Model')
+            self.layout.label(text='Select a MMD Model')
             return
 
         col = self.layout.column()
@@ -740,8 +725,7 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
         active_obj = context.active_object
         root = mmd_model.Model.findRoot(active_obj)
         if root is None:
-            c = self.layout.column()
-            c.label('Select a MMD Model')
+            self.layout.label(text='Select a MMD Model')
             return
 
         col = self.layout.column()
