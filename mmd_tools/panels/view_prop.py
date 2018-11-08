@@ -2,6 +2,7 @@
 
 from bpy.types import Panel
 
+from mmd_tools import register_wrap
 from mmd_tools.core.model import Model
 from mmd_tools.core.sdef import FnSDEF
 
@@ -9,6 +10,7 @@ class _PanelBase(object):
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
 
+@register_wrap
 class MMDModelObjectDisplayPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_root_object_display'
     bl_label = 'MMD Display'
@@ -43,7 +45,7 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
         row = layout.row(align=True)
         row.prop(root.mmd_root, 'use_sdef', text='SDEF')
 
-
+@register_wrap
 class MMDViewPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_view'
     bl_label = 'MMD Shading'
@@ -58,6 +60,7 @@ class MMDViewPanel(_PanelBase, Panel):
         r = c.row(align=True)
         r.operator('mmd_tools.reset_shading', text='Reset')
 
+@register_wrap
 class MMDSDEFPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_sdef'
     bl_label = 'MMD SDEF Driver'

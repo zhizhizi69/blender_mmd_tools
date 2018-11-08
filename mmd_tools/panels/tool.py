@@ -3,6 +3,7 @@
 import bpy
 from bpy.types import Panel, Menu, UIList
 
+from mmd_tools import register_wrap
 from mmd_tools import operators
 from mmd_tools.utils import ItemOp
 import mmd_tools.core.model as mmd_model
@@ -21,6 +22,7 @@ class _PanelBase(object):
     bl_category = 'MMD'
 
 
+@register_wrap
 class MMDToolsObjectPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_object'
     bl_label = 'Operator'
@@ -84,6 +86,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
         col.operator('mmd_tools.export_vpd', text='Export')
 
 
+@register_wrap
 class MMD_ROOT_UL_display_item_frames(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         frame = item
@@ -103,6 +106,7 @@ class MMD_ROOT_UL_display_item_frames(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+@register_wrap
 class MMD_ROOT_UL_display_items(UIList):
     morph_filter = bpy.props.EnumProperty(
         name="Morph Filter",
@@ -163,7 +167,6 @@ class MMD_ROOT_UL_display_items(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
-
     def filter_items(self, context, data, propname):
         if len(self.morph_filter) == 5 or data.name != u'表情':
             return [], []
@@ -186,6 +189,7 @@ class MMD_ROOT_UL_display_items(UIList):
         row.prop(self, 'mmd_name', expand=True)
 
 
+@register_wrap
 class MMDDisplayItemFrameMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_display_item_frame_menu'
     bl_label = 'Display Item Frame Menu'
@@ -197,6 +201,7 @@ class MMDDisplayItemFrameMenu(Menu):
         layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
         layout.operator('mmd_tools.display_item_frame_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
+@register_wrap
 class MMDDisplayItemMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_display_item_menu'
     bl_label = 'Display Item Menu'
@@ -208,6 +213,7 @@ class MMDDisplayItemMenu(Menu):
         layout.operator('mmd_tools.display_item_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
         layout.operator('mmd_tools.display_item_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
+@register_wrap
 class MMDDisplayItemsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_display_items'
     bl_label = 'Display Panel'
@@ -268,6 +274,7 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
         row.operator('mmd_tools.display_item_select_current', text='Select')
 
 
+@register_wrap
 class UL_Morphs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mmd_root = data
@@ -290,6 +297,7 @@ class UL_Morphs(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+@register_wrap
 class UL_MaterialMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
@@ -303,6 +311,7 @@ class UL_MaterialMorphOffsets(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+@register_wrap
 class UL_UVMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
@@ -314,6 +323,7 @@ class UL_UVMorphOffsets(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+@register_wrap
 class UL_BoneMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
@@ -325,6 +335,7 @@ class UL_BoneMorphOffsets(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+@register_wrap
 class UL_GroupMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
@@ -342,6 +353,7 @@ class UL_GroupMorphOffsets(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
+@register_wrap
 class MMDMorphMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_morph_menu'
     bl_label = 'Morph Menu'
@@ -357,6 +369,7 @@ class MMDMorphMenu(Menu):
         layout.operator('mmd_tools.morph_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
         layout.operator('mmd_tools.morph_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
+@register_wrap
 class MMDMorphToolsPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_morph_tools'
     bl_label = 'Morph Tools'
@@ -623,6 +636,7 @@ class UL_ObjectsMixIn(object):
             flt_neworder[i_orig] = i_new
         return flt_flags, flt_neworder
 
+@register_wrap
 class UL_rigidbodies(UL_ObjectsMixIn, UIList):
     mmd_type = 'RIGID_BODY'
     icon = 'MESH_ICOSPHERE'
@@ -635,6 +649,7 @@ class UL_rigidbodies(UL_ObjectsMixIn, UIList):
         elif not item.mmd_rigid.bone:
             layout.label(icon='BONE_DATA')
 
+@register_wrap
 class MMDRigidbodySelectMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_rigidbody_select_menu'
     bl_label = 'Rigidbody Select Menu'
@@ -647,6 +662,7 @@ class MMDRigidbodySelectMenu(Menu):
         layout.operator_context = 'EXEC_DEFAULT'
         layout.operator_enum('mmd_tools.select_rigid_body', 'properties')
 
+@register_wrap
 class MMDRigidbodyMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_rigidbody_menu'
     bl_label = 'Rigidbody Menu'
@@ -659,6 +675,7 @@ class MMDRigidbodyMenu(Menu):
         layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
         layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
+@register_wrap
 class MMDRigidbodySelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_rigidbody_list'
     bl_label = 'Rigid Bodies'
@@ -692,6 +709,7 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         tb1.operator('mmd_tools.object_move', text='', icon='TRIA_DOWN').type = 'DOWN'
 
 
+@register_wrap
 class UL_joints(UL_ObjectsMixIn, UIList):
     mmd_type = 'JOINT'
     icon = 'CONSTRAINT'
@@ -706,6 +724,7 @@ class UL_joints(UL_ObjectsMixIn, UIList):
         elif rbc.object1 == rbc.object2:
             layout.label(icon='MESH_CUBE')
 
+@register_wrap
 class MMDJointMenu(Menu):
     bl_idname = 'OBJECT_MT_mmd_tools_joint_menu'
     bl_label = 'Joint Menu'
@@ -716,6 +735,7 @@ class MMDJointMenu(Menu):
         layout.operator('mmd_tools.object_move', icon=TRIA_UP_BAR, text='Move To Top').type = 'TOP'
         layout.operator('mmd_tools.object_move', icon=TRIA_DOWN_BAR, text='Move To Bottom').type = 'BOTTOM'
 
+@register_wrap
 class MMDJointSelectorPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_joint_list'
     bl_label = 'Joints'

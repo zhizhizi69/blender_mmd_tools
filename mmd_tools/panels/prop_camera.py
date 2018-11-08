@@ -2,8 +2,10 @@
 
 from bpy.types import Panel
 
+from mmd_tools import register_wrap
 from mmd_tools.core.camera import MMDCamera
 
+@register_wrap
 class MMDCameraPanel(Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_camera'
     bl_label = 'MMD Camera Tools'

@@ -3,8 +3,10 @@
 from bpy.props import FloatProperty
 from bpy.types import Operator
 
+from mmd_tools import register_wrap
 from mmd_tools.core.lamp import MMDLamp
 
+@register_wrap
 class ConvertToMMDLamp(Operator):
     bl_idname = 'mmd_tools.convert_to_mmd_lamp'
     bl_label = 'Convert to MMD Lamp'

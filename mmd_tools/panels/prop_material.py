@@ -2,8 +2,10 @@
 
 from bpy.types import Panel
 
+from mmd_tools import register_wrap
 from mmd_tools.core.material import FnMaterial
 
+@register_wrap
 class MMDMaterialPanel(Panel):
     bl_idname = 'MATERIAL_PT_mmd_tools_material'
     bl_label = 'MMD Material'
@@ -57,7 +59,7 @@ class MMDMaterialPanel(Panel):
         r.prop(mmd_material, 'edge_color')
         r.prop(mmd_material, 'edge_weight', slider=True)
 
-
+@register_wrap
 class MMDTexturePanel(Panel):
     bl_idname = 'MATERIAL_PT_mmd_tools_texture'
     bl_label = 'MMD Texture'

@@ -4,10 +4,12 @@ import bpy
 from bpy.types import Operator
 from bpy.props import StringProperty, BoolProperty
 
+from mmd_tools import register_wrap
 from mmd_tools.core.material import FnMaterial
 from mmd_tools.core.exceptions import MaterialNotFoundError
 from mmd_tools import cycles_converter
 
+@register_wrap
 class ConvertMaterialsForCycles(Operator):
     bl_idname = 'mmd_tools.convert_materials_for_cycles'
     bl_label = 'Convert Shaders For Cycles'
@@ -45,7 +47,7 @@ class _OpenTextureBase(object):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-
+@register_wrap
 class OpenTexture(Operator, _OpenTextureBase):
     bl_idname = 'mmd_tools.material_open_texture'
     bl_label = 'Open Texture'
@@ -57,7 +59,7 @@ class OpenTexture(Operator, _OpenTextureBase):
         fnMat.create_texture(self.filepath)
         return {'FINISHED'}
 
-
+@register_wrap
 class RemoveTexture(Operator):
     """ Create a texture for mmd model material.
     """
@@ -72,6 +74,7 @@ class RemoveTexture(Operator):
         fnMat.remove_texture()
         return {'FINISHED'}
 
+@register_wrap
 class OpenSphereTextureSlot(Operator, _OpenTextureBase):
     """ Create a texture for mmd model material.
     """
@@ -85,7 +88,7 @@ class OpenSphereTextureSlot(Operator, _OpenTextureBase):
         fnMat.create_sphere_texture(self.filepath, context.active_object)
         return {'FINISHED'}
 
-
+@register_wrap
 class RemoveSphereTexture(Operator):
     """ Create a texture for mmd model material.
     """
@@ -100,6 +103,7 @@ class RemoveSphereTexture(Operator):
         fnMat.remove_sphere_texture()
         return {'FINISHED'}
 
+@register_wrap
 class MoveMaterialUp(Operator):
     bl_idname = 'mmd_tools.move_material_up'
     bl_label = 'Move Material Up'
@@ -126,6 +130,7 @@ class MoveMaterialUp(Operator):
 
         return { 'FINISHED' }
 
+@register_wrap
 class MoveMaterialDown(Operator):
     bl_idname = 'mmd_tools.move_material_down'
     bl_label = 'Move Material Down'
@@ -151,6 +156,7 @@ class MoveMaterialDown(Operator):
         obj.active_material_index = next_index
         return { 'FINISHED' }
 
+@register_wrap
 class EdgePreviewSetup(Operator):
     bl_idname = 'mmd_tools.edge_preview_setup'
     bl_label = 'Edge Preview Setup'

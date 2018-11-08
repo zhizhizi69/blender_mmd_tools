@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import re
 import bpy
 from bpy.types import Operator
 from mathutils import Matrix
-import re
 
+from mmd_tools import register_wrap
+
+@register_wrap
 class SetGLSLShading(Operator):
     bl_idname = 'mmd_tools.set_glsl_shading'
     bl_label = 'GLSL View'
@@ -29,6 +32,7 @@ class SetGLSLShading(Operator):
         bpy.context.scene.game_settings.material_mode = 'GLSL'
         return {'FINISHED'}
 
+@register_wrap
 class SetShadelessGLSLShading(Operator):
     bl_idname = 'mmd_tools.set_shadeless_glsl_shading'
     bl_label = 'Shadeless GLSL View'
@@ -55,6 +59,7 @@ class SetShadelessGLSLShading(Operator):
         bpy.context.scene.game_settings.material_mode = 'GLSL'
         return {'FINISHED'}
 
+@register_wrap
 class ResetShading(Operator):
     bl_idname = 'mmd_tools.reset_shading'
     bl_label = 'Reset View'
@@ -82,6 +87,7 @@ class ResetShading(Operator):
         bpy.context.scene.game_settings.material_mode = 'MULTITEXTURE'
         return {'FINISHED'}
 
+@register_wrap
 class FlipPose(Operator):
     bl_idname = 'mmd_tools.flip_pose'
     bl_label = 'Flip Pose'

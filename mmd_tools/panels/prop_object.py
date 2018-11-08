@@ -3,6 +3,7 @@
 import bpy
 from bpy.types import Panel
 
+from mmd_tools import register_wrap
 import mmd_tools.core.model as mmd_model
 
 
@@ -12,6 +13,7 @@ class _PanelBase(object):
     bl_context = 'object'
 
 
+@register_wrap
 class MMDModelObjectPanel(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_root_object'
     bl_label = 'MMD Model Information'
@@ -36,6 +38,7 @@ class MMDModelObjectPanel(_PanelBase, Panel):
         c.operator('mmd_tools.change_mmd_ik_loop_factor', text='Change MMD IK Loop Factor')
         c.operator('mmd_tools.recalculate_bone_roll', text='Recalculate bone roll')
 
+@register_wrap
 class MMDRigidPanel(_PanelBase, Panel):
     bl_idname = 'RIGID_PT_mmd_tools_bone'
     bl_label = 'MMD Rigid Body'
@@ -101,7 +104,7 @@ class MMDRigidPanel(_PanelBase, Panel):
         row.prop(obj.rigid_body, 'linear_damping')
         row.prop(obj.rigid_body, 'angular_damping')
 
-
+@register_wrap
 class MMDJointPanel(_PanelBase, Panel):
     bl_idname = 'JOINT_PT_mmd_tools_bone'
     bl_label = 'MMD Joint'

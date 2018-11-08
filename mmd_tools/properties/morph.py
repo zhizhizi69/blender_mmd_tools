@@ -9,6 +9,7 @@ from bpy.props import FloatProperty
 from bpy.props import CollectionProperty
 from bpy.props import EnumProperty
 
+from mmd_tools import register_wrap
 from mmd_tools.core.model import Model as FnModel
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.material import FnMaterial
@@ -123,6 +124,7 @@ def _set_bone(prop, value):
     fnBone = FnBone(pose_bone)
     prop['bone_id'] = fnBone.bone_id
 
+@register_wrap
 class BoneMorphData(PropertyGroup):
     """
     """
@@ -153,6 +155,7 @@ class BoneMorphData(PropertyGroup):
         default=[1, 0, 0, 0],
         )
 
+@register_wrap
 class BoneMorph(_MorphBase, PropertyGroup):
     """Bone Morph
     """
@@ -193,6 +196,7 @@ def _set_related_mesh(prop, value):
 def _get_related_mesh(prop):
     return prop.get('related_mesh', '')
 
+@register_wrap
 class MaterialMorphData(PropertyGroup):
     """
     """
@@ -325,6 +329,7 @@ class MaterialMorphData(PropertyGroup):
         default=[0, 0, 0, 1],
         )
 
+@register_wrap
 class MaterialMorph(_MorphBase, PropertyGroup):
     """ Material Morph
     """
@@ -338,6 +343,7 @@ class MaterialMorph(_MorphBase, PropertyGroup):
         default=0,
         )
 
+@register_wrap
 class UVMorphOffset(PropertyGroup):
     """UV Morph Offset
     """
@@ -358,6 +364,7 @@ class UVMorphOffset(PropertyGroup):
         default=[0, 0, 0, 0],
         )
 
+@register_wrap
 class UVMorph(_MorphBase, PropertyGroup):
     """UV Morph
     """
@@ -394,6 +401,7 @@ class UVMorph(_MorphBase, PropertyGroup):
         default=1,
         )
 
+@register_wrap
 class GroupMorphOffset(PropertyGroup):
     """Group Morph Offset
     """
@@ -419,6 +427,7 @@ class GroupMorphOffset(PropertyGroup):
         default=0
         )
 
+@register_wrap
 class GroupMorph(_MorphBase, PropertyGroup):
     """Group Morph
     """
@@ -432,6 +441,7 @@ class GroupMorph(_MorphBase, PropertyGroup):
         default=0,
         )
 
+@register_wrap
 class VertexMorph(_MorphBase, PropertyGroup):
     """Vertex Morph
     """

@@ -4,13 +4,14 @@ import bpy
 import math
 import mathutils
 
-
 from bpy.types import Operator
 
-import mmd_tools.core.model as mmd_model
-from mmd_tools.core import rigid_body
+from mmd_tools import register_wrap
 from mmd_tools import utils
+from mmd_tools.core import rigid_body
+import mmd_tools.core.model as mmd_model
 
+@register_wrap
 class SelectRigidBody(Operator):
     bl_idname = 'mmd_tools.select_rigid_body'
     bl_label = 'Select Rigid Body'
@@ -78,6 +79,7 @@ class SelectRigidBody(Operator):
 
         return { 'FINISHED' }
 
+@register_wrap
 class AddRigidBody(Operator):
     bl_idname = 'mmd_tools.add_rigid_body'
     bl_label = 'Add Rigid Body'
@@ -263,6 +265,7 @@ class AddRigidBody(Operator):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
+@register_wrap
 class RemoveRigidBody(Operator):
     bl_idname = 'mmd_tools.remove_rigid_body'
     bl_label = 'Remove Rigid Body'
@@ -282,6 +285,7 @@ class RemoveRigidBody(Operator):
             utils.selectAObject(root)
         return { 'FINISHED' } 
 
+@register_wrap
 class AddJoint(Operator): 
     bl_idname = 'mmd_tools.add_joint'
     bl_label = 'Add Joint'
@@ -415,6 +419,7 @@ class AddJoint(Operator):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
+@register_wrap
 class RemoveJoint(Operator):
     bl_idname = 'mmd_tools.remove_joint'
     bl_label = 'Remove Joint'

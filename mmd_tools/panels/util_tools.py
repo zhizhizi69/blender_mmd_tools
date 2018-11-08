@@ -2,10 +2,12 @@
 
 from bpy.types import Panel, UIList
 
+from mmd_tools import register_wrap
 from mmd_tools.core.model import Model
 from mmd_tools.panels.tool import TRIA_UP_BAR, TRIA_DOWN_BAR
 from mmd_tools.panels.tool import _PanelBase
 
+@register_wrap
 class UL_Materials(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -26,6 +28,7 @@ class UL_Materials(UIList):
     def draw_filter(self, context, layout):
         layout.label(text="Use the arrows to sort", icon='INFO')
 
+@register_wrap
 class MMDMaterialSorter(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_material_sorter'
     bl_label = 'Material Sorter'
@@ -50,6 +53,7 @@ class MMDMaterialSorter(_PanelBase, Panel):
         tb1.operator('mmd_tools.move_material_up', text='', icon='TRIA_UP')
         tb1.operator('mmd_tools.move_material_down', text='', icon='TRIA_DOWN')
 
+@register_wrap
 class UL_ModelMeshes(UIList):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
@@ -90,7 +94,7 @@ class UL_ModelMeshes(UIList):
 
         return flt_flags, flt_neworder
 
-
+@register_wrap
 class MMDMeshSorter(_PanelBase, Panel):
     bl_idname = 'OBJECT_PT_mmd_tools_meshes_sorter'
     bl_label = 'Meshes Sorter'

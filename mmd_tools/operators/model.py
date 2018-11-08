@@ -3,12 +3,14 @@
 import bpy
 from bpy.types import Operator
 
+from mmd_tools import register_wrap
 from mmd_tools import bpyutils
 from mmd_tools.core.bone import FnBone
 from mmd_tools.translations import DictionaryEnum
 import mmd_tools.core.model as mmd_model
 
 
+@register_wrap
 class MorphSliderSetup(Operator):
     bl_idname = 'mmd_tools.morph_slider_setup'
     bl_label = 'Morph Slider Setup'
@@ -39,6 +41,7 @@ class MorphSliderSetup(Operator):
         context.scene.objects.active = obj
         return {'FINISHED'}
 
+@register_wrap
 class CleanRiggingObjects(Operator):
     bl_idname = 'mmd_tools.clean_rig'
     bl_label = 'Clean Rig'
@@ -52,6 +55,7 @@ class CleanRiggingObjects(Operator):
         context.scene.objects.active = root
         return {'FINISHED'}
 
+@register_wrap
 class BuildRig(Operator):
     bl_idname = 'mmd_tools.build_rig'
     bl_label = 'Build Rig'
@@ -65,6 +69,7 @@ class BuildRig(Operator):
         context.scene.objects.active = root
         return {'FINISHED'}
 
+@register_wrap
 class CleanAdditionalTransformConstraints(Operator):
     bl_idname = 'mmd_tools.clean_additional_transform'
     bl_label = 'Clean Additional Transform'
@@ -79,6 +84,7 @@ class CleanAdditionalTransformConstraints(Operator):
         context.scene.objects.active = obj
         return {'FINISHED'}
 
+@register_wrap
 class ApplyAdditionalTransformConstraints(Operator):
     bl_idname = 'mmd_tools.apply_additional_transform'
     bl_label = 'Apply Additional Transform'
@@ -93,6 +99,7 @@ class ApplyAdditionalTransformConstraints(Operator):
         context.scene.objects.active = obj
         return {'FINISHED'}
 
+@register_wrap
 class SetupBoneFixedAxes(Operator):
     bl_idname = 'mmd_tools.bone_fixed_axis_setup'
     bl_label = 'Setup Bone Fixed Axis'
@@ -123,6 +130,7 @@ class SetupBoneFixedAxes(Operator):
             FnBone.load_bone_fixed_axis(arm, enable=(self.type=='LOAD'))
         return {'FINISHED'}
 
+@register_wrap
 class SetupBoneLocalAxes(Operator):
     bl_idname = 'mmd_tools.bone_local_axes_setup'
     bl_label = 'Setup Bone Local Axes'
@@ -153,6 +161,7 @@ class SetupBoneLocalAxes(Operator):
             FnBone.load_bone_local_axes(arm, enable=(self.type=='LOAD'))
         return {'FINISHED'}
 
+@register_wrap
 class CreateMMDModelRoot(Operator):
     bl_idname = 'mmd_tools.create_mmd_model_root_object'
     bl_label = 'Create a MMD Model Root Object'
@@ -184,6 +193,7 @@ class CreateMMDModelRoot(Operator):
         vm = context.window_manager
         return vm.invoke_props_dialog(self)
 
+@register_wrap
 class ConvertToMMDModel(Operator):
     bl_idname = 'mmd_tools.convert_to_mmd_model'
     bl_label = 'Convert to a MMD Model'
@@ -313,6 +323,7 @@ class ConvertToMMDModel(Operator):
         rig.initialDisplayFrames(reset=False) # ensure default frames
         DisplayItemQuickSetup.load_facial_items(root.mmd_root)
 
+@register_wrap
 class TranslateMMDModel(Operator):
     bl_idname = 'mmd_tools.translate_mmd_model'
     bl_label = 'Translate a MMD Model'

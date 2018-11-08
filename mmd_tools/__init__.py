@@ -13,6 +13,14 @@ bl_info = {
     "category": "Object",
     }
 
+__bl_classes = []
+def register_wrap(cls):
+    #print('%3d'%len(__bl_classes), cls)
+    #assert(cls not in __bl_classes)
+    if hasattr(cls, 'bl_rna'):
+        __bl_classes.append(cls)
+    return cls
+
 if "bpy" in locals():
     if bpy.app.version < (2, 71, 0):
         import imp as importlib
@@ -36,6 +44,7 @@ else:
 logging.basicConfig(format='%(message)s', level=logging.DEBUG)
 
 
+@register_wrap
 class MMDToolsAddonPreferences(AddonPreferences):
     # this must match the addon name, use '__package__'
     # when defining this in a submodule of a python package.
@@ -86,7 +95,9 @@ def load_handler(dummy):
     FnSDEF.register_driver_function()
 
 def register():
-    bpy.utils.register_module(__name__)
+    for cls in __bl_classes:
+        bpy.utils.register_class(cls)
+    print(__name__, 'registed %d classes'%len(__bl_classes))
     bpy.types.INFO_MT_file_import.append(menu_func_import)
     bpy.types.INFO_MT_file_export.append(menu_func_export)
     bpy.types.INFO_MT_armature_add.append(menu_func_armature)
@@ -99,7 +110,8 @@ def unregister():
     bpy.types.INFO_MT_file_import.remove(menu_func_import)
     bpy.types.INFO_MT_file_export.remove(menu_func_export)
     bpy.types.INFO_MT_armature_add.remove(menu_func_armature)
-    bpy.utils.unregister_module(__name__)
+    for cls in reversed(__bl_classes):
+        bpy.utils.unregister_class(cls)
 
 if __name__ == "__main__":
     register()
