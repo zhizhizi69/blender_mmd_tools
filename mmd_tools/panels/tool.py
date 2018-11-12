@@ -15,10 +15,29 @@ if bpy.app.version < (2, 73, 0):
     TRIA_UP_BAR = 'TRIA_UP'
     TRIA_DOWN_BAR = 'TRIA_DOWN'
 
+ICON_ADD, ICON_REMOVE = 'ADD', 'REMOVE'
+if bpy.app.version < (2, 80, 0):
+    ICON_ADD, ICON_REMOVE = 'ZOOMIN', 'ZOOMOUT'
+
+
+def draw_filter_wrap(func):
+    if bpy.app.version < (2, 80, 0):
+        return func
+    def draw_filter_new(self_, context, layout, reverse=False):
+        func(self_, context, layout)
+    return draw_filter_new
+
+if bpy.app.version < (2, 80, 0):
+    def _layout_split(layout, factor, align):
+        return layout.split(percentage=factor, align=align)
+else:
+    def _layout_split(layout, factor, align):
+        return layout.split(factor=factor, align=align)
+
 
 class _PanelBase(object):
     bl_space_type = 'VIEW_3D'
-    bl_region_type = 'TOOLS'
+    bl_region_type = 'TOOLS' if bpy.app.version < (2, 80, 0) else 'UI'
     bl_category = 'MMD'
 
 
@@ -48,7 +67,7 @@ class MMDToolsObjectPanel(_PanelBase, Panel):
             col.operator('mmd_tools.attach_meshes')
             col.operator('mmd_tools.translate_mmd_model', text='Translation')
 
-            row = layout.split(percentage=1/3, align=False)
+            row = _layout_split(layout, factor=1/3, align=False)
 
             col = row.column(align=True)
             col.label(text='Bone Constraints:', icon='CONSTRAINT_BONE')
@@ -91,7 +110,7 @@ class MMD_ROOT_UL_display_item_frames(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         frame = item
         if self.layout_type in {'DEFAULT'}:
-            row = layout.split(percentage=0.5, align=True)
+            row = _layout_split(layout, factor=0.5, align=True)
             if frame.is_special:
                 row.label(text=frame.name, translate=False)
                 row = row.row(align=True)
@@ -151,11 +170,11 @@ class MMD_ROOT_UL_display_items(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
             if item.type == 'BONE':
-                row = layout.split(percentage=0.5, align=True)
+                row = _layout_split(layout, factor=0.5, align=True)
                 row.prop(item, 'name', text='', emboss=False, icon='BONE_DATA')
                 self.draw_bone_special(row, mmd_model.Model(item.id_data).armature(), item.name, self.mmd_name)
             else:
-                row = layout.split(percentage=0.6, align=True)
+                row = _layout_split(layout, factor=0.6, align=True)
                 row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
                 row = row.row(align=True)
                 row.prop(item, 'morph_type', text='', emboss=False)
@@ -182,7 +201,7 @@ class MMD_ROOT_UL_display_items(UIList):
 
         return flt_flags, flt_neworder
 
-
+    @draw_filter_wrap
     def draw_filter(self, context, layout):
         row = layout.row()
         row.prop(self, 'morph_filter', expand=True)
@@ -237,8 +256,8 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator('mmd_tools.display_item_frame_add', text='', icon='ZOOMIN')
-        tb1.operator('mmd_tools.display_item_frame_remove', text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.display_item_frame_add', text='', icon=ICON_ADD)
+        tb1.operator('mmd_tools.display_item_frame_remove', text='', icon=ICON_REMOVE)
         tb1.menu('OBJECT_MT_mmd_tools_display_item_frame_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
@@ -259,8 +278,8 @@ class MMDDisplayItemsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator('mmd_tools.display_item_add', text='', icon='ZOOMIN')
-        tb1.operator('mmd_tools.display_item_remove', text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.display_item_add', text='', icon=ICON_ADD)
+        tb1.operator('mmd_tools.display_item_remove', text='', icon=ICON_REMOVE)
         tb1.menu('OBJECT_MT_mmd_tools_display_item_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
@@ -279,9 +298,9 @@ class UL_Morphs(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         mmd_root = data
         if self.layout_type in {'DEFAULT'}:
-            row = layout.split(percentage=0.4, align=True)
+            row = _layout_split(layout, factor=0.4, align=True)
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
-            row = row.split(percentage=0.6, align=True)
+            row = _layout_split(row, factor=0.6, align=True)
             row.prop(item, 'name_e', text='', emboss=True)
             row = row.row(align=True)
             row.prop(item, 'category', text='', emboss=False)
@@ -339,7 +358,7 @@ class UL_BoneMorphOffsets(UIList):
 class UL_GroupMorphOffsets(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT'}:
-            row = layout.split(percentage=0.5, align=True)
+            row = _layout_split(layout, factor=0.5, align=True)
             row.prop(item, 'name', text='', emboss=False, icon='SHAPEKEY_DATA')
             row = row.row(align=True)
             row.prop(item, 'morph_type', text='', emboss=False)
@@ -398,8 +417,8 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator('mmd_tools.morph_add', text='', icon='ZOOMIN')
-        tb1.operator('mmd_tools.morph_remove', text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.morph_add', text='', icon=ICON_ADD)
+        tb1.operator('mmd_tools.morph_remove', text='', icon=ICON_REMOVE)
         tb1.menu('OBJECT_MT_mmd_tools_morph_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
@@ -424,8 +443,8 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator('mmd_tools.morph_offset_add', text='', icon='ZOOMIN')
-        tb1.operator('mmd_tools.morph_offset_remove', text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.morph_offset_add', text='', icon=ICON_ADD)
+        tb1.operator('mmd_tools.morph_offset_remove', text='', icon=ICON_REMOVE)
         tb.operator('mmd_tools.morph_offset_remove', text='', icon='X').all = True
         return ItemOp.get_by_index(morph.data, morph.active_data)
 
@@ -573,7 +592,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
             return
 
         c = col.column(align=True)
-        row = c.split(percentage=0.67, align=True)
+        row = _layout_split(c, factor=0.67, align=True)
         row.prop_search(item, 'name', morph.id_data.mmd_root, item.morph_type, icon='SHAPEKEY_DATA', text='')
         row.prop(item, 'morph_type', text='')
 
@@ -596,7 +615,7 @@ class UL_ObjectsMixIn(object):
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            row = layout.split(percentage=0.5, align=True)
+            row = _layout_split(layout, factor=0.5, align=True)
             item_prop = getattr(item, self.prop_name)
             row.prop(item_prop, 'name_j', text='', emboss=False, icon=self.icon)
             row = row.row(align=True)
@@ -606,6 +625,7 @@ class UL_ObjectsMixIn(object):
             layout.alignment = 'CENTER'
             layout.label(text='', icon=self.icon)
 
+    @draw_filter_wrap
     def draw_filter(self, context, layout):
         row = layout.row(align=True)
         row.prop(self, 'model_filter', expand=True)
@@ -657,10 +677,10 @@ class MMDRigidbodySelectMenu(Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator_context = 'INVOKE_DEFAULT'
-        layout.operator('mmd_tools.select_rigid_body', text='Select Similar...')
+        layout.operator('mmd_tools.rigid_body_select', text='Select Similar...')
         layout.separator()
         layout.operator_context = 'EXEC_DEFAULT'
-        layout.operator_enum('mmd_tools.select_rigid_body', 'properties')
+        layout.operator_enum('mmd_tools.rigid_body_select', 'properties')
 
 @register_wrap
 class MMDRigidbodyMenu(Menu):
@@ -699,8 +719,8 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.rigid_body.AddRigidBody.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.rigid_body.RemoveRigidBody.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.rigid_body_add', text='', icon=ICON_ADD)
+        tb1.operator('mmd_tools.rigid_body_remove', text='', icon=ICON_REMOVE)
         tb1.menu('OBJECT_MT_mmd_tools_rigidbody_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)
@@ -760,8 +780,8 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
             )
         tb = row.column()
         tb1 = tb.column(align=True)
-        tb1.operator(operators.rigid_body.AddJoint.bl_idname, text='', icon='ZOOMIN')
-        tb1.operator(operators.rigid_body.RemoveJoint.bl_idname, text='', icon='ZOOMOUT')
+        tb1.operator('mmd_tools.joint_add', text='', icon=ICON_ADD)
+        tb1.operator('mmd_tools.joint_remove', text='', icon=ICON_REMOVE)
         tb1.menu('OBJECT_MT_mmd_tools_joint_menu', text='', icon='DOWNARROW_HLT')
         tb.separator()
         tb1 = tb.column(align=True)

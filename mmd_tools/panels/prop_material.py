@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
 
+import bpy
 from bpy.types import Panel
 
 from mmd_tools import register_wrap
 from mmd_tools.core.material import FnMaterial
+
+
+ICON_FILE_FOLDER = 'FILE_FOLDER'
+if bpy.app.version < (2, 80, 0):
+    ICON_FILE_FOLDER = 'FILESEL'
+
 
 @register_wrap
 class MMDMaterialPanel(Panel):
@@ -92,7 +99,7 @@ class MMDTexturePanel(Panel):
                 r.operator('mmd_tools.material_remove_texture', text='Remove', icon='PANEL_CLOSE')
                 r.label(icon='ERROR')
         else:
-            r.operator('mmd_tools.material_open_texture', text='Add', icon='FILESEL')
+            r.operator('mmd_tools.material_open_texture', text='Add', icon=ICON_FILE_FOLDER)
 
         col = layout.column()
         col.label(text='Sphere Texture:')
@@ -106,7 +113,7 @@ class MMDTexturePanel(Panel):
                 r.operator('mmd_tools.material_remove_sphere_texture', text='Remove', icon='PANEL_CLOSE')
                 r.label(icon='ERROR')
         else:
-            r.operator('mmd_tools.material_open_sphere_texture', text='Add', icon='FILESEL')
+            r.operator('mmd_tools.material_open_sphere_texture', text='Add', icon=ICON_FILE_FOLDER)
         col.prop(mmd_material, 'sphere_texture_type')
 
         col = layout.column()

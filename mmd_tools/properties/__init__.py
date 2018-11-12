@@ -5,21 +5,21 @@ if "bpy" in locals():
         import imp as importlib
     else:
         import importlib
+    importlib.reload(morph)
     importlib.reload(root)
     importlib.reload(camera)
     importlib.reload(material)
     importlib.reload(bone)
     importlib.reload(rigid_body)
-    importlib.reload(morph)
 else:
     import bpy
     from . import (
+        morph,
         root,
         camera,
         material,
         bone,
         rigid_body,
-        morph,
         )
 
 __properties = {
