@@ -6,6 +6,7 @@ from bpy.types import Operator
 from mathutils import Matrix
 
 from mmd_tools import register_wrap
+from mmd_tools.bpyutils import matmul
 
 @register_wrap
 class SetGLSLShading(Operator):
@@ -137,11 +138,8 @@ class FlipPose(Operator):
 
     @staticmethod
     def __matrix_compose(loc, rot, scale):
-        return (Matrix.Translation(loc) *
-                rot.to_matrix().to_4x4() *
-                Matrix.Scale(scale[0], 4, (1, 0, 0)) *
-                Matrix.Scale(scale[1], 4, (0, 1, 0)) *
-                Matrix.Scale(scale[2], 4, (0, 0, 1)))
+        return matmul(matmul(Matrix.Translation(loc), rot.to_matrix().to_4x4()),
+                    Matrix([(scale[0],0,0,0), (0,scale[1],0,0), (0,0,scale[2],0), (0,0,0,1)]))
 
     @classmethod
     def __flip_direction(cls, bone1, bone2):

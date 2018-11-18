@@ -4,6 +4,8 @@ from mathutils import Vector, Matrix, Quaternion
 import numpy as np
 import time
 
+from mmd_tools.bpyutils import matmul
+
 class FnSDEF():
     g_verts = {} # global cache
     g_shapekey_data = {}
@@ -115,32 +117,31 @@ class FnSDEF():
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
-                    mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
-                    mat1 = bone1.matrix * bone1.bone.matrix_local.inverted()
+                    mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
+                    mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
                     rot0 = mat0.to_quaternion()
                     rot1 = mat1.to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
                     s0, s1 = mat0.to_scale(), mat1.to_scale()
                     for vid, w0, w1, pos_c, cr0, cr1 in sdef_data:
-                        mat_rot = (rot0*w0 + rot1*w1).normalized().to_matrix()
                         s = s0*w0 + s1*w1
-                        mat_rot *= Matrix([[s[0],0,0], [0,s[1],0], [0,0,s[2]]])
-                        shapekey_data[vid].co = mat_rot * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1
+                        mat_rot = matmul((rot0*w0 + rot1*w1).normalized().to_matrix(), Matrix([(s[0],0,0), (0,s[1],0), (0,0,s[2])]))
+                        shapekey_data[vid].co = matmul(mat_rot, pos_c) + matmul(mat0, cr0)*w0 + matmul(mat1, cr1)*w1
             else:
                 # default
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
-                    mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
-                    mat1 = bone1.matrix * bone1.bone.matrix_local.inverted()
+                    mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
+                    mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
                     rot0 = mat0.to_quaternion()
                     rot1 = mat1.to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
                     for vid, w0, w1, pos_c, cr0, cr1 in sdef_data:
                         mat_rot = (rot0*w0 + rot1*w1).normalized().to_matrix()
-                        shapekey_data[vid].co = mat_rot * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1
+                        shapekey_data[vid].co = matmul(mat_rot, pos_c) + matmul(mat0, cr0)*w0 + matmul(mat1, cr1)*w1
         else: # bulk update
             shapekey_data = cls.g_shapekey_data[hash(obj)]
             if use_scale:
@@ -148,8 +149,8 @@ class FnSDEF():
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
-                    mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
-                    mat1 = bone1.matrix * bone1.bone.matrix_local.inverted()
+                    mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
+                    mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
                     rot0 = mat0.to_quaternion()
                     rot1 = mat1.to_quaternion()
                     if rot1.dot(rot0) < 0:
@@ -157,20 +158,20 @@ class FnSDEF():
                     s0, s1 = mat0.to_scale(), mat1.to_scale()
                     def scale(mat_rot, w0, w1):
                         s = s0*w0 + s1*w1
-                        return mat_rot * Matrix([[s[0],0,0], [0,s[1],0], [0,0,s[2]]])
-                    shapekey_data[vids] = [scale((rot0*w0 + rot1*w1).normalized().to_matrix(), w0, w1) * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1 for vid, w0, w1, pos_c, cr0, cr1 in sdef_data]
+                        return matmul(mat_rot, Matrix([(s[0],0,0), (0,s[1],0), (0,0,s[2])]))
+                    shapekey_data[vids] = [matmul(scale((rot0*w0 + rot1*w1).normalized().to_matrix(), w0, w1), pos_c) + matmul(mat0, cr0)*w0 + matmul(mat1, cr1)*w1 for vid, w0, w1, pos_c, cr0, cr1 in sdef_data]
             else:
                 # bulk update
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
-                    mat0 = bone0.matrix * bone0.bone.matrix_local.inverted()
-                    mat1 = bone1.matrix * bone1.bone.matrix_local.inverted()
+                    mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
+                    mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
                     rot0 = mat0.to_quaternion()
                     rot1 = mat1.to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
-                    shapekey_data[vids] = [(rot0*w0 + rot1*w1).normalized().to_matrix() * pos_c + mat0 * cr0 * w0 + mat1 * cr1 * w1 for vid, w0, w1, pos_c, cr0, cr1 in sdef_data]
+                    shapekey_data[vids] = [matmul((rot0*w0 + rot1*w1).normalized().to_matrix(), pos_c) + matmul(mat0, cr0)*w0 + matmul(mat1, cr1)*w1 for vid, w0, w1, pos_c, cr0, cr1 in sdef_data]
             shapekey.data.foreach_set('co', shapekey_data.reshape(3 * len(shapekey.data)))
 
         return 1.0 # shapkey value

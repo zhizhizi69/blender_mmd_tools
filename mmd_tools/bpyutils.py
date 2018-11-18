@@ -2,6 +2,8 @@
 
 import bpy
 
+matmul = (lambda a, b: a*b) if bpy.app.version < (2, 80, 0) else (lambda a, b: a.__matmul__(b))
+
 class __EditMode:
     def __init__(self, obj):
         if not isinstance(obj, bpy.types.Object):

@@ -5,7 +5,7 @@ import logging
 import time
 
 import bpy
-import mathutils
+from mathutils import Vector, Matrix
 
 import mmd_tools.core.model as mmd_model
 from mmd_tools import utils
@@ -122,7 +122,6 @@ class PMXImporter:
         if vertex_count < 1:
             return
 
-        Vector = mathutils.Vector
         mesh = self.__meshObj.data
         mesh.vertices.add(count=vertex_count)
         mesh.vertices.foreach_set('co', tuple(i for pv in pmx_vertices for i in (Vector(pv.co).xzy * self.__scale)))
@@ -164,7 +163,6 @@ class PMXImporter:
         if len(self.__sdefVertices) < 1:
             return
 
-        Vector = mathutils.Vector
         self.__createBasisShapeKey()
         sdefC = self.__meshObj.shape_key_add(name='mmd_sdef_c')
         sdefR0 = self.__meshObj.shape_key_add(name='mmd_sdef_r0')
@@ -198,7 +196,6 @@ class PMXImporter:
         #            if p_bone.parent == t.parent:
         #                dependency_cycle_ik_bones.append(i)
 
-        Vector = mathutils.Vector
         with bpyutils.edit_object(obj) as data:
             for i in pmx_bones:
                 bone = data.edit_bones.new(name=i.name)
@@ -278,13 +275,14 @@ class PMXImporter:
 
     @staticmethod
     def convertIKLimitAngles(min_angle, max_angle, bone_matrix, invert=False):
-        mat = mathutils.Matrix([[1,0,0], [0,0,1], [0,1,0]])
-        mat = bone_matrix.to_3x3().transposed() * mat * -1
+        mat = bone_matrix.to_3x3() * -1
+        mat[1], mat[2] = mat[2].copy(), mat[1].copy()
+        mat.transpose()
         if invert:
             mat.invert()
 
         # align matrix to global axes
-        m = mathutils.Matrix([[0,0,0], [0,0,0], [0,0,0]])
+        m = Matrix([[0,0,0], [0,0,0], [0,0,0]])
         i_set, j_set = [0, 1, 2], [0, 1, 2]
         for _ in range(3):
             ii, jj = i_set[0], j_set[0]
@@ -296,8 +294,8 @@ class PMXImporter:
             j_set.remove(jj)
             m[ii][jj] = -1 if mat[ii][jj] < 0 else 1
 
-        new_min_angle = m * mathutils.Vector(min_angle)
-        new_max_angle = m * mathutils.Vector(max_angle)
+        new_min_angle = bpyutils.matmul(m, Vector(min_angle))
+        new_max_angle = bpyutils.matmul(m, Vector(max_angle))
         for i in range(3):
             if new_min_angle[i] > new_max_angle[i]:
                 new_min_angle[i], new_max_angle[i] = new_max_angle[i], new_min_angle[i]
@@ -438,7 +436,6 @@ class PMXImporter:
     def __importRigids(self):
         start_time = time.time()
         self.__rigidTable = {}
-        Vector = mathutils.Vector
         rigid_pool = self.__rig.createRigidBodyPool(len(self.__model.rigids))
         for i, (rigid, rigid_obj) in enumerate(zip(self.__model.rigids, rigid_pool)):
             loc = Vector(rigid.location).xzy * self.__scale
@@ -472,7 +469,6 @@ class PMXImporter:
 
     def __importJoints(self):
         start_time = time.time()
-        Vector = mathutils.Vector
         joint_pool = self.__rig.createJointPool(len(self.__model.joints))
         for i, (joint, joint_obj) in enumerate(zip(self.__model.joints, joint_pool)):
             loc = Vector(joint.location).xzy * self.__scale
@@ -605,7 +601,6 @@ class PMXImporter:
     def __importVertexMorphs(self):
         mmd_root = self.__root.mmd_root
         categories = self.CATEGORIES
-        Vector = mathutils.Vector
         self.__createBasisShapeKey()
         for morph in (x for x in self.__model.morphs if isinstance(x, pmx.VertexMorph)):
             shapeKey = self.__meshObj.shape_key_add(name=morph.name)
@@ -732,7 +727,6 @@ class PMXImporter:
             logging.info(' * No support for custom normals!!')
             return
         logging.info('Setting custom normals...')
-        Vector = mathutils.Vector
         if self.__vertex_map:
             verts, faces = self.__model.vertices, self.__model.faces
             custom_normals = [(Vector(verts[i].normal).xzy).normalized() for f in faces for i in f]

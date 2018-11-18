@@ -112,6 +112,7 @@ class MMDCamera:
 
         from math import atan
         from mathutils import Matrix, Vector
+        from mmd_tools.bpyutils import matmul
 
         render = scene.render
         factor = (render.resolution_y*render.pixel_aspect_y)/(render.resolution_x*render.pixel_aspect_x)
@@ -140,8 +141,8 @@ class MMDCamera:
                 cameraTarget = _target_override_func(cameraObj)
             cam_matrix_world = cameraObj.matrix_world
             cam_target_loc = cameraTarget.matrix_world.translation
-            cam_rotation = (cam_matrix_world * matrix_rotation).to_euler(mmd_cam_root.rotation_mode)
-            cam_vec = cam_matrix_world.to_3x3() * neg_z_vector
+            cam_rotation = matmul(cam_matrix_world, matrix_rotation).to_euler(mmd_cam_root.rotation_mode)
+            cam_vec = matmul(cam_matrix_world.to_3x3(), neg_z_vector)
             if cameraObj.data.type == 'ORTHO':
                 cam_dis = -(9/5) * cameraObj.data.ortho_scale
                 if cameraObj.data.sensor_fit != 'VERTICAL':

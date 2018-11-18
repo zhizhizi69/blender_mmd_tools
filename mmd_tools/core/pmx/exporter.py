@@ -18,6 +18,7 @@ from mmd_tools.core.sdef import FnSDEF
 from mmd_tools.core.vmd.importer import BoneConverter, BoneConverterPoseMode
 from mmd_tools import bpyutils
 from mmd_tools.utils import saferelpath
+from mmd_tools.bpyutils import matmul
 from mmd_tools.operators.misc import MoveObject
 
 
@@ -345,12 +346,12 @@ class __PmxExporter:
         pmx_matrix = world_mat * self.__scale
         pmx_matrix[1], pmx_matrix[2] = pmx_matrix[2].copy(), pmx_matrix[1].copy()
         def __to_pmx_location(loc):
-            return pmx_matrix * Vector(loc)
+            return matmul(pmx_matrix, Vector(loc))
 
         pmx_matrix_rot = pmx_matrix.to_3x3()
         def __to_pmx_axis(axis, pose_bone):
-            m = (pose_bone.matrix * pose_bone.bone.matrix_local.inverted()).to_3x3()
-            return (pmx_matrix_rot * m * Vector(axis).xzy).normalized()
+            m = matmul(pose_bone.matrix, pose_bone.bone.matrix_local.inverted()).to_3x3()
+            return matmul(matmul(pmx_matrix_rot, m), Vector(axis).xzy).normalized()
 
         if True: # no need to enter edit mode
             for p_bone in sorted_bones:
@@ -478,7 +479,7 @@ class __PmxExporter:
                     maximum[2] = ik_limit_override.max_z
 
             convertIKLimitAngles = pmx.importer.PMXImporter.convertIKLimitAngles
-            bone_matrix = pose_bone.id_data.matrix_world * pose_bone.matrix
+            bone_matrix = matmul(pose_bone.id_data.matrix_world, pose_bone.matrix)
             minimum, maximum = convertIKLimitAngles(minimum, maximum, bone_matrix, invert=True)
             ik_link.minimumAngle = list(minimum)
             ik_link.maximumAngle = list(maximum)
@@ -951,25 +952,25 @@ class __PmxExporter:
         if hasattr(mesh, 'has_custom_normals'):
             logging.debug(' - Calculating normals split...')
             mesh.calc_normals_split()
-            custom_normals = [(matrix * l.normal).normalized() for l in mesh.loops]
+            custom_normals = [matmul(matrix, l.normal).normalized() for l in mesh.loops]
             mesh.free_normals_split()
         elif mesh.use_auto_smooth:
             logging.debug(' - Calculating normals split (angle:%f)...', mesh.auto_smooth_angle)
             mesh.calc_normals_split(mesh.auto_smooth_angle)
-            custom_normals = [(matrix * l.normal).normalized() for l in mesh.loops]
+            custom_normals = [matmul(matrix, l.normal).normalized() for l in mesh.loops]
             mesh.free_normals_split()
         else:
             logging.debug(' - Calculating normals...')
             mesh.calc_normals()
-            #custom_normals = [(matrix * mesh.vertices[l.vertex_index].normal).normalized() for l in mesh.loops]
+            #custom_normals = [matmul(matrix, mesh.vertices[l.vertex_index].normal).normalized() for l in mesh.loops]
             custom_normals = []
             for f in mesh.polygons:
                 if f.use_smooth:
                     for v in f.vertices:
-                        custom_normals.append((matrix * mesh.vertices[v].normal).normalized())
+                        custom_normals.append(matmul(matrix, mesh.vertices[v].normal).normalized())
                 else:
                     for v in f.vertices:
-                        custom_normals.append((matrix * f.normal).normalized())
+                        custom_normals.append(matmul(matrix, f.normal).normalized())
         logging.debug('   - Done (polygons:%d)', len(mesh.polygons))
         return custom_normals
 
@@ -984,8 +985,8 @@ class __PmxExporter:
         normal_matrix = pmx_matrix.to_3x3()
         if not (sx == sy == sz):
             invert_scale_matrix = mathutils.Matrix([[1.0/sx,0,0], [0,1.0/sy,0], [0,0,1.0/sz]])
-            normal_matrix *= invert_scale_matrix # reset the scale of meshObj.matrix_world
-            normal_matrix *= invert_scale_matrix # the scale transform of normals
+            normal_matrix = matmul(normal_matrix, invert_scale_matrix) # reset the scale of meshObj.matrix_world
+            normal_matrix = matmul(normal_matrix, invert_scale_matrix) # the scale transform of normals
 
         base_mesh = meshObj.to_mesh(bpy.context.scene, True, 'PREVIEW', False)
         loop_normals = self.__triangulate(base_mesh, self.__get_normals(base_mesh, normal_matrix))
