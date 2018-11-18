@@ -215,7 +215,8 @@ class FnSDEF():
             bulk_update = cls.__get_benchmark_result(obj, shapekey, use_scale, use_skip)
         # Add the driver to the shapekey
         f = obj.data.shape_keys.driver_add('key_blocks["'+cls.SHAPEKEY_NAME+'"].value', -1)
-        f.driver.show_debug_info = False
+        if hasattr(f.driver, 'show_debug_info'):
+            f.driver.show_debug_info = False
         f.driver.type = 'SCRIPTED'
         ov = f.driver.variables.new()
         ov.name = 'obj'

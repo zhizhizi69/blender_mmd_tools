@@ -570,14 +570,15 @@ class PMXImporter:
         mesh.polygons.foreach_set('use_smooth', (True,)*len(pmxModel.faces))
         mesh.polygons.foreach_set('material_index', material_indices)
 
-        uv_textures, uv_layers = mesh.uv_textures, mesh.uv_layers
+        uv_textures, uv_layers = getattr(mesh, 'uv_textures', mesh.uv_layers), mesh.uv_layers
         uv_tex = uv_textures.new()
         uv_layer = uv_layers[uv_tex.name]
         uv_table = {vi:self.flipUV_V(v.uv) for vi, v in enumerate(pmxModel.vertices)}
         uv_layer.data.foreach_set('uv', tuple(v for i in loop_indices_orig for v in uv_table[i]))
 
-        for bf, mi in zip(uv_tex.data, material_indices):
-            bf.image = self.__imageTable.get(mi, None)
+        if uv_textures is not uv_layers:
+            for bf, mi in zip(uv_tex.data, material_indices):
+                bf.image = self.__imageTable.get(mi, None)
 
         if pmxModel.header and pmxModel.header.additional_uvs:
             logging.info('Importing %d additional uvs', pmxModel.header.additional_uvs)

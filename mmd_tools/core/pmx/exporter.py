@@ -1161,8 +1161,9 @@ class __PmxExporter:
         meshObj.show_only_shape_key = True
         active_shape_key_index = meshObj.active_shape_key_index
         meshObj.active_shape_key_index = 0
-        active_uv_texture_index = meshObj.data.uv_textures.active_index
-        meshObj.data.uv_textures.active_index = 0
+        uv_textures = getattr(meshObj.data, 'uv_textures', meshObj.data.uv_layers)
+        active_uv_texture_index = uv_textures.active_index
+        uv_textures.active_index = 0
 
         muted_modifiers = []
         for m in meshObj.modifiers:
@@ -1178,7 +1179,7 @@ class __PmxExporter:
         finally:
             meshObj.show_only_shape_key = show_only_shape_key
             meshObj.active_shape_key_index = active_shape_key_index
-            meshObj.data.uv_textures.active_index = active_uv_texture_index
+            uv_textures.active_index = active_uv_texture_index
             for m, show in muted_modifiers:
                 m.show_viewport = show
 

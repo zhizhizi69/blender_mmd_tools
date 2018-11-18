@@ -528,7 +528,7 @@ class ViewUVMorph(Operator):
         with bpyutils.select_object(meshObj) as data:
             morph = mmd_root.uv_morphs[mmd_root.active_morph]
             mesh = meshObj.data
-            uv_textures = mesh.uv_textures
+            uv_textures = getattr(mesh, 'uv_textures', mesh.uv_layers)
 
             base_uv_layers = [l for l in mesh.uv_layers if not l.name.startswith('_')]
             if morph.uv_index >= len(base_uv_layers):
@@ -574,7 +574,7 @@ class ClearUVMorphView(Operator):
         rig = mmd_model.Model(root)
         for m in rig.meshes():
             mesh = m.data
-            uv_textures = mesh.uv_textures
+            uv_textures = getattr(mesh, 'uv_textures', mesh.uv_layers)
             for t in uv_textures:
                 if t.name.startswith('__uv.'):
                     uv_textures.remove(t)
