@@ -2,6 +2,7 @@
 
 import bpy
 
+from mmd_tools.bpyutils import SceneOp
 
 class MMDLamp:
     def __init__(self, obj):
@@ -29,7 +30,7 @@ class MMDLamp:
             return MMDLamp(lampObj)
 
         empty = bpy.data.objects.new(name='MMD_Light', object_data=None)
-        bpy.context.scene.objects.link(empty)
+        SceneOp(bpy.context).link_object(empty)
 
         empty.rotation_mode = 'XYZ'
         empty.lock_rotation = (True, True, True)

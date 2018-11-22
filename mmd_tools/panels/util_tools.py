@@ -3,6 +3,7 @@
 from bpy.types import Panel, UIList
 
 from mmd_tools import register_wrap
+from mmd_tools.bpyutils import SceneOp
 from mmd_tools.core.model import Model
 from mmd_tools.panels.tool import TRIA_UP_BAR, TRIA_DOWN_BAR
 from mmd_tools.panels.tool import draw_filter_wrap
@@ -115,7 +116,7 @@ class MMDMeshSorter(_PanelBase, Panel):
         col = layout.column(align=True)
         row = col.row()
         row.template_list("UL_ModelMeshes", "",
-                          context.scene, "objects",
+                          SceneOp(context).id_scene, 'objects',
                           root.mmd_root, "active_mesh_index")
         tb = row.column()
         tb1 = tb.column(align=True)

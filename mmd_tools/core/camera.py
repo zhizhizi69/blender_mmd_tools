@@ -3,6 +3,8 @@
 import bpy
 import math
 
+from mmd_tools.bpyutils import SceneOp
+
 class MMDCamera:
     def __init__(self, obj):
         if obj.type == 'CAMERA':
@@ -60,7 +62,7 @@ class MMDCamera:
             return MMDCamera(cameraObj)
 
         empty = bpy.data.objects.new(name='MMD_Camera', object_data=None)
-        bpy.context.scene.objects.link(empty)
+        SceneOp(bpy.context).link_object(empty)
 
         cameraObj.parent = empty
         cameraObj.data.dof_object = empty
@@ -90,7 +92,7 @@ class MMDCamera:
     def newMMDCameraAnimation(cameraObj, cameraTarget=None, scale=1.0, min_distance=0.1):
         scene = bpy.context.scene
         mmd_cam = bpy.data.objects.new(name='Camera', object_data=bpy.data.cameras.new('Camera'))
-        scene.objects.link(mmd_cam)
+        SceneOp(bpy.context).link_object(mmd_cam)
         MMDCamera.convertToMMDCamera(mmd_cam, scale=scale)
         mmd_cam_root = mmd_cam.parent
 

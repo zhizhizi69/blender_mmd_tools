@@ -4,7 +4,7 @@ import bpy
 from bpy.types import Operator
 
 from mmd_tools import register_wrap
-from mmd_tools import bpyutils
+from mmd_tools.bpyutils import SceneOp
 from mmd_tools.core.bone import FnBone
 from mmd_tools.translations import DictionaryEnum
 import mmd_tools.core.model as mmd_model
@@ -38,7 +38,7 @@ class MorphSliderSetup(Operator):
             rig.morph_slider.unbind()
         else:
             rig.morph_slider.create()
-        context.scene.objects.active = obj
+        SceneOp(context).active_object = obj
         return {'FINISHED'}
 
 @register_wrap
@@ -52,7 +52,7 @@ class CleanRiggingObjects(Operator):
         root = mmd_model.Model.findRoot(context.active_object)
         rig = mmd_model.Model(root)
         rig.clean()
-        context.scene.objects.active = root
+        SceneOp(context).active_object = root
         return {'FINISHED'}
 
 @register_wrap
@@ -66,7 +66,7 @@ class BuildRig(Operator):
         root = mmd_model.Model.findRoot(context.active_object)
         rig = mmd_model.Model(root)
         rig.build()
-        context.scene.objects.active = root
+        SceneOp(context).active_object = root
         return {'FINISHED'}
 
 @register_wrap
@@ -81,7 +81,7 @@ class CleanAdditionalTransformConstraints(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         rig.cleanAdditionalTransformConstraints()
-        context.scene.objects.active = obj
+        SceneOp(context).active_object = obj
         return {'FINISHED'}
 
 @register_wrap
@@ -96,7 +96,7 @@ class ApplyAdditionalTransformConstraints(Operator):
         root = mmd_model.Model.findRoot(obj)
         rig = mmd_model.Model(root)
         rig.applyAdditionalTransformConstraints()
-        context.scene.objects.active = obj
+        SceneOp(context).active_object = obj
         return {'FINISHED'}
 
 @register_wrap
@@ -247,7 +247,7 @@ class ConvertToMMDModel(Operator):
         if root is None or root != armature.parent:
             rig = mmd_model.Model.create(model_name, model_name, scale, armature=armature)
 
-        self.__attach_meshes_to(armature, context.scene.objects)
+        self.__attach_meshes_to(armature, SceneOp(context).id_objects)
         self.__configure_rig(mmd_model.Model(armature.parent))
         return {'FINISHED'}
 

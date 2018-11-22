@@ -8,6 +8,7 @@ from mmd_tools.core import rigid_body
 from mmd_tools.core.bone import FnBone
 from mmd_tools.core.morph import FnMorph
 from mmd_tools.bpyutils import matmul
+from mmd_tools.bpyutils import SceneOp
 
 import logging
 import time
@@ -60,7 +61,7 @@ class Model:
 
     @staticmethod
     def create(name, name_e='', scale=1, obj_name=None, armature=None, add_root_bone=False):
-        scene = bpy.context.scene
+        scene = SceneOp(bpy.context)
         if obj_name is None:
             obj_name = name
 
@@ -69,7 +70,7 @@ class Model:
         root.mmd_root.name = name
         root.mmd_root.name_e = name_e
         root.empty_draw_size = scale / 0.2
-        scene.objects.link(root)
+        scene.link_object(root)
 
         armObj = armature
         if armObj:
@@ -84,7 +85,7 @@ class Model:
             #arm.draw_type = 'STICK'
             armObj = bpy.data.objects.new(name=obj_name+'_arm', object_data=arm)
             armObj.parent = root
-            scene.objects.link(armObj)
+            scene.link_object(armObj)
         armObj.lock_rotation = armObj.lock_location = armObj.lock_scale = [True, True, True]
         armObj.show_x_ray = True
         armObj.draw_type = 'WIRE'
@@ -412,7 +413,7 @@ class Model:
                 rigids.parent = self.__root
                 rigids.hide = rigids.hide_select = True
                 rigids.lock_rotation = rigids.lock_location = rigids.lock_scale = [True, True, True]
-                bpy.context.scene.objects.link(rigids)
+                SceneOp(bpy.context).link_object(rigids)
                 self.__rigid_grp = rigids
         return self.__rigid_grp
 
@@ -427,7 +428,7 @@ class Model:
                 joints.parent = self.__root
                 joints.hide = joints.hide_select = True
                 joints.lock_rotation = joints.lock_location = joints.lock_scale = [True, True, True]
-                bpy.context.scene.objects.link(joints)
+                SceneOp(bpy.context).link_object(joints)
                 self.__joint_grp = joints
         return self.__joint_grp
 
@@ -442,7 +443,7 @@ class Model:
                 temporarys.parent = self.__root
                 temporarys.hide = temporarys.hide_select = True
                 temporarys.lock_rotation = temporarys.lock_location = temporarys.lock_scale = [True, True, True]
-                bpy.context.scene.objects.link(temporarys)
+                SceneOp(bpy.context).link_object(temporarys)
                 self.__temporary_grp = temporarys
         return self.__temporary_grp
 
@@ -777,7 +778,7 @@ class Model:
                     empty = bpy.data.objects.new(
                         'mmd_bonetrack',
                         None)
-                    bpy.context.scene.objects.link(empty)
+                    SceneOp(bpy.context).link_object(empty)
                     empty.matrix_world = target_bone.matrix
                     empty.empty_draw_size = 0.1 * self.__root.empty_draw_size
                     empty.empty_draw_type = 'ARROWS'
@@ -897,7 +898,7 @@ class Model:
     def __makeSpring(self, target, base_obj, spring_stiffness):
         with bpyutils.select_object(target):
             bpy.ops.object.duplicate()
-            spring_target = bpy.context.scene.objects.active
+            spring_target = SceneOp(bpy.context).active_object
         t = spring_target.constraints.get('mmd_tools_rigid_parent')
         if t is not None:
             spring_target.constraints.remove(t)
@@ -911,7 +912,7 @@ class Model:
         obj = bpy.data.objects.new(
             'S.'+target.name,
             None)
-        bpy.context.scene.objects.link(obj)
+        SceneOp(bpy.context).link_object(obj)
         obj.location = target.location
         obj.empty_draw_size = 0.1
         obj.empty_draw_type = 'ARROWS'

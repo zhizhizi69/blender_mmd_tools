@@ -6,6 +6,7 @@ from bpy.types import Panel, Menu, UIList
 from mmd_tools import register_wrap
 from mmd_tools import operators
 from mmd_tools.utils import ItemOp
+from mmd_tools.bpyutils import SceneOp
 import mmd_tools.core.model as mmd_model
 
 
@@ -715,7 +716,7 @@ class MMDRigidbodySelectorPanel(_PanelBase, Panel):
         row.template_list(
             "UL_rigidbodies",
             "",
-            context.scene, "objects",
+            SceneOp(context).id_scene, 'objects',
             root.mmd_root, 'active_rigidbody_index',
             )
         tb = row.column()
@@ -776,7 +777,7 @@ class MMDJointSelectorPanel(_PanelBase, Panel):
         row.template_list(
             "UL_joints",
             "",
-            context.scene, "objects",
+            SceneOp(context).id_scene, 'objects',
             root.mmd_root, 'active_joint_index',
             )
         tb = row.column()

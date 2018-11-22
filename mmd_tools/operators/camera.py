@@ -55,6 +55,7 @@ class ConvertToMMDCamera(Operator):
 
     def execute(self, context):
         if self.bake_animation:
+            from mmd_tools.bpyutils import SceneOp
             obj = context.active_object
             targets = [x for x in context.selected_objects if x != obj]
             target = targets[0] if len(targets) == 1 else None
@@ -62,7 +63,7 @@ class ConvertToMMDCamera(Operator):
                 obj = None
             camera = MMDCamera.newMMDCameraAnimation(obj, target, self.scale, self.min_distance).camera()
             camera.select = True
-            context.scene.objects.active = camera
+            SceneOp(context).active_object = camera
         else:
             MMDCamera.convertToMMDCamera(context.active_object, self.scale)
         return {'FINISHED'}

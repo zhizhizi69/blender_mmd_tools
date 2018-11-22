@@ -40,14 +40,11 @@ class __SelectObjects:
         self.__selected_objects = [active_object]+selected_objects
 
         self.__hides = []
-        active_layer = bpy.context.scene.active_layer
+        scene = SceneOp(bpy.context)
         for i in self.__selected_objects:
             self.__hides.append(i.hide)
-            i.layers[active_layer] = True
-            i.hide_select = False
-            i.hide = False
-            i.select = True
-        bpy.context.scene.objects.active = active_object
+            scene.select_object(i)
+        scene.active_object = active_object
 
     def __enter__(self):
         return self.__active_object
@@ -76,7 +73,7 @@ def setParentToBone(obj, parent, bone_name):
     select_object(parent)
     bpy.ops.object.mode_set(mode='POSE')
     select_object(obj)
-    bpy.context.scene.objects.active = parent
+    SceneOp(bpy.context).active_object = parent
     parent.select = True
     bpy.ops.object.mode_set(mode='POSE')
     parent.data.bones.active = parent.data.bones[bone_name]
@@ -128,8 +125,7 @@ def duplicateObject(obj, total_len):
 
 def makeCapsuleBak(segment=16, ring_count=8, radius=1.0, height=1.0, target_scene=None):
     import math
-    if target_scene is None:
-        target_scene = bpy.context.scene
+    target_scene = SceneOp(target_scene)
     mesh = bpy.data.meshes.new(name='Capsule')
     meshObj = bpy.data.objects.new(name='Capsule', object_data=mesh)
     vertices = []
@@ -175,15 +171,14 @@ def makeCapsuleBak(segment=16, ring_count=8, radius=1.0, height=1.0, target_scen
     faces.append([offset-1, offset, offset-segment])
 
     mesh.from_pydata(vertices, [], faces)
-    target_scene.objects.link(meshObj)
+    target_scene.link_object(meshObj)
     return meshObj
 
 def createObject(name='Object', object_data=None, target_scene=None):
-    if target_scene is None:
-        target_scene = bpy.context.scene
+    target_scene = SceneOp(target_scene)
     obj = bpy.data.objects.new(name=name, object_data=object_data)
-    target_scene.objects.link(obj)
-    target_scene.objects.active = obj
+    target_scene.link_object(obj)
+    target_scene.active_object = obj
     obj.select = True
     return obj
 
@@ -366,4 +361,63 @@ class TransformConstraintOp:
             setattr(c, attr, -value*influence)
         for attr in cls.min_max_attributes(c.map_to, 'to_max'):
             setattr(c, attr, value*influence)
+
+if bpy.app.version < (2, 80, 0):
+    class SceneOp:
+        def __init__(self, context):
+            self.__context = context or bpy.context
+            self.__scene = self.__context.scene
+
+        def select_object(self, obj):
+            obj.hide = obj.hide_select = False
+            obj.select = obj.layers[self.__scene.active_layer] = True
+
+        def link_object(self, obj):
+            self.__scene.objects.link(obj)
+
+        @property
+        def active_object(self):
+            return self.__scene.objects.active
+
+        @active_object.setter
+        def active_object(self, obj):
+            obj.layers[self.__scene.active_layer] = True
+            self.__scene.objects.active = obj
+
+        @property
+        def id_scene(self):
+            return self.__scene
+
+        @property
+        def id_objects(self):
+            return self.__scene.objects
+else:
+    class SceneOp:
+        def __init__(self, context):
+            self.__context = context or bpy.context
+            self.__collection = self.__context.collection
+            self.__view_layer = self.__context.view_layer
+
+        def select_object(self, obj):
+            obj.hide = obj.hide_select = False
+            obj.select = True
+
+        def link_object(self, obj):
+            self.__collection.objects.link(obj)
+
+        @property
+        def active_object(self):
+            return self.__view_layer.objects.active
+
+        @active_object.setter
+        def active_object(self, obj):
+            self.__view_layer.objects.active = obj
+
+        @property
+        def id_scene(self):
+            return self.__view_layer
+
+        @property
+        def id_objects(self):
+            return self.__view_layer.objects
 

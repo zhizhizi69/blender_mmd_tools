@@ -40,7 +40,7 @@ class PMXImporter:
 
     def __init__(self):
         self.__model = None
-        self.__targetScene = bpy.context.scene
+        self.__targetScene = bpyutils.SceneOp(bpy.context)
 
         self.__scale = None
 
@@ -93,14 +93,14 @@ class PMXImporter:
         model_name = self.__root.name
         self.__meshObj = bpy.data.objects.new(name=model_name+'_mesh', object_data=bpy.data.meshes.new(name=model_name))
         self.__meshObj.parent = self.__armObj
-        self.__targetScene.objects.link(self.__meshObj)
+        self.__targetScene.link_object(self.__meshObj)
 
     def __createBasisShapeKey(self):
         if self.__meshObj.data.shape_keys:
             assert(len(self.__meshObj.data.vertices) > 0)
             assert(len(self.__meshObj.data.shape_keys.key_blocks) > 1)
             return
-        self.__targetScene.objects.active = self.__meshObj
+        self.__targetScene.active_object = self.__meshObj
         bpy.ops.object.shape_key_add()
 
     def __importVertexGroup(self):
@@ -836,7 +836,7 @@ class PMXImporter:
             root.mmd_root.show_armature = True
         if 'MESH' in types:
             root.mmd_root.show_meshes = True
-        self.__targetScene.objects.active = root
+        self.__targetScene.active_object = root
         root.select = True
 
         logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)
