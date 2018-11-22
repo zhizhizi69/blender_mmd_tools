@@ -17,6 +17,17 @@ __bl_classes = []
 def register_wrap(cls):
     #print('%3d'%len(__bl_classes), cls)
     #assert(cls not in __bl_classes)
+    if __make_annotations:
+        bl_props = {k:v for k, v in cls.__dict__.items() if isinstance(v, tuple)}
+        if bl_props:
+            if '__annotations__' not in cls.__dict__:
+                setattr(cls, '__annotations__', {})
+            annotations = cls.__dict__['__annotations__']
+            for k, v in bl_props.items():
+                #print('   -', k, v[0])
+                #assert(getattr(v[0], '__module__', None) == 'bpy.props' and isinstance(v[1], dict))
+                annotations[k] = v
+                delattr(cls, k)
     if hasattr(cls, 'bl_rna'):
         __bl_classes.append(cls)
     return cls
@@ -26,6 +37,7 @@ if "bpy" in locals():
         import imp as importlib
     else:
         import importlib
+    __make_annotations = (bpy.app.version >= (2, 80, 0))
     importlib.reload(properties)
     importlib.reload(operators)
     importlib.reload(panels)
@@ -36,6 +48,7 @@ else:
     from bpy.props import StringProperty
     from bpy.app.handlers import persistent
 
+    __make_annotations = (bpy.app.version >= (2, 80, 0))
     from . import properties
     from . import operators
     from . import panels

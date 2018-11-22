@@ -26,6 +26,7 @@ class ConvertMaterialsForCycles(Operator):
             cycles_converter.convertToCyclesShader(obj)
         return {'FINISHED'}
 
+@register_wrap
 class _OpenTextureBase(object):
     """ Create a texture for mmd model material.
     """
@@ -272,10 +273,11 @@ class EdgePreviewSetup(Operator):
             node_shader.width = 200
             node_shader.node_tree = self.__get_edge_preview_shader()
 
-            node_out = nodes.new('ShaderNodeOutput')
-            node_out.location = (XPOS*2, YPOS*2)
-            links.new(node_shader.outputs['Color'], node_out.inputs['Color'])
-            links.new(node_shader.outputs['Alpha'], node_out.inputs['Alpha'])
+            if bpy.app.version < (2, 80, 0):
+                node_out = nodes.new('ShaderNodeOutput')
+                node_out.location = (XPOS*2, YPOS*2)
+                links.new(node_shader.outputs['Color'], node_out.inputs['Color'])
+                links.new(node_shader.outputs['Alpha'], node_out.inputs['Alpha'])
 
             node_out = nodes.new('ShaderNodeOutputMaterial')
             node_out.location = (XPOS*2, YPOS*0)
@@ -311,16 +313,19 @@ class EdgePreviewSetup(Operator):
         ############################################################################
         node_color = __new_node('ShaderNodeMixRGB', (XPOS*-1, YPOS*-3))
         node_color.mute = True
-        node_geo = __new_node('ShaderNodeGeometry', (XPOS*-2, YPOS*-5))
-        node_cull = __new_node('ShaderNodeMath', (XPOS*-1, YPOS*-5))
-        node_cull.operation = 'MULTIPLY'
-
-        links.new(node_geo.outputs['Front/Back'], node_cull.inputs[1])
 
         __new_io(shader.inputs, node_input.outputs, 'Color', node_color.inputs['Color1'])
-        __new_io(shader.inputs, node_input.outputs, 'Alpha', node_cull.inputs[0])
-        __new_io(shader.outputs, node_output.inputs, 'Color', node_color.outputs['Color'])
-        __new_io(shader.outputs, node_output.inputs, 'Alpha', node_cull.outputs['Value'])
+
+        if bpy.app.version < (2, 80, 0):
+            node_geo = __new_node('ShaderNodeGeometry', (XPOS*-2, YPOS*-5))
+            node_cull = __new_node('ShaderNodeMath', (XPOS*-1, YPOS*-5))
+            node_cull.operation = 'MULTIPLY'
+
+            links.new(node_geo.outputs['Front/Back'], node_cull.inputs[1])
+
+            __new_io(shader.inputs, node_input.outputs, 'Alpha', node_cull.inputs[0])
+            __new_io(shader.outputs, node_output.inputs, 'Color', node_color.outputs['Color'])
+            __new_io(shader.outputs, node_output.inputs, 'Alpha', node_cull.outputs['Value'])
 
         ############################################################################
         node_ray = __new_node('ShaderNodeLightPath', (XPOS*-3, YPOS*3))

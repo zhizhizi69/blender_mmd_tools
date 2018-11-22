@@ -15,7 +15,7 @@ class MMDLamp:
 
     @staticmethod
     def isLamp(obj):
-        return obj and obj.type == 'LAMP'
+        return obj and obj.type in {'LIGHT', 'LAMP'}
 
     @staticmethod
     def isMMDLamp(obj):

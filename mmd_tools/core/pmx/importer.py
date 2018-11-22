@@ -572,7 +572,7 @@ class PMXImporter:
         uv_table = {vi:self.flipUV_V(v.uv) for vi, v in enumerate(pmxModel.vertices)}
         uv_layer.data.foreach_set('uv', tuple(v for i in loop_indices_orig for v in uv_table[i]))
 
-        if uv_textures is not uv_layers:
+        if hasattr(mesh, 'uv_textures'):
             for bf, mi in zip(uv_tex.data, material_indices):
                 bf.image = self.__imageTable.get(mi, None)
 

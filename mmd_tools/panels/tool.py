@@ -597,6 +597,7 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
         row.prop(item, 'morph_type', text='')
 
 
+@register_wrap
 class UL_ObjectsMixIn(object):
     model_filter = bpy.props.EnumProperty(
         name="Model Filter",

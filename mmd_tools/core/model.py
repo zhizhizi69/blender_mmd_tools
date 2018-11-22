@@ -564,15 +564,21 @@ class Model:
                 const = i.constraints['mmd_tools_rigid_track']
                 i.constraints.remove(const)
 
-        self.__removeChildrenOfTemporaryGroupObject() # for speeding up only
-
-        for i in self.temporaryObjects():
-            if i.mmd_type in ['NON_COLLISION_CONSTRAINT', 'SPRING_GOAL', 'SPRING_CONSTRAINT']:
-                bpy.context.scene.objects.unlink(i)
-                bpy.data.objects.remove(i)
-            elif i.mmd_type == 'TRACK_TARGET':
-                bpy.context.scene.objects.unlink(i)
-                bpy.data.objects.remove(i)
+        if bpy.app.version < (2, 78, 0):
+            self.__removeChildrenOfTemporaryGroupObject() # for speeding up only
+            for i in self.temporaryObjects():
+                if i.mmd_type in ['NON_COLLISION_CONSTRAINT', 'SPRING_GOAL', 'SPRING_CONSTRAINT']:
+                    bpy.context.scene.objects.unlink(i)
+                    bpy.data.objects.remove(i)
+                elif i.mmd_type == 'TRACK_TARGET':
+                    bpy.context.scene.objects.unlink(i)
+                    bpy.data.objects.remove(i)
+        else:
+            for i in self.temporaryObjects():
+                if i.mmd_type in ['NON_COLLISION_CONSTRAINT', 'SPRING_GOAL', 'SPRING_CONSTRAINT']:
+                    bpy.data.objects.remove(i, do_unlink=True)
+                elif i.mmd_type == 'TRACK_TARGET':
+                    bpy.data.objects.remove(i, do_unlink=True)
 
         rigid_track_counts = 0
         for i in self.rigidBodies():

@@ -293,6 +293,7 @@ class ConvertToMMDModel(Operator):
             pose_bone.lock_location = (True, True, True)
 
         for m in {x for mesh in meshes for x in mesh.data.materials if x}:
+            if not hasattr(m, 'use_transparency'): continue
             mmd_material = m.mmd_material
 
             map_diffuse = next((s.blend_type for s in m.texture_slots if s and s.use_map_color_diffuse), None)

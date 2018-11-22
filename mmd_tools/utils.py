@@ -2,6 +2,8 @@
 import re
 import os
 
+from mmd_tools import register_wrap
+
 ## 指定したオブジェクトのみを選択状態かつアクティブにする
 def selectAObject(obj):
     import bpy
@@ -222,6 +224,7 @@ class ItemOp:
         items.move(index_end, index)
         return items[index], index
 
+@register_wrap
 class ItemMoveOp:
     import bpy
     type = bpy.props.EnumProperty(

@@ -75,6 +75,7 @@ def _set_name(prop, value):
 
     prop['name'] = value
 
+@register_wrap
 class _MorphBase:
     name = StringProperty(
         name='Name',

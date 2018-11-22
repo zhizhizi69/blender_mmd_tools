@@ -17,7 +17,6 @@ class SetGLSLShading(Operator):
 
     def execute(self, context):
         bpy.ops.mmd_tools.reset_shading()
-        bpy.context.scene.render.engine = 'BLENDER_RENDER'
         for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
             for s in i.material_slots:
                 if s.material is None:
@@ -42,15 +41,11 @@ class SetShadelessGLSLShading(Operator):
 
     def execute(self, context):
         bpy.ops.mmd_tools.reset_shading()
-        bpy.context.scene.render.engine = 'BLENDER_RENDER'
         for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
             for s in i.material_slots:
                 if s.material is None:
                     continue
                 s.material.use_shadeless = True
-        for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
-            context.scene.objects.unlink(i)
-
         try:
             bpy.context.scene.display_settings.display_device = 'None'
         except TypeError:
