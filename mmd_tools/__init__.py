@@ -37,7 +37,6 @@ if "bpy" in locals():
         import imp as importlib
     else:
         import importlib
-    __make_annotations = (bpy.app.version >= (2, 80, 0))
     importlib.reload(properties)
     importlib.reload(operators)
     importlib.reload(panels)
