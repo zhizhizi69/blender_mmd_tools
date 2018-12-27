@@ -82,7 +82,7 @@ class ResetShading(Operator):
             shading.light = 'STUDIO'
             shading.color_type = 'MATERIAL'
             shading.show_object_outline = False
-            context.space_data.overlay.show_backface_culling = True
+            shading.show_backface_culling = True
             return {'FINISHED'}
 
         context.scene.render.engine = 'BLENDER_RENDER'
