@@ -544,8 +544,8 @@ class MMDMorphToolsPanel(_PanelBase, Panel):
 
         row = col.row(align=True)
         row.operator(operators.morph.ViewBoneMorph.bl_idname, text='View')
-        row.operator('mmd_tools.apply_bone_morph', text='Apply')
-        row.operator('pose.transforms_clear', text='Clear')
+        row.operator(operators.morph.ApplyBoneMorph.bl_idname, text='Apply')
+        row.operator(operators.morph.ClearBoneMorphView.bl_idname, text='Clear')
 
         col.label(text='Bone Offsets (%d)'%len(morph.data))
         data = self._template_morph_offset_list(col, morph, 'UL_BoneMorphOffsets')
