@@ -514,7 +514,7 @@ class _FnMaterialCycles(_FnMaterialBI):
     def update_shininess(self):
         mat = self.material
         mmd_mat = mat.mmd_material
-        mat.roughness = 1/max(mmd_mat.shininess, 1)
+        mat.roughness = 1/pow(max(mmd_mat.shininess, 1), 0.37)
         if hasattr(mat, 'metallic'):
             mat.metallic = 1 - mat.roughness
         if hasattr(mat, 'specular_hardness'):
