@@ -478,7 +478,8 @@ class ExportPmx(Operator, ExportHelper):
 
     @classmethod
     def poll(cls, context):
-        return len(context.selected_objects) > 0
+        obj = context.active_object
+        return obj in context.selected_objects and mmd_model.Model.findRoot(obj)
 
     def execute(self, context):
         try:
@@ -603,7 +604,7 @@ class ExportVmd(Operator, ExportHelper):
         obj = context.active_object
         if obj.mmd_type == 'ROOT':
             rig = mmd_model.Model(obj)
-            params['mesh'] = rig.firstMesh()
+            params['mesh'] = rig.morph_slider.placeholder(binded=True) or rig.firstMesh()
             params['armature'] = rig.armature()
             params['model_name'] = obj.mmd_root.name or obj.name
         elif getattr(obj.data, 'shape_keys', None):
@@ -671,7 +672,7 @@ class ExportVpd(Operator, ExportHelper):
 
         if obj.mmd_type == 'ROOT':
             return True
-        if obj.mmd_type == 'NONE' and obj.type in {'MESH', 'ARMATURE'}:
+        if obj.mmd_type == 'NONE' and (obj.type == 'ARMATURE' or getattr(obj.data, 'shape_keys', None)):
             return True
 
         return False
@@ -694,10 +695,10 @@ class ExportVpd(Operator, ExportHelper):
         obj = context.active_object
         if obj.mmd_type == 'ROOT':
             rig = mmd_model.Model(obj)
-            params['mesh'] = rig.firstMesh()
+            params['mesh'] = rig.morph_slider.placeholder(binded=True) or rig.firstMesh()
             params['armature'] = rig.armature()
             params['model_name'] = obj.mmd_root.name or obj.name
-        elif obj.type == 'MESH':
+        elif getattr(obj.data, 'shape_keys', None):
             params['mesh'] = obj
             params['model_name'] = obj.name
         elif obj.type == 'ARMATURE':

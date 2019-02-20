@@ -210,6 +210,19 @@ class VMDImporter:
         for c in action.fcurves:
             self.__fixFcurveHandles(c)
 
+        # property animation
+        propertyAnim = self.__vmdFile.propertyAnimation
+        if len(propertyAnim) < 1:
+            return
+        logging.info('---- IK animations:%5d  target: %s', len(propertyAnim), armObj.name)
+        for keyFrame in propertyAnim:
+            frame = keyFrame.frame_number + self.__frame_margin
+            for ikName, enable in keyFrame.ik_states:
+                bone = pose_bones.get(ikName, None)
+                if bone:
+                    bone.mmd_ik_toggle = enable
+                    bone.keyframe_insert(data_path='mmd_ik_toggle', frame=frame)
+
 
     def __assignToMesh(self, meshObj, action_name=None):
         shapeKeyAnim = self.__vmdFile.shapeKeyAnimation
@@ -241,6 +254,22 @@ class VMDImporter:
             weights = tuple(i.weight for i in keyFrames)
             shapeKey.slider_min = min(shapeKey.slider_min, floor(min(weights)))
             shapeKey.slider_max = max(shapeKey.slider_max, ceil(max(weights)))
+
+
+    def __assignToRoot(self, rootObj, action_name=None):
+        propertyAnim = self.__vmdFile.propertyAnimation
+        logging.info('---- display animations:%5d  target: %s', len(propertyAnim), rootObj.name)
+        if len(propertyAnim) < 1:
+            return
+
+        action_name = action_name or rootObj.name
+        action = bpy.data.actions.new(name=action_name)
+        rootObj.animation_data_create().action = action
+
+        for keyFrame in propertyAnim:
+            rootObj.mmd_root.show_meshes = keyFrame.visible
+            rootObj.keyframe_insert(data_path='mmd_root.show_meshes',
+                                    frame=keyFrame.frame_number+self.__frame_margin)
 
 
     @staticmethod
@@ -311,6 +340,7 @@ class VMDImporter:
         frameCount = len(frames)
         frames.sort(key=lambda x:x.co[0])
         for i, f in enumerate(frames):
+            f.interpolation = 'LINEAR'
             if i+1 < frameCount:
                 n = frames[i+1]
                 if n.co[0] - f.co[0] <= 1.0 and abs(f.co[1] - n.co[1]) > threshold:
@@ -361,6 +391,8 @@ class VMDImporter:
             self.__assignToCamera(obj, action_name+'_camera')
         elif obj.type == 'LAMP' and self.__convert_mmd_lamp:
             self.__assignToLamp(obj, action_name+'_lamp')
+        elif obj.mmd_type == 'ROOT':
+            self.__assignToRoot(obj, action_name+'_display')
         else:
             pass
 

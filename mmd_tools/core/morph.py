@@ -214,7 +214,7 @@ class _MorphSlider:
     def __init__(self, model):
         self.__rig = model
 
-    def placeholder(self, create=False):
+    def placeholder(self, create=False, binded=False):
         rig = self.__rig
         root = rig.rootObject()
         obj = next((x for x in root.children if x.mmd_type == 'PLACEHOLDER' and x.type == 'MESH'), None)
@@ -226,6 +226,8 @@ class _MorphSlider:
         if obj and obj.data.shape_keys is None:
             key = obj.shape_key_add(name='--- morph sliders ---')
             key.mute = True
+        if binded and obj and obj.data.shape_keys.key_blocks[0].mute:
+            return None
         return obj
 
     @property
