@@ -14,6 +14,28 @@ from mmd_tools.core.camera import MMDCamera
 from mmd_tools.core.lamp import MMDLamp
 
 
+class _MirrorMapper:
+    def __init__(self, data_map=None):
+        from mmd_tools.operators.view import FlipPose
+        self.__data_map = data_map
+        self.__flip_name = FlipPose.flip_name
+
+    def get(self, name, default=None):
+        return self.__data_map.get(self.__flip_name(name), None) or self.__data_map.get(name, default)
+
+    @staticmethod
+    def get_location(location):
+        return (-location[0], location[1], location[2])
+
+    @staticmethod
+    def get_rotation(rotation_xyzw):
+        return (rotation_xyzw[0], -rotation_xyzw[1], -rotation_xyzw[2], rotation_xyzw[3])
+
+    @staticmethod
+    def get_rotation3(rotation_xyz):
+        return (rotation_xyz[0], -rotation_xyz[1], -rotation_xyz[2])
+
+
 class RenamedBoneMapper:
     def __init__(self, armObj=None, rename_LR_bones=True, use_underscore=False, translator=None):
         self.__pose_bones = armObj.pose.bones if armObj else None
@@ -90,7 +112,7 @@ class BoneConverterPoseMode:
 
 class VMDImporter:
     def __init__(self, filepath, scale=1.0, bone_mapper=None, use_pose_mode=False,
-            convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5):
+            convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5, use_mirror=False):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
         self.__scale = scale
@@ -99,6 +121,7 @@ class VMDImporter:
         self.__bone_mapper = bone_mapper
         self.__bone_util_cls = BoneConverterPoseMode if use_pose_mode else BoneConverter
         self.__frame_margin = frame_margin + 1
+        self.__mirror = use_mirror
 
 
     @staticmethod
@@ -149,6 +172,12 @@ class VMDImporter:
         pose_bones = armObj.pose.bones
         if self.__bone_mapper:
             pose_bones = self.__bone_mapper(armObj)
+
+        _loc = _rot = lambda i: i
+        if self.__mirror:
+            pose_bones = _MirrorMapper(pose_bones)
+            _loc, _rot = _MirrorMapper.get_location, _MirrorMapper.get_rotation
+
         bone_name_table = {}
         for name, keyFrames in boneAnim.items():
             num_frame = len(keyFrames)
@@ -186,8 +215,8 @@ class VMDImporter:
             keyFrames.sort(key=lambda x:x.frame_number)
             for k, x, y, z, rw, rx, ry, rz in zip(keyFrames, *fcurves):
                 frame = k.frame_number + self.__frame_margin
-                loc = converter.convert_location(k.location)
-                curr_rot = converter.convert_rotation(k.rotation)
+                loc = converter.convert_location(_loc(k.location))
+                curr_rot = converter.convert_rotation(_rot(k.rotation))
                 if prev_rot is not None:
                     curr_rot = self.__minRotationDiff(prev_rot, curr_rot)
                 prev_rot = curr_rot
@@ -234,9 +263,8 @@ class VMDImporter:
         action = bpy.data.actions.new(name=action_name)
         meshObj.data.shape_keys.animation_data_create().action = action
 
-        shapeKeyDict = {}
-        for i in meshObj.data.shape_keys.key_blocks:
-            shapeKeyDict[i.name] = i
+        mirror_map = _MirrorMapper(meshObj.data.shape_keys.key_blocks) if self.__mirror else {}
+        shapeKeyDict = {k:mirror_map.get(k, v) for k, v in meshObj.data.shape_keys.key_blocks.items()}
 
         from math import floor, ceil
         for name, keyFrames in shapeKeyAnim.items():
@@ -299,6 +327,10 @@ class VMDImporter:
         mmdCamera.animation_data_create().action = parent_action
         cameraObj.animation_data_create().action = distance_action
 
+        _loc = _rot = lambda i: i
+        if self.__mirror:
+            _loc, _rot = _MirrorMapper.get_location, _MirrorMapper.get_rotation3
+
         fcurves = []
         for i in range(3):
             fcurves.append(parent_action.fcurves.new(data_path='location', index=i)) # x, y, z
@@ -314,8 +346,8 @@ class VMDImporter:
         cameraAnim.sort(key=lambda x:x.frame_number)
         for k, x, y, z, rx, ry, rz, fov, persp, dis in zip(cameraAnim, *(c.keyframe_points for c in fcurves)):
             frame = k.frame_number + self.__frame_margin
-            x.co, z.co, y.co = ((frame, val*self.__scale) for val in k.location)
-            rx.co, rz.co, ry.co = ((frame, val) for val in k.rotation)
+            x.co, z.co, y.co = ((frame, val*self.__scale) for val in _loc(k.location))
+            rx.co, rz.co, ry.co = ((frame, val) for val in _rot(k.rotation))
             fov.co = (frame, math.radians(k.angle))
             dis.co = (frame, k.distance*self.__scale)
             persp.co = (frame, k.persp)
@@ -362,10 +394,11 @@ class VMDImporter:
         lampObj.data.animation_data_create().action = color_action
         lampObj.animation_data_create().action = location_action
 
+        _loc = _MirrorMapper.get_location if self.__mirror else lambda i: i
         for keyFrame in lampAnim:
             frame = keyFrame.frame_number + self.__frame_margin
             lampObj.data.color = Vector(keyFrame.color)
-            lampObj.location = Vector(keyFrame.direction).xzy * -1
+            lampObj.location = Vector(_loc(keyFrame.direction)).xzy * -1
             lampObj.data.keyframe_insert(data_path='color', frame=frame)
             lampObj.keyframe_insert(data_path='location', frame=frame)
 

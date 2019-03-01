@@ -257,6 +257,11 @@ class ImportVmd(Operator, ImportHelper):
         default=False,
         options={'SKIP_SAVE'},
         )
+    use_mirror = bpy.props.BoolProperty(
+        name='Mirror Motion',
+        description='Import the motion by using X-Axis mirror',
+        default=False,
+        )
     update_scene_settings = bpy.props.BoolProperty(
         name='Update scene settings',
         description='Update frame range and frame rate (30 fps)',
@@ -278,6 +283,7 @@ class ImportVmd(Operator, ImportHelper):
             layout.prop(self, 'use_underscore')
             layout.prop(self, 'dictionary')
         layout.prop(self, 'use_pose_mode')
+        layout.prop(self, 'use_mirror')
 
         layout.prop(self, 'update_scene_settings')
 
@@ -308,6 +314,7 @@ class ImportVmd(Operator, ImportHelper):
             bone_mapper=bone_mapper,
             use_pose_mode=self.use_pose_mode,
             frame_margin=self.margin,
+            use_mirror=self.use_mirror,
             )
 
         for i in selected_objects:

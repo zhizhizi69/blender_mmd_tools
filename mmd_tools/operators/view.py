@@ -117,8 +117,10 @@ class FlipPose(Operator):
         {"re": re.compile(r'^(.+)(RIGHT|LEFT)(\.\d+)?$', re.IGNORECASE), "lr": 1},
         {"re": re.compile(r'^(.+)([\.\- _])(L|R)(\.\d+)?$', re.IGNORECASE), "lr": 2},
         {"re": re.compile(r'^(LEFT|RIGHT)(.+)$', re.IGNORECASE), "lr": 0},
-        {"re": re.compile(r'^(L|R)([\.\- _])(.+)$', re.IGNORECASE), "lr": 0}
-    ]
+        {"re": re.compile(r'^(L|R)([\.\- _])(.+)$', re.IGNORECASE), "lr": 0},
+        {"re": re.compile(r'^(.+)(左|右)(\.\d+)?$'), "lr": 1},
+        {"re": re.compile(r'^(左|右)(.+)$'), "lr": 0},
+        ]
     __LR_MAP = {
         "RIGHT": "LEFT",
         "Right": "Left",
@@ -129,10 +131,12 @@ class FlipPose(Operator):
         "L": "R",
         "l": "r",
         "R": "L",
-        "r": "l"
-    }
+        "r": "l",
+        "左": "右",
+        "右": "左",
+        }
     @classmethod
-    def __flip_name(cls, name):
+    def flip_name(cls, name):
         for regex in cls.__LR_REGEX:
             match = regex["re"].match(name)
             if match:
@@ -147,7 +151,7 @@ class FlipPose(Operator):
                         elif s:
                             name += s
                     return name
-        return None
+        return ''
 
     @staticmethod
     def __cmul(vec1, vec2):
@@ -159,11 +163,14 @@ class FlipPose(Operator):
                     Matrix([(scale[0],0,0,0), (0,scale[1],0,0), (0,0,scale[2],0), (0,0,0,1)]))
 
     @classmethod
-    def __flip_direction(cls, bone1, bone2):
-        axis1 = bone1.matrix_local.to_3x3().transposed()
-        axis2 = bone2.matrix_local.to_3x3().transposed()
-        axis1 = [cls.__cmul(vec, (-1, 1, 1)) for vec in axis1]
-        return [1] + [(1, -1)[vec1.dot(vec2) > 0] for vec1, vec2 in zip(axis1, axis2)]
+    def __flip_pose(cls, matrix_basis, bone_src, bone_dest):
+        from mathutils import Quaternion
+        m = bone_dest.bone.matrix_local.to_3x3().transposed()
+        mi = bone_src.bone.matrix_local.to_3x3().transposed().inverted() if bone_src != bone_dest else m.inverted()
+        loc, rot, scale = matrix_basis.decompose()
+        loc = cls.__cmul(matmul(mi, loc), (-1, 1, 1))
+        rot = cls.__cmul(Quaternion(matmul(mi, rot.axis), rot.angle).normalized(), (1, 1, -1, -1))
+        bone_dest.matrix_basis = cls.__matrix_compose(matmul(m, loc), Quaternion(matmul(m, rot.axis), rot.angle).normalized(), scale)
 
     @classmethod
     def poll(cls, context):
@@ -172,29 +179,8 @@ class FlipPose(Operator):
                     context.active_object.mode == 'POSE')
 
     def execute(self, context):
-        copy_buffer = []
-        arm = context.active_object
-
-        for pose_bone in context.selected_pose_bones:
-            copy_buffer.append({
-                'name': pose_bone.bone.name,
-                'flipped_name': self.__flip_name(pose_bone.bone.name),
-                'bone': pose_bone.bone,
-                'matrix_basis': pose_bone.matrix_basis.copy()})
-
-        for b in copy_buffer:
-            if b["flipped_name"] and b["flipped_name"] in arm.pose.bones:
-                pose_bone = arm.pose.bones[b["flipped_name"]]
-                sign = self.__flip_direction(b['bone'], pose_bone.bone)
-                loc, rot, scale = b['matrix_basis'].decompose()
-                loc = self.__cmul(loc, (-1, 1, 1))
-                rot = self.__cmul(rot, sign)
-                pose_bone.matrix_basis = self.__matrix_compose(loc, rot, scale)
-            else:
-                pose_bone = arm.pose.bones[b['name']]
-                loc, rot, scale = b['matrix_basis'].decompose()
-                loc = self.__cmul(loc, (-1, 1, 1))
-                rot = self.__cmul(rot, (1, 1, -1, -1))
-                pose_bone.matrix_basis = self.__matrix_compose(loc, rot, scale)
-
+        pose_bones = context.active_object.pose.bones
+        for b, mat in [(x, x.matrix_basis.copy()) for x in context.selected_pose_bones]:
+            self.__flip_pose(mat, b, pose_bones.get(self.flip_name(b.name), b))
         return {'FINISHED'}
+
