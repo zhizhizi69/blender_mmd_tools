@@ -239,6 +239,11 @@ class VMDImporter:
         for c in action.fcurves:
             self.__fixFcurveHandles(c)
 
+        # ensure IK's default state
+        for b in armObj.pose.bones:
+            if not b.mmd_ik_toggle:
+                b.mmd_ik_toggle = True
+
         # property animation
         propertyAnim = self.__vmdFile.propertyAnimation
         if len(propertyAnim) < 1:
