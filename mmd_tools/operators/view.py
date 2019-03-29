@@ -8,102 +8,96 @@ from mathutils import Matrix
 from mmd_tools import register_wrap
 from mmd_tools.bpyutils import matmul
 
+
+class _SetShadingBase:
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @staticmethod
+    def _get_view3d_spaces(context):
+        if context.area.type == 'VIEW_3D':
+            return (context.area.spaces[0],)
+        return (area.spaces[0] for area in context.screen.areas if area.type == 'VIEW_3D')
+
+    @staticmethod
+    def _reset_color_management(context, use_display_device=True):
+        try:
+            context.scene.display_settings.display_device = ('None', 'sRGB')[use_display_device]
+        except TypeError:
+            pass
+
+    @staticmethod
+    def _reset_material_shading(context, use_shadeless=False):
+        for i in (x for x in context.scene.objects if x.type == 'MESH' and x.mmd_type == 'NONE'):
+            for s in i.material_slots:
+                if s.material is None:
+                    continue
+                s.material.use_nodes = False
+                s.material.use_shadeless = use_shadeless
+
+    @staticmethod
+    def _reset_mmd_glsl_light(context, use_light=False):
+        for i in (x for x in context.scene.objects if x.is_mmd_glsl_light):
+            if use_light:
+                return
+            context.scene.objects.unlink(i)
+
+        if use_light:
+            light = bpy.data.objects.new('Hemi', bpy.data.lamps.new('Hemi', 'HEMI'))
+            light.is_mmd_glsl_light = True
+            context.scene.objects.link(light)
+
+
+    if bpy.app.version < (2, 80, 0):
+        def execute(self, context):
+            context.scene.render.engine = 'BLENDER_RENDER'
+
+            shading_mode = getattr(self, '_shading_mode', None)
+            self._reset_mmd_glsl_light(context, use_light=(shading_mode == 'GLSL'))
+            self._reset_material_shading(context, use_shadeless=(shading_mode == 'SHADELESS'))
+            self._reset_color_management(context, use_display_device=(shading_mode != 'SHADELESS'))
+
+            shade, context.scene.game_settings.material_mode = ('TEXTURED', 'GLSL') if shading_mode else ('SOLID', 'MULTITEXTURE')
+            for space in self._get_view3d_spaces(context):
+                space.viewport_shade = shade
+                space.show_backface_culling = True
+            return {'FINISHED'}
+    else:
+        def execute(self, context): #TODO
+            context.scene.render.engine = 'BLENDER_EEVEE'
+
+            shading_mode = getattr(self, '_shading_mode', None)
+            for space in self._get_view3d_spaces(context):
+                shading = space.shading
+                shading.type = 'SOLID'
+                shading.light = 'FLAT' if shading_mode == 'SHADELESS' else 'STUDIO'
+                shading.color_type = 'TEXTURE' if shading_mode else 'MATERIAL'
+                shading.show_object_outline = False
+                shading.show_backface_culling = True
+            return {'FINISHED'}
+
+
 @register_wrap
-class SetGLSLShading(Operator):
+class SetGLSLShading(Operator, _SetShadingBase):
     bl_idname = 'mmd_tools.set_glsl_shading'
     bl_label = 'GLSL View'
     bl_description = 'Use GLSL shading with additional lighting'
-    bl_options = {'REGISTER', 'UNDO'}
 
-    def execute(self, context):
-        bpy.ops.mmd_tools.reset_shading()
-        if bpy.app.version >= (2, 80, 0):
-            shading = context.area.spaces[0].shading
-            shading.light = 'STUDIO'
-            shading.color_type = 'TEXTURE'
-            return {'FINISHED'}
-
-        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-            for s in i.material_slots:
-                if s.material is None:
-                    continue
-                s.material.use_shadeless = False
-        if len(list(filter(lambda x: x.is_mmd_glsl_light, context.scene.objects))) == 0:
-            light = bpy.data.objects.new('Hemi', bpy.data.lamps.new('Hemi', 'HEMI'))
-            light.is_mmd_glsl_light = True
-            light.hide = True
-            context.scene.objects.link(light)
-
-        context.area.spaces[0].viewport_shade='TEXTURED'
-        context.scene.game_settings.material_mode = 'GLSL'
-        return {'FINISHED'}
+    _shading_mode = 'GLSL'
 
 @register_wrap
-class SetShadelessGLSLShading(Operator):
+class SetShadelessGLSLShading(Operator, _SetShadingBase):
     bl_idname = 'mmd_tools.set_shadeless_glsl_shading'
     bl_label = 'Shadeless GLSL View'
     bl_description = 'Use only toon shading'
-    bl_options = {'REGISTER', 'UNDO'}
 
-    def execute(self, context):
-        bpy.ops.mmd_tools.reset_shading()
-        if bpy.app.version >= (2, 80, 0):
-            shading = context.area.spaces[0].shading
-            shading.light = 'FLAT'
-            shading.color_type = 'TEXTURE'
-            return {'FINISHED'}
-
-        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-            for s in i.material_slots:
-                if s.material is None:
-                    continue
-                s.material.use_shadeless = True
-        try:
-            context.scene.display_settings.display_device = 'None'
-        except TypeError:
-            pass # Blender was built without OpenColorIO:
-
-        context.area.spaces[0].viewport_shade='TEXTURED'
-        context.scene.game_settings.material_mode = 'GLSL'
-        return {'FINISHED'}
+    _shading_mode = 'SHADELESS'
 
 @register_wrap
-class ResetShading(Operator):
+class ResetShading(Operator, _SetShadingBase):
     bl_idname = 'mmd_tools.reset_shading'
     bl_label = 'Reset View'
     bl_description = 'Reset to default Blender shading'
-    bl_options = {'REGISTER', 'UNDO'}
 
-    def execute(self, context):
-        if bpy.app.version >= (2, 80, 0):
-            context.scene.render.engine = 'BLENDER_EEVEE'
-            shading = context.area.spaces[0].shading
-            shading.type = 'SOLID'
-            shading.light = 'STUDIO'
-            shading.color_type = 'MATERIAL'
-            shading.show_object_outline = False
-            shading.show_backface_culling = True
-            return {'FINISHED'}
-
-        context.scene.render.engine = 'BLENDER_RENDER'
-        for i in filter(lambda x: x.type == 'MESH', context.scene.objects):
-            for s in i.material_slots:
-                if s.material is None:
-                    continue
-                s.material.use_shadeless = False
-                s.material.use_nodes = False
-
-        for i in filter(lambda x: x.is_mmd_glsl_light, context.scene.objects):
-            context.scene.objects.unlink(i)
-
-        try:
-            context.scene.display_settings.display_device = 'sRGB'
-        except TypeError:
-            pass
-        context.area.spaces[0].viewport_shade='SOLID'
-        context.area.spaces[0].show_backface_culling = True
-        context.scene.game_settings.material_mode = 'MULTITEXTURE'
-        return {'FINISHED'}
 
 @register_wrap
 class FlipPose(Operator):
