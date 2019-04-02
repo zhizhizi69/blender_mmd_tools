@@ -48,7 +48,7 @@ class ModelOperatorsTest(unittest.TestCase):
         # Check the root frame has the root bone
         root_frame = frames['Root']
         try:
-            item = root_frame.items[0]
+            item = getattr(root_frame, 'data', root_frame.items)[0]
             self.assertEqual(item.name, armObj.data.bones.keys()[0], 'Incorrect Item name')
             self.assertEqual(item.type, 'BONE', 'Incorrect Item type')
         except IndexError:

@@ -582,6 +582,13 @@ class TestPmxExporter(unittest.TestCase):
                         ret.append(os.path.join(root, name))
         return ret
 
+    def __enable_mmd_tools(self):
+        bpy.ops.wm.read_homefile() # reload blender startup file
+        pref = getattr(bpy.context, 'preferences', None) or bpy.context.user_preferences
+        if not pref.addons.get('mmd_tools', None):
+            addon_enable = bpy.ops.wm.addon_enable if 'addon_enable' in dir(bpy.ops.wm) else bpy.ops.preferences.addon_enable
+            addon_enable(module='mmd_tools') # make sure addon 'mmd_tools' is enabled
+
     def test_pmx_exporter(self):
         '''
         '''
@@ -603,10 +610,7 @@ class TestPmxExporter(unittest.TestCase):
         for test_num, filepath in enumerate(input_files):
             print('\n     - %2d/%d | filepath: %s'%(test_num+1, len(input_files), filepath))
             try:
-                bpy.ops.wm.read_homefile() # reload blender startup file
-                if not bpy.context.user_preferences.addons.get('mmd_tools', None):
-                    bpy.ops.wm.addon_enable(module='mmd_tools') # make sure addon 'mmd_tools' is enabled
-
+                self.__enable_mmd_tools()
                 file_loader = pmx.load
                 if filepath.lower().endswith('.pmd'):
                     file_loader = import_pmd_to_pmx
