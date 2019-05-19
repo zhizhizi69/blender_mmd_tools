@@ -621,7 +621,8 @@ class TestPmxExporter(unittest.TestCase):
                     scale=1,
                     clean_model=False,
                     )
-                bpy.context.scene.update()
+                #bpy.context.scene.update()
+                bpy.context.scene.frame_set(bpy.context.scene.frame_current)
             except Exception:
                 self.fail('Exception happened during import %s'%filepath)
             else:
