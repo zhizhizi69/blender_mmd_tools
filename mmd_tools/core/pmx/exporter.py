@@ -1079,14 +1079,9 @@ class __PmxExporter:
                 material_faces[face.material_index] = []
             material_faces[face.material_index].append(t)
 
-        # assign default material
-        if len(base_mesh.materials) < len(material_faces):
-            base_mesh.materials.append(self.__getDefaultMaterial())
-        else:
-            for i, m in enumerate(base_mesh.materials):
-                if m is None:
-                    base_mesh.materials[i] = self.__getDefaultMaterial()
-        material_names = tuple(i.name for i in base_mesh.materials)
+        _mat_name = lambda x: x.name if x else self.__getDefaultMaterial().name
+        material_names = tuple(_mat_name(i) for i in base_mesh.materials)
+        material_names += tuple(_mat_name(None) for i in range(1+max(material_faces.keys())-len(material_names)))
 
         # export add UV
         bl_add_uvs = [i for i in base_mesh.uv_layers[1:] if not i.name.startswith('_')]
