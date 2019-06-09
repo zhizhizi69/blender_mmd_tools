@@ -998,7 +998,8 @@ class __PmxExporter:
         else:
             def _to_mesh(obj):
                 bpy.context.view_layer.update()
-                return obj.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                return obj.evaluated_get(depsgraph).to_mesh(depsgraph=depsgraph, preserve_all_data_layers=True)
             _to_mesh_clear = lambda obj, mesh: obj.to_mesh_clear()
 
         base_mesh = _to_mesh(meshObj)
