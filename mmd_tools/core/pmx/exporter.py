@@ -43,10 +43,9 @@ class _Face:
         self.vertices = vertices
 
 class _Mesh:
-    def __init__(self, material_faces, shape_key_names, vertex_group_names, material_names):
+    def __init__(self, material_faces, shape_key_names, material_names):
         self.material_faces = material_faces # dict of {material_index => [face1, face2, ....]}
         self.shape_key_names = shape_key_names
-        self.vertex_group_names = vertex_group_names
         self.material_names = material_names
 
 
@@ -115,7 +114,7 @@ class __PmxExporter:
                 name = mesh.material_names[index]
                 if name not in mat_map:
                     mat_map[name] = []
-                mat_map[name].append((mat_faces, mesh.vertex_group_names))
+                mat_map[name].append(mat_faces)
 
         sort_vertices = self.__vertex_order_map is not None
         if sort_vertices:
@@ -124,7 +123,7 @@ class __PmxExporter:
         # export vertices
         for mat_name, mat_meshes in mat_map.items():
             face_count = 0
-            for mat_faces, vertex_group_names in mat_meshes:
+            for mat_faces in mat_meshes:
                 mesh_vertices = []
                 for face in mat_faces:
                     mesh_vertices.extend(face.vertices)
@@ -138,7 +137,7 @@ class __PmxExporter:
                         self.__vertex_order_map[v.index] = v
 
                     pv = pmx.Vertex()
-                    pv.co = list(v.co)
+                    pv.co = v.co
                     pv.normal = v.normal
                     pv.uv = self.flipUV_V(v.uv)
                     pv.edge_scale = v.edge_scale
@@ -155,16 +154,13 @@ class __PmxExporter:
                     elif t == 1:
                         weight = pmx.BoneWeight()
                         weight.type = pmx.BoneWeight.BDEF1
-                        weight.bones = [bone_map[vertex_group_names[v.groups[0][0]]]]
+                        weight.bones = [v.groups[0][0]]
                         pv.weight = weight
                     elif t == 2:
                         vg1, vg2 = v.groups
                         weight = pmx.BoneWeight()
                         weight.type = pmx.BoneWeight.BDEF2
-                        weight.bones = [
-                            bone_map[vertex_group_names[vg1[0]]],
-                            bone_map[vertex_group_names[vg2[0]]]
-                            ]
+                        weight.bones = [vg1[0], vg2[0]]
                         w1, w2 = vg1[1], vg2[1]
                         weight.weights = [w1/(w1+w2)]
                         if v.sdef_data:
@@ -187,7 +183,7 @@ class __PmxExporter:
                             v.groups.sort(key=lambda x: -x[1])
                         for i in range(min(t, 4)):
                             gn, w = v.groups[i]
-                            weight.bones[i] = bone_map[vertex_group_names[gn]]
+                            weight.bones[i] = gn
                             weight.weights[i] = w
                             w_all += w
                         for i in range(4):
@@ -974,7 +970,7 @@ class __PmxExporter:
         return custom_normals
 
     def __doLoadMeshData(self, meshObj, bone_map):
-        vertex_group_names = {i:x.name for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
+        vg_to_bone = {i:bone_map[x.name] for i, x in enumerate(meshObj.vertex_groups) if x.name in bone_map}
         vg_edge_scale = meshObj.vertex_groups.get('mmd_edge_scale', None)
         vg_vertex_order = meshObj.vertex_groups.get('mmd_vertex_order', None)
 
@@ -1043,7 +1039,7 @@ class __PmxExporter:
         for v in base_mesh.vertices:
             base_vertices[v.index] = [_Vertex(
                 v.co.copy(),
-                [(x.group, x.weight) for x in v.groups if x.weight > 0 and x.group in vertex_group_names],
+                [(vg_to_bone[x.group], x.weight) for x in v.groups if x.weight > 0 and x.group in vg_to_bone],
                 {},
                 get_edge_scale(v),
                 get_vertex_order(v),
@@ -1081,8 +1077,8 @@ class __PmxExporter:
             material_faces[face.material_index].append(t)
 
         _mat_name = lambda x: x.name if x else self.__getDefaultMaterial().name
-        material_names = tuple(_mat_name(i) for i in base_mesh.materials)
-        material_names += tuple(_mat_name(None) for i in range(1+max(material_faces.keys())-len(material_names)))
+        material_names = {i:_mat_name(m) for i, m in enumerate(base_mesh.materials)}
+        material_names = {i:material_names.get(i, None) or _mat_name(None) for i in material_faces.keys()}
 
         # export add UV
         bl_add_uvs = [i for i in base_mesh.uv_layers[1:] if not i.name.startswith('_')]
@@ -1171,7 +1167,6 @@ class __PmxExporter:
         return _Mesh(
             material_faces,
             shape_key_names,
-            vertex_group_names,
             material_names)
 
     def __loadMeshData(self, meshObj, bone_map):
