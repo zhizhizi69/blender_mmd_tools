@@ -436,42 +436,24 @@ class __PmxExporter:
         logging.debug('    Create IK Link for %s', pose_bone.name)
         ik_link = pmx.IKLink()
         ik_link.target = bone_map[pose_bone.name]
-        if pose_bone.use_ik_limit_x or pose_bone.use_ik_limit_y or pose_bone.use_ik_limit_z:
-            minimum = []
-            maximum = []
-            if pose_bone.use_ik_limit_x:
-                minimum.append(pose_bone.ik_min_x)
-                maximum.append(pose_bone.ik_max_x)
+
+        from math import pi
+        minimum, maximum = [-pi]*3, [pi]*3
+        unused_counts = 0
+        ik_limit_override = next((c for c in pose_bone.constraints if c.type == 'LIMIT_ROTATION' and not c.mute), None)
+        for i, axis in enumerate('xyz'):
+            if getattr(pose_bone, 'lock_ik_'+axis):
+                minimum[i] = maximum[i] = 0
+            elif getattr(ik_limit_override, 'use_limit_'+axis):
+                minimum[i] = getattr(ik_limit_override, 'min_'+axis)
+                maximum[i] = getattr(ik_limit_override, 'max_'+axis)
+            elif getattr(pose_bone, 'use_ik_limit_'+axis):
+                minimum[i] = getattr(pose_bone, 'ik_min_'+axis)
+                maximum[i] = getattr(pose_bone, 'ik_max_'+axis)
             else:
-                minimum.append(0.0)
-                maximum.append(0.0)
+                unused_counts += 1
 
-            if pose_bone.use_ik_limit_y:
-                minimum.append(pose_bone.ik_min_y)
-                maximum.append(pose_bone.ik_max_y)
-            else:
-                minimum.append(0.0)
-                maximum.append(0.0)
-
-            if pose_bone.use_ik_limit_z:
-                minimum.append(pose_bone.ik_min_z)
-                maximum.append(pose_bone.ik_max_z)
-            else:
-                minimum.append(0.0)
-                maximum.append(0.0)
-
-            ik_limit_override = pose_bone.constraints.get('mmd_ik_limit_override', None)
-            if ik_limit_override:
-                if ik_limit_override.use_limit_x:
-                    minimum[0] = ik_limit_override.min_x
-                    maximum[0] = ik_limit_override.max_x
-                if ik_limit_override.use_limit_y:
-                    minimum[1] = ik_limit_override.min_y
-                    maximum[1] = ik_limit_override.max_y
-                if ik_limit_override.use_limit_z:
-                    minimum[2] = ik_limit_override.min_z
-                    maximum[2] = ik_limit_override.max_z
-
+        if unused_counts < 3:
             convertIKLimitAngles = pmx.importer.PMXImporter.convertIKLimitAngles
             bone_matrix = matmul(pose_bone.id_data.matrix_world, pose_bone.matrix)
             minimum, maximum = convertIKLimitAngles(minimum, maximum, bone_matrix, invert=True)

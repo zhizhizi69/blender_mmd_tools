@@ -250,7 +250,8 @@ class VMDExporter:
                 key.rotation = curr_rot[1:] + curr_rot[0:1] # (w, x, y, z) to (x, y, z, w)
                 #FIXME we can only choose one interpolation from (rw, rx, ry, rz) for bone's rotation
                 ir = self.__pickRotationInterpolation([rw[1], rx[1], ry[1], rz[1]])
-                key.interp = self.__getVMDBoneInterpolation(x[1], z[1], y[1], ir) # x, z, y, q
+                ix, iy, iz = converter.convert_interpolation([x[1], y[1], z[1]])
+                key.interp = self.__getVMDBoneInterpolation(ix, iy, iz, ir)
                 frame_keys.append(key)
             logging.info('(bone) frames:%5d  name: %s', len(frame_keys), key_name)
         logging.info('---- bone animations:%5d  source: %s', len(vmd_bone_anim), armObj.name)

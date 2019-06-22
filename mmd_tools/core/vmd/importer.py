@@ -56,6 +56,19 @@ class RenamedBoneMapper:
         return self.__pose_bones.get(bl_bone_name, default)
 
 
+class _InterpolationHelper:
+    def __init__(self, mat):
+        self.__indices = indices = [0, 1, 2]
+        l = sorted((-abs(mat[i][j]), i, j) for i in range(3) for j in range(3))
+        idx0 = l[0][2]
+        if idx0 != 0:
+            indices[0], indices[idx0] = indices[idx0], indices[0]
+        if next(i[2] for i in l if i[1] != l[0][1] and i[2] != l[0][2]) != indices[1]:
+            indices[1], indices[2] = indices[2], indices[1]
+
+    def convert(self, interpolation_xyz):
+        return (interpolation_xyz[i] for i in self.__indices)
+
 class BoneConverter:
     def __init__(self, pose_bone, scale, invert=False):
         mat = pose_bone.bone.matrix_local.to_3x3()
@@ -64,6 +77,7 @@ class BoneConverter:
         self.__scale = scale
         if invert:
             self.__mat.invert()
+        self.convert_interpolation = _InterpolationHelper(self.__mat).convert
 
     def convert_location(self, location):
         return matmul(self.__mat, Vector(location)) * self.__scale
@@ -90,6 +104,7 @@ class BoneConverterPoseMode:
             self.__mat_loc.invert()
             self.convert_location = self._convert_location_inverted
             self.convert_rotation = self._convert_rotation_inverted
+        self.convert_interpolation = _InterpolationHelper(self.__mat_loc).convert
 
     def _convert_location(self, location):
         return self.__offset + matmul(self.__mat_loc, Vector(location)) * self.__scale
@@ -211,7 +226,7 @@ class VMDImporter:
 
             converter = self.__bone_util_cls(bone, self.__scale)
             prev_rot = bone.rotation_quaternion if extra_frame else None
-            prev_kps, indices = None, (0, 32, 16, 48, 48, 48, 48) # x, z, y, rw, rx, ry, rz
+            prev_kps, indices = None, tuple(converter.convert_interpolation((0, 16, 32)))+(48,)*4
             keyFrames.sort(key=lambda x:x.frame_number)
             for k, x, y, z, rw, rx, ry, rz in zip(keyFrames, *fcurves):
                 frame = k.frame_number + self.__frame_margin
