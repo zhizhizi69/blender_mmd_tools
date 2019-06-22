@@ -60,11 +60,13 @@ class _InterpolationHelper:
     def __init__(self, mat):
         self.__indices = indices = [0, 1, 2]
         l = sorted((-abs(mat[i][j]), i, j) for i in range(3) for j in range(3))
-        idx0 = l[0][2]
-        if idx0 != 0:
-            indices[0], indices[idx0] = indices[idx0], indices[0]
-        if next(i[2] for i in l if i[1] != l[0][1] and i[2] != l[0][2]) != indices[1]:
-            indices[1], indices[2] = indices[2], indices[1]
+        _, i, j = l[0]
+        if i != j:
+            indices[i], indices[j] = indices[j], indices[i]
+        _, i, j = next(k for k in l if k[1] != i and k[2] != j)
+        if indices[i] != j:
+            idx = indices.index(j)
+            indices[i], indices[idx] = indices[idx], indices[i]
 
     def convert(self, interpolation_xyz):
         return (interpolation_xyz[i] for i in self.__indices)
