@@ -444,7 +444,7 @@ class __PmxExporter:
         for i, axis in enumerate('xyz'):
             if getattr(pose_bone, 'lock_ik_'+axis):
                 minimum[i] = maximum[i] = 0
-            elif getattr(ik_limit_override, 'use_limit_'+axis):
+            elif ik_limit_override is not None and getattr(ik_limit_override, 'use_limit_'+axis):
                 minimum[i] = getattr(ik_limit_override, 'min_'+axis)
                 maximum[i] = getattr(ik_limit_override, 'max_'+axis)
             elif getattr(pose_bone, 'use_ik_limit_'+axis):
