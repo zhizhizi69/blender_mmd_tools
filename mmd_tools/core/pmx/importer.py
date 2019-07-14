@@ -199,10 +199,14 @@ class PMXImporter:
         #            if p_bone.parent == t.parent:
         #                dependency_cycle_ik_bones.append(i)
 
+        from math import isfinite
+        def _VectorXZY(v):
+            return Vector(v).xzy if all(isfinite(n) for n in v) else Vector((0,0,0))
+
         with bpyutils.edit_object(obj) as data:
             for i in pmx_bones:
                 bone = data.edit_bones.new(name=i.name)
-                loc = Vector(i.location).xzy * self.__scale
+                loc = _VectorXZY(i.location) * self.__scale
                 bone.head = loc
                 editBoneTable.append(bone)
                 nameTable.append(bone.name)
@@ -221,7 +225,7 @@ class PMXImporter:
                     else:
                         b_bone.tail = b_bone.head
                 else:
-                    loc = Vector(m_bone.displayConnection).xzy * self.__scale
+                    loc = _VectorXZY(m_bone.displayConnection) * self.__scale
                     b_bone.tail = b_bone.head + loc
 
             for b_bone, m_bone in zip(editBoneTable, pmx_bones):
