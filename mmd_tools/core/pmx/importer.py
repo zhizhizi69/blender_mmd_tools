@@ -526,16 +526,6 @@ class PMXImporter:
             mmd_mat.enabled_toon_edge = i.enabled_toon_edge
             mmd_mat.edge_color = i.edge_color
             mmd_mat.edge_weight = i.edge_size
-            mmd_mat.sphere_texture_type = str(i.sphere_texture_mode)
-            if i.is_shared_toon_texture:
-                mmd_mat.is_shared_toon_texture = True
-                mmd_mat.shared_toon_texture = i.toon_texture
-            else:
-                mmd_mat.is_shared_toon_texture = False
-                if i.toon_texture >= 0:
-                    mmd_mat.toon_texture = self.__textureTable[i.toon_texture]
-                else:
-                    mmd_mat.toon_texture = ''
             mmd_mat.comment = i.comment
 
             self.__materialFaceCountTable.append(int(i.vertex_count/3))
@@ -545,6 +535,15 @@ class PMXImporter:
                 texture_slot = fnMat.create_texture(self.__textureTable[i.texture])
                 texture_slot.texture.use_mipmap = self.__use_mipmap
                 self.__imageTable[len(self.__materialTable)-1] = texture_slot.texture.image
+
+            if i.is_shared_toon_texture:
+                mmd_mat.is_shared_toon_texture = True
+                mmd_mat.shared_toon_texture = i.toon_texture
+            else:
+                mmd_mat.is_shared_toon_texture = False
+                if i.toon_texture >= 0:
+                    mmd_mat.toon_texture = self.__textureTable[i.toon_texture]
+
             if i.sphere_texture_mode == 2:
                 amount = self.__spa_blend_factor
             else:
@@ -554,7 +553,7 @@ class PMXImporter:
                 texture_slot.diffuse_color_factor = amount
                 if i.sphere_texture_mode == 3 and getattr(pmxModel.header, 'additional_uvs', 0):
                     texture_slot.uv_layer = 'UV1' # for SubTexture
-                    mmd_mat.sphere_texture_type = mmd_mat.sphere_texture_type # re-update
+            mmd_mat.sphere_texture_type = str(i.sphere_texture_mode)
 
     def __importFaces(self):
         pmxModel = self.__model

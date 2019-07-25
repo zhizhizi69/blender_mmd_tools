@@ -46,10 +46,9 @@ class _FCurve:
 
     @staticmethod
     def getVMDControlPoints(kp0, kp1):
-        if kp0.interpolation == 'LINEAR':
-            return ((20, 20), (107, 107))
-
-        return _FCurve.__toVMDControlPoints(_FnBezier.from_fcurve(kp0, kp1))
+        if kp0.interpolation == 'BEZIER':
+            return _FCurve.__toVMDControlPoints(_FnBezier.from_fcurve(kp0, kp1))
+        return ((20, 20), (107, 107))
 
     @staticmethod
     def __toVMDControlPoints(bezier):
