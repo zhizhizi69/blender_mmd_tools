@@ -6,7 +6,6 @@ from mmd_tools import register_wrap
 from mmd_tools.bpyutils import SceneOp
 from mmd_tools.core.model import Model
 from mmd_tools.panels.tool import TRIA_UP_BAR, TRIA_DOWN_BAR
-from mmd_tools.panels.tool import draw_filter_wrap
 from mmd_tools.panels.tool import _PanelBase
 
 @register_wrap
@@ -26,7 +25,6 @@ class MMD_TOOLS_UL_Materials(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
-    @draw_filter_wrap
     def draw_filter(self, context, layout):
         layout.label(text="Use the arrows to sort", icon='INFO')
 
@@ -66,7 +64,6 @@ class MMD_TOOLS_UL_ModelMeshes(UIList):
             layout.alignment = 'CENTER'
             layout.label(text="", icon_value=icon)
 
-    @draw_filter_wrap
     def draw_filter(self, context, layout):
         layout.label(text="Use the arrows to sort", icon='INFO')
 
