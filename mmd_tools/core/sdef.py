@@ -52,6 +52,7 @@ class FnSDEF():
         if mute != cls.g_bone_check[hash(obj)].get('sdef_mute'):
             mod = obj.modifiers.get('mmd_bone_order_override')
             if mod and mod.type == 'ARMATURE':
+                #FIXME not working well inside driver function on Blender 2.8
                 if not mute and cls.MASK_NAME not in obj.vertex_groups:
                     mask = tuple(i[0] for v in cls.g_verts[hash(obj)].values() for i in v[2])
                     obj.vertex_groups.new(name=cls.MASK_NAME).add(mask, 1, 'REPLACE')

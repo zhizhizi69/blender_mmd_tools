@@ -552,6 +552,9 @@ class Model:
         rigid_body.setRigidBodyWorldEnabled(rigidbody_world_enabled)
 
     def clean(self):
+        #FIXME rigid body cache is out of sync on Blender 2.8
+        # [Build] at frame 1 -> [Play] -> [Stop] at frame N -> [Clean] at frame N -> [Play] -> crash
+        # [Build] at frame 1 -> [Play] -> [Stop] at frame N -> [Clean] at frame N -> go to frame 1 ->[Play] -> ok
         rigidbody_world_enabled = rigid_body.setRigidBodyWorldEnabled(False)
         logging.info('****************************************')
         logging.info(' Clean rig')
