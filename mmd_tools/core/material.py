@@ -29,6 +29,15 @@ class _FnMaterialBI:
         return None
 
     @classmethod
+    def clean_materials(cls, obj, can_remove):
+        materials = obj.data.materials
+        materials_pop = (lambda index: materials.pop(index=index, update_data=True)) if bpy.app.version < (2, 81, 0) else materials.pop
+        for i in sorted((x for x, m in enumerate(materials) if can_remove(m)), reverse=True):
+            m = materials_pop(index=i)
+            if m.users < 1:
+                bpy.data.materials.remove(m)
+
+    @classmethod
     def swap_materials(cls, meshObj, mat1_ref, mat2_ref, reverse=False,
                        swap_slots=False):
         """

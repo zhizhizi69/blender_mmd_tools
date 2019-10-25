@@ -102,14 +102,7 @@ def separateByMaterials(meshObj):
         bpy.ops.object.mode_set(mode='OBJECT')
 
     for i in dummy_parent.children:
-        mesh = i.data
-        materials = mesh.materials
-        if len(mesh.polygons) > 0:
-            if len(materials) > 1:
-                mat_index = mesh.polygons[0].material_index
-                for x in reversed(range(len(materials))):
-                    if x != mat_index:
-                        materials.pop(index=x, update_data=True)
+        materials = i.data.materials
         i.name = getattr(materials[0], 'name', 'None') if len(materials) else 'None'
         i.parent = prev_parent
         i.matrix_parent_inverse = matrix_parent_inverse
