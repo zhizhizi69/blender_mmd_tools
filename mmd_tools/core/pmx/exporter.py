@@ -843,8 +843,9 @@ class __PmxExporter:
             p_joint.rotation = Vector(r).xzy * -1
             p_joint.src_rigid = rigid_map.get(rbc.object1, -1)
             p_joint.dest_rigid = rigid_map.get(rbc.object2, -1)
-            p_joint.maximum_location = Vector((rbc.limit_lin_x_upper, rbc.limit_lin_z_upper, rbc.limit_lin_y_upper)) * self.__scale
-            p_joint.minimum_location = Vector((rbc.limit_lin_x_lower, rbc.limit_lin_z_lower, rbc.limit_lin_y_lower)) * self.__scale
+            scale = self.__scale * sum(s) / 3
+            p_joint.maximum_location = Vector((rbc.limit_lin_x_upper, rbc.limit_lin_z_upper, rbc.limit_lin_y_upper)) * scale
+            p_joint.minimum_location = Vector((rbc.limit_lin_x_lower, rbc.limit_lin_z_lower, rbc.limit_lin_y_lower)) * scale
             p_joint.maximum_rotation = Vector((rbc.limit_ang_x_lower, rbc.limit_ang_z_lower, rbc.limit_ang_y_lower)) * -1
             p_joint.minimum_rotation = Vector((rbc.limit_ang_x_upper, rbc.limit_ang_z_upper, rbc.limit_ang_y_upper)) * -1
             p_joint.spring_constant = Vector(mmd_joint.spring_linear).xzy
