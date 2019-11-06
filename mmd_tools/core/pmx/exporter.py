@@ -267,7 +267,7 @@ class __PmxExporter:
         mmd_mat = material.mmd_material
 
         p_mat.name = mmd_mat.name_j or material.name
-        p_mat.name_e = mmd_mat.name_e or material.name
+        p_mat.name_e = mmd_mat.name_e
         p_mat.diffuse = list(mmd_mat.diffuse_color) + [mmd_mat.alpha]
         p_mat.ambient = mmd_mat.ambient_color
         p_mat.specular = mmd_mat.specular_color
@@ -355,7 +355,7 @@ class __PmxExporter:
                 mmd_bone = p_bone.mmd_bone
                 pmx_bone = pmx.Bone()
                 pmx_bone.name = mmd_bone.name_j or bone.name
-                pmx_bone.name_e = mmd_bone.name_e or bone.name
+                pmx_bone.name_e = mmd_bone.name_e
 
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
                 pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
@@ -563,9 +563,11 @@ class __PmxExporter:
             shape_key_names.sort(key=lambda x: root.mmd_root.vertex_morphs.find(x))
 
         for i in shape_key_names:
-            morph = pmx.VertexMorph(i, '', 4)
-            morph.name_e = morph_english_names.get(i, '')
-            morph.category = morph_categories.get(i, pmx.Morph.CATEGORY_OHTER)
+            morph = pmx.VertexMorph(
+                name=i,
+                name_e=morph_english_names.get(i, ''),
+                category=morph_categories.get(i, pmx.Morph.CATEGORY_OHTER)
+            )
             self.__model.morphs.append(morph)
 
         append_table = dict(zip(shape_key_names, [m.offsets.append for m in self.__model.morphs]))
@@ -1185,7 +1187,7 @@ class __PmxExporter:
 
         if root is not None:
             self.__model.name = root.mmd_root.name or root.name
-            self.__model.name_e = root.mmd_root.name_e or root.name
+            self.__model.name_e = root.mmd_root.name_e
             txt = bpy.data.texts.get(root.mmd_root.comment_text, None)
             if txt:
                 self.__model.comment = txt.as_string().replace('\n', '\r\n')
