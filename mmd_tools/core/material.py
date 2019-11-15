@@ -628,6 +628,7 @@ class _FnMaterialCycles(_FnMaterialBI):
         from mathutils import Vector
         nodes, links = mat.node_tree.nodes, mat.node_tree.links
 
+        class _Dummy: default_value, is_linked = None, True
         node_shader = nodes.get('mmd_shader', None)
         if node_shader is None:
             node_shader = nodes.new('ShaderNodeGroup')
@@ -637,12 +638,13 @@ class _FnMaterialCycles(_FnMaterialBI):
             node_shader.node_tree = self.__get_shader()
 
             mmd_mat = mat.mmd_material
-            node_shader.inputs['Ambient Color'].default_value = mmd_mat.ambient_color[:] + (1,)
-            node_shader.inputs['Diffuse Color'].default_value = mmd_mat.diffuse_color[:] + (1,)
-            node_shader.inputs['Specular Color'].default_value = mmd_mat.specular_color[:] + (1,)
-            node_shader.inputs['Alpha'].default_value = mmd_mat.alpha
-            node_shader.inputs['Reflect'].default_value = mmd_mat.shininess
-            node_shader.inputs['Double Sided'].default_value = mmd_mat.is_double_sided
+            node_shader.inputs.get('Ambient Color', _Dummy).default_value = mmd_mat.ambient_color[:] + (1,)
+            node_shader.inputs.get('Diffuse Color', _Dummy).default_value = mmd_mat.diffuse_color[:] + (1,)
+            node_shader.inputs.get('Specular Color', _Dummy).default_value = mmd_mat.specular_color[:] + (1,)
+            node_shader.inputs.get('Reflect', _Dummy).default_value = mmd_mat.shininess
+            node_shader.inputs.get('Alpha', _Dummy).default_value = mmd_mat.alpha
+            node_shader.inputs.get('Double Sided', _Dummy).default_value = mmd_mat.is_double_sided
+            node_shader.inputs.get('Self Shadow', _Dummy).default_value = mmd_mat.enabled_self_shadow
 
         node_uv = nodes.get('mmd_tex_uv', None)
         if node_uv is None:
@@ -663,9 +665,9 @@ class _FnMaterialCycles(_FnMaterialBI):
             texture = self.__get_texture_node('mmd_%s_tex'%name_id.lower())
             if texture:
                 name_tex_in, name_alpha_in, name_uv_out = (name_id+x for x in (' Tex', ' Alpha', ' UV'))
-                if not node_shader.inputs[name_tex_in].is_linked:
+                if not node_shader.inputs.get(name_tex_in, _Dummy).is_linked:
                     links.new(texture.outputs['Color'], node_shader.inputs[name_tex_in])
-                if not node_shader.inputs[name_alpha_in].is_linked:
+                if not node_shader.inputs.get(name_alpha_in, _Dummy).is_linked:
                     links.new(texture.outputs['Alpha'], node_shader.inputs[name_alpha_in])
                 if not texture.inputs['Vector'].is_linked:
                     links.new(node_uv.outputs[name_uv_out], texture.inputs['Vector'])
