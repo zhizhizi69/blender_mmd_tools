@@ -203,13 +203,13 @@ class TestPmxExporter(unittest.TestCase):
 
     def __get_bone_display_connection(self, bone, bones):
         displayConnection = bone.displayConnection
-        if displayConnection == -1 or displayConnection == [0.0, 0.0, 0.0]:
-            return [0.0, 0.0, 0.0]
         if isinstance(displayConnection, int):
+            if displayConnection == -1:
+                return (0.0, 0.0, 0.0)
             tail_bone = self.__get_bone(displayConnection, bones)
             if self.__get_bone_name(tail_bone.parent, bones) == bone.name and not tail_bone.isMovable:
                 return tail_bone.name
-            return list(Vector(tail_bone.location) - Vector(bone.location))
+            return tuple(Vector(tail_bone.location) - Vector(bone.location))
         return displayConnection
 
     def __check_pmx_bones(self, source_model, result_model):
@@ -237,7 +237,7 @@ class TestPmxExporter(unittest.TestCase):
 
             self.assertEqual(bone0.transform_order, bone1.transform_order, msg)
             self.assertEqual(bone0.isRotatable, bone1.isRotatable, msg)
-            self.assertEqual(bone0.isMovable, bone1.isMovable, msg)
+            self.assertEqual(bone0.isMovable and not bone0.axis, bone1.isMovable, msg)
             self.assertEqual(bone0.visible, bone1.visible, msg)
             self.assertEqual(bone0.isControllable, bone1.isControllable, msg)
             self.assertEqual(bone0.isIK, bone1.isIK, msg)

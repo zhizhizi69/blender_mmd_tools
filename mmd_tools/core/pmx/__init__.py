@@ -466,17 +466,10 @@ class Model:
                 logging.debug('  Additional Transform: Bone:%d, influence: %f', *b.additionalTransform)
             logging.debug('  IK: %s', str(b.isIK))
             if b.isIK:
+                logging.debug('    Unit Angle: %f', b.rotationConstraint)
                 logging.debug('    Target: %d', b.target)
                 for j, link in enumerate(b.ik_links):
-                    if isinstance(link.minimumAngle, list) and len(link.minimumAngle) == 3:
-                        min_str = '(%f, %f, %f)'%tuple(link.minimumAngle)
-                    else:
-                        min_str = '(None, None, None)'
-                    if isinstance(link.maximumAngle, list) and len(link.maximumAngle) == 3:
-                        max_str = '(%f, %f, %f)'%tuple(link.maximumAngle)
-                    else:
-                        max_str = '(None, None, None)'
-                    logging.debug('    IK Link %d: %d, %s - %s', j, link.target, min_str, max_str)
+                    logging.debug('    IK Link %d: %d, %s - %s', j, link.target, str(link.minimumAngle), str(link.maximumAngle))
             logging.debug('')
         logging.info('----- Loaded %d bones.', len(self.bones))
 
@@ -1128,7 +1121,7 @@ class IKLink:
 
     def save(self, fs):
         fs.writeBoneIndex(self.target)
-        if isinstance(self.minimumAngle, list) and isinstance(self.maximumAngle, list):
+        if isinstance(self.minimumAngle, (tuple, list)) and isinstance(self.maximumAngle, (tuple, list)):
             fs.writeByte(1)
             fs.writeVector(self.minimumAngle)
             fs.writeVector(self.maximumAngle)
