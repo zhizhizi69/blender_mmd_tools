@@ -35,7 +35,7 @@ class MMDBonePanel(Panel):
 
         row = layout.row()
         row.label(text='ID: %d'%(mmd_bone.bone_id))
-        row.prop(pose_bone, 'mmd_ik_toggle')
+        #row.prop(pose_bone, 'mmd_ik_toggle')
 
         c = layout.column(align=True)
         row = c.row()

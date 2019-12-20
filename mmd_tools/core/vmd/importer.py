@@ -247,6 +247,7 @@ class VMDImporter:
             convert_mmd_camera=True, convert_mmd_lamp=True, frame_margin=5, use_mirror=False):
         self.__vmdFile = vmd.File()
         self.__vmdFile.load(filepath=filepath)
+        logging.debug(str(self.__vmdFile.header))
         self.__scale = scale
         self.__convert_mmd_camera = convert_mmd_camera
         self.__convert_mmd_lamp = convert_mmd_lamp
@@ -384,6 +385,7 @@ class VMDImporter:
             return
         logging.info('---- IK animations:%5d  target: %s', len(propertyAnim), armObj.name)
         for keyFrame in propertyAnim:
+            logging.debug('(IK) frame:%5d  list: %s', keyFrame.frame_number, keyFrame.ik_states)
             frame = keyFrame.frame_number + self.__frame_margin
             for ikName, enable in keyFrame.ik_states:
                 bone = pose_bones.get(ikName, None)
@@ -433,6 +435,7 @@ class VMDImporter:
         action = bpy.data.actions.new(name=action_name)
         rootObj.animation_data_create().action = action
 
+        logging.debug('(Display) list(frame, show): %s', [(keyFrame.frame_number, bool(keyFrame.visible)) for keyFrame in propertyAnim])
         for keyFrame in propertyAnim:
             rootObj.mmd_root.show_meshes = keyFrame.visible
             rootObj.keyframe_insert(data_path='mmd_root.show_meshes',

@@ -318,6 +318,9 @@ class __PmxExporter:
             A dictionary to map Blender bone names to bone indices of the pmx.model instance.
         """
         arm = self.__armature
+        if hasattr(arm, 'evaluated_get'):
+            bpy.context.view_layer.update()
+            arm = arm.evaluated_get(bpy.context.evaluated_depsgraph_get())
         boneMap = {}
         pmx_bones = []
         pose_bones = arm.pose.bones
