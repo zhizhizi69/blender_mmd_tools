@@ -45,6 +45,8 @@ class MMDModelObjectDisplayPanel(_PanelBase, Panel):
         row = layout.row(align=True)
         row.prop(root.mmd_root, 'use_sdef', text='SDEF')
 
+        layout.prop(root.mmd_root, 'use_property_driver', text='Property Drivers', icon='DRIVER')
+
         self.__draw_IK_toggle(Model(root).armature() or root)
 
     def __draw_IK_toggle(self, armature):

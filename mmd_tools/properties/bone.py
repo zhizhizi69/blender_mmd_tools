@@ -181,30 +181,30 @@ def _mmd_ik_toggle_get(prop):
     return prop.get('mmd_ik_toggle', True)
 
 def _mmd_ik_toggle_set(prop, v):
-    #FIXME animation is not working well on Blender 2.8. Using driver is another way but it's troublesome.
     if v != prop.get('mmd_ik_toggle', None):
         prop['mmd_ik_toggle'] = v
-        #print('_mmd_ik_toggle_set', v, prop.name)
-        for b in prop.id_data.pose.bones:
-            for c in b.constraints:
-                if c.type == 'IK' and c.subtarget == prop.name:
-                    #print('   ', b.name, c.name)
-                    c.influence = v
-                    __update_mmd_ik_chain(b if c.use_tail else b.parent, v, c.chain_count)
+        _mmd_ik_toggle_update(prop, None)
 
-def __update_mmd_ik_chain(bone, enable, chain_count):
-    for i in range(chain_count):
-        for c in bone.constraints:
-            if c.name.startswith('mmd_ik_limit'):
-                #print('    -', bone.name, c.name)
-                c.influence = enable
-        bone = bone.parent
+def _mmd_ik_toggle_update(prop, context):
+    v = prop.mmd_ik_toggle
+    #print('_mmd_ik_toggle_update', v, prop.name)
+    for b in prop.id_data.pose.bones:
+        for c in b.constraints:
+            if c.type == 'IK' and c.subtarget == prop.name:
+                #print('   ', b.name, c.name)
+                c.influence = v
+                b = b if c.use_tail else b.parent
+                for b in ([b]+b.parent_recursive)[:c.chain_count]:
+                    c = next((c for c in b.constraints if c.type == 'LIMIT_ROTATION' and not c.mute), None)
+                    if c: c.influence = v
 
 class _MMDPoseBoneProp:
     mmd_ik_toggle = BoolProperty(
         name='MMD IK Toggle',
         description='MMD IK toggle is used to import/export animation of IK on-off',
-        get=_mmd_ik_toggle_get,
-        set=_mmd_ik_toggle_set,
+        #get=_mmd_ik_toggle_get,
+        #set=_mmd_ik_toggle_set,
+        update=_mmd_ik_toggle_update,
+        default=True,
         )
 
