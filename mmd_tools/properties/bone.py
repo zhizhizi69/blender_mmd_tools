@@ -55,7 +55,9 @@ class MMDBone(PropertyGroup):
 
     bone_id = IntProperty(
         name='Bone ID',
+        description='Unique ID for the reference of bone morph and rotate+/move+',
         default=-1,
+        min=-1,
         )
 
     transform_order = IntProperty(
@@ -175,6 +177,9 @@ class MMDBone(PropertyGroup):
         name='',
         default=True
         )
+
+    def is_id_unique(self):
+        return self.bone_id < 0 or not next((b for b in self.id_data.pose.bones if b.mmd_bone != self and b.mmd_bone.bone_id == self.bone_id), None)
 
 
 def _mmd_ik_toggle_get(prop):

@@ -41,12 +41,16 @@ class MMDBonePanel(Panel):
 
         mmd_bone = pose_bone.mmd_bone
 
-        c = layout.column(align=True)
+        c = layout.column()
+
+        row = c.row(align=True)
+        row.label(text='Information:')
+        if not mmd_bone.is_id_unique():
+            row.label(icon='ERROR')
+        row.prop(mmd_bone, 'bone_id', text='ID')
+
         c.prop(mmd_bone, 'name_j')
         c.prop(mmd_bone, 'name_e')
-
-        row = layout.row()
-        row.label(text='ID: %d'%(mmd_bone.bone_id))
 
         c = layout.column(align=True)
         row = c.row()
