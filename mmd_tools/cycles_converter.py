@@ -7,18 +7,16 @@ def __switchToCyclesRenderEngine():
         bpy.context.scene.render.engine = 'CYCLES'
 
 def __exposeNodeTreeInput(in_socket, name, default_value, node_input, shader):
-    t = len(node_input.outputs)-1
-    i = node_input.outputs[t]
+    shader.inputs.new(type=in_socket.bl_idname, name=name)
+    i = node_input.outputs[name]
     shader.links.new(in_socket, i)
     if default_value is not None:
-        shader.inputs[t].default_value = default_value
-    shader.inputs[t].name = name
+        shader.inputs[name].default_value = default_value
 
 def __exposeNodeTreeOutput(out_socket, name, node_output, shader):
-    t = len(node_output.inputs)-1
-    i = node_output.inputs[t]
+    shader.outputs.new(type=out_socket.bl_idname, name=name)
+    i = node_output.inputs[name]
     shader.links.new(i, out_socket)
-    shader.outputs[t].name = name
 
 def __getMaterialOutput(nodes):
     for node in nodes:

@@ -686,8 +686,8 @@ class _FnMaterialCycles(_FnMaterialBI):
             return node
 
         def __new_io(shader_io, io_sockets, io_name, socket):
-            links.new(io_sockets[-1], socket)
-            shader_io[-1].name = io_name
+            shader_io.new(type=socket.bl_idname, name=io_name)
+            links.new(io_sockets[io_name], socket)
 
         ############################################################################
         node_output = __new_node('NodeGroupOutput', (6, 0))
@@ -749,12 +749,12 @@ class _FnMaterialCycles(_FnMaterialBI):
             return node
 
         def __new_io(shader_io, io_sockets, io_name, socket, default_val=None, min_max=None):
-            links.new(io_sockets[-1], socket)
-            shader_io[-1].name = io_name
+            shader_io.new(type=socket.bl_idname, name=io_name)
+            links.new(io_sockets[io_name], socket)
             if default_val is not None:
-                shader_io[-1].default_value = default_val
+                shader_io[io_name].default_value = default_val
             if min_max is not None:
-                shader_io[-1].min_value, shader_io[-1].max_value = min_max
+                shader_io[io_name].min_value, shader_io[io_name].max_value = min_max
 
         ############################################################################
         node_input = __new_node('NodeGroupInput', (-5, -1))
@@ -817,13 +817,13 @@ class _FnMaterialCycles(_FnMaterialBI):
         __new_io(shader.inputs, node_input.outputs, 'Diffuse Color', node_diffuse.inputs['Color2'], (0.8, 0.8, 0.8, 1))
         __new_io(shader.inputs, node_input.outputs, 'Specular Color', shader_glossy.inputs['Color'], (0.8, 0.8, 0.8, 1))
         __new_io(shader.inputs, node_input.outputs, 'Reflect', node_reflect.inputs[1], 50, min_max=(1, 512))
-        __new_io(shader.inputs, node_input.outputs, 'Base Tex Fac', node_tex.inputs['Fac'], 1)
+        __new_io(shader.inputs, node_input.outputs, 'Base Tex Fac', node_tex.inputs['Fac'], 1, min_max=(0, 1))
         __new_io(shader.inputs, node_input.outputs, 'Base Tex', node_tex.inputs['Color2'], (1, 1, 1, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Toon Tex Fac', node_toon.inputs['Fac'], 1)
+        __new_io(shader.inputs, node_input.outputs, 'Toon Tex Fac', node_toon.inputs['Fac'], 1, min_max=(0, 1))
         __new_io(shader.inputs, node_input.outputs, 'Toon Tex', node_toon.inputs['Color2'], (1, 1, 1, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Sphere Tex Fac', node_sph.inputs['Fac'], 1)
+        __new_io(shader.inputs, node_input.outputs, 'Sphere Tex Fac', node_sph.inputs['Fac'], 1, min_max=(0, 1))
         __new_io(shader.inputs, node_input.outputs, 'Sphere Tex', node_sph.inputs['Color2'], (1, 1, 1, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Sphere Mul/Add', node_sphere.inputs['Fac'], 0)
+        __new_io(shader.inputs, node_input.outputs, 'Sphere Mul/Add', node_sphere.inputs['Fac'], 0, min_max=(0, 1))
         __new_io(shader.inputs, node_input.outputs, 'Double Sided', node_cull.inputs[1], 0, min_max=(0, 1))
         __new_io(shader.inputs, node_input.outputs, 'Alpha', node_alpha_tex.inputs[0], 1, min_max=(0, 1))
         __new_io(shader.inputs, node_input.outputs, 'Base Alpha', node_alpha_tex.inputs[1], 1, min_max=(0, 1))

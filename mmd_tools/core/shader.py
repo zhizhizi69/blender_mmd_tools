@@ -81,11 +81,9 @@ class _NodeGroupUtils(_NodeTreeUtils):
         self.__new_io(self.shader.outputs, self.node_output.inputs, io_name, socket, default_val, min_max)
 
     def __new_io(self, shader_io, io_sockets, io_name, socket, default_val=None, min_max=None):
-        if io_name in io_sockets:
-            self.links.new(io_sockets[io_name], socket)
-        else:
-            self.links.new(io_sockets[-1], socket)
-            shader_io[-1].name = io_name
+        if io_name not in io_sockets:
+            shader_io.new(type=socket.bl_idname, name=io_name)
+        self.links.new(io_sockets[io_name], socket)
         if default_val is not None:
             shader_io[io_name].default_value = default_val
         if min_max is not None:

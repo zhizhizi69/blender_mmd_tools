@@ -296,11 +296,9 @@ class EdgePreviewSetup(Operator):
             return node
 
         def __new_io(shader_io, io_sockets, io_name, socket):
-            if io_name in io_sockets:
-                links.new(io_sockets[io_name], socket)
-            else:
-                links.new(io_sockets[-1], socket)
-                shader_io[-1].name = io_name
+            if io_name not in io_sockets:
+                shader_io.new(type=socket.bl_idname, name=io_name)
+            links.new(io_sockets[io_name], socket)
 
         XPOS, YPOS = 210, 110
         node_input = __new_node('NodeGroupInput', (XPOS*-5, 0))

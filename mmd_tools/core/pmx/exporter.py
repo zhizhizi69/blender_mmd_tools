@@ -362,11 +362,7 @@ class __PmxExporter:
 
                 pmx_bone.hasAdditionalRotate = mmd_bone.has_additional_rotation
                 pmx_bone.hasAdditionalLocation = mmd_bone.has_additional_location
-                pmx_bone.additionalTransform = [None, mmd_bone.additional_transform_influence]
-                if mmd_bone.additional_transform_bone_id != -1:
-                    fnBone = FnBone.from_bone_id(arm, mmd_bone.additional_transform_bone_id)
-                    if fnBone:
-                        pmx_bone.additionalTransform[0] = fnBone.pose_bone
+                pmx_bone.additionalTransform = [mmd_bone.additional_transform_bone, mmd_bone.additional_transform_influence]
 
                 pmx_bone.location = __to_pmx_location(p_bone.head)
                 pmx_bone.parent = bone.parent
@@ -414,9 +410,7 @@ class __PmxExporter:
                     i.displayConnection = pmx_bones.index(i.displayConnection)
                 elif isinstance(i.displayConnection, bpy.types.Bone):
                     i.displayConnection = pmx_bones.index(boneMap[i.displayConnection])
-
-                pose_bone = i.additionalTransform[0]
-                i.additionalTransform[0] = r.get(pose_bone.name, -1) if pose_bone else -1
+                i.additionalTransform[0] = r.get(i.additionalTransform[0], -1)
 
             if len(pmx_bones) == 0:
                 # avoid crashing MMD
