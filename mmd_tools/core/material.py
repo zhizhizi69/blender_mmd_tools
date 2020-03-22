@@ -6,6 +6,7 @@ import os
 import bpy
 from mmd_tools.bpyutils import addon_preferences, select_object
 from mmd_tools.core.exceptions import MaterialNotFoundError
+from mmd_tools.core.shader import _NodeGroupUtils
 
 SPHERE_MODE_OFF    = 0
 SPHERE_MODE_MULT   = 1
@@ -678,35 +679,26 @@ class _FnMaterialCycles(_FnMaterialBI):
         if len(shader.nodes):
             return shader
 
-        nodes, links = shader.nodes, shader.links
-
-        def __new_node(idname, pos):
-            node = nodes.new(idname)
-            node.location = (pos[0]*210, pos[1]*220)
-            return node
-
-        def __new_io(shader_io, io_sockets, io_name, socket):
-            shader_io.new(type=socket.bl_idname, name=io_name)
-            links.new(io_sockets[io_name], socket)
+        ng = _NodeGroupUtils(shader)
 
         ############################################################################
-        node_output = __new_node('NodeGroupOutput', (6, 0))
+        node_output = ng.new_node('NodeGroupOutput', (6, 0))
 
-        tex_coord = __new_node('ShaderNodeTexCoord', (0, 0))
+        tex_coord = ng.new_node('ShaderNodeTexCoord', (0, 0))
 
         if hasattr(bpy.types, 'ShaderNodeUVMap'):
-            tex_coord1 = __new_node('ShaderNodeUVMap', (4, -2))
+            tex_coord1 = ng.new_node('ShaderNodeUVMap', (4, -2))
             tex_coord1.uv_map, socketUV1 = 'UV1', 'UV'
         else:
-            tex_coord1 = __new_node('ShaderNodeAttribute', (4, -2))
+            tex_coord1 = ng.new_node('ShaderNodeAttribute', (4, -2))
             tex_coord1.attribute_name, socketUV1 = 'UV1', 'Vector'
 
-        vec_trans = __new_node('ShaderNodeVectorTransform', (1, -1))
+        vec_trans = ng.new_node('ShaderNodeVectorTransform', (1, -1))
         vec_trans.vector_type = 'NORMAL'
         vec_trans.convert_from = 'OBJECT'
         vec_trans.convert_to = 'CAMERA'
 
-        node_vector = __new_node('ShaderNodeMapping', (2, -1))
+        node_vector = ng.new_node('ShaderNodeMapping', (2, -1))
         node_vector.vector_type = 'POINT'
         if bpy.app.version < (2, 81, 0):
             node_vector.translation = (0.5, 0.5, 0.0)
@@ -715,13 +707,14 @@ class _FnMaterialCycles(_FnMaterialBI):
             node_vector.inputs['Location'].default_value = (0.5, 0.5, 0.0)
             node_vector.inputs['Scale'].default_value = (0.5, 0.5, 1.0)
 
+        links = ng.links
         links.new(tex_coord.outputs['Normal'], vec_trans.inputs['Vector'])
         links.new(vec_trans.outputs['Vector'], node_vector.inputs['Vector'])
 
-        __new_io(shader.outputs, node_output.inputs, 'Base UV', tex_coord.outputs['UV'])
-        __new_io(shader.outputs, node_output.inputs, 'Toon UV', node_vector.outputs['Vector'])
-        __new_io(shader.outputs, node_output.inputs, 'Sphere UV', node_vector.outputs['Vector'])
-        __new_io(shader.outputs, node_output.inputs, 'SubTex UV', tex_coord1.outputs[socketUV1])
+        ng.new_output_socket('Base UV', tex_coord.outputs['UV'])
+        ng.new_output_socket('Toon UV', node_vector.outputs['Vector'])
+        ng.new_output_socket('Sphere UV', node_vector.outputs['Vector'])
+        ng.new_output_socket('SubTex UV', tex_coord1.outputs[socketUV1])
 
         return shader
 
@@ -731,64 +724,40 @@ class _FnMaterialCycles(_FnMaterialBI):
         if len(shader.nodes):
             return shader
 
-        nodes, links = shader.nodes, shader.links
-
-        def __new_node(idname, pos):
-            node = nodes.new(idname)
-            node.location = (pos[0]*210, pos[1]*220)
-            return node
-
-        def __new_mix_node(blend_type, pos):
-            node = __new_node('ShaderNodeMixRGB', pos)
-            node.blend_type = blend_type
-            return node
-
-        def __new_math_node(operation, pos):
-            node = __new_node('ShaderNodeMath', pos)
-            node.operation = operation
-            return node
-
-        def __new_io(shader_io, io_sockets, io_name, socket, default_val=None, min_max=None):
-            shader_io.new(type=socket.bl_idname, name=io_name)
-            links.new(io_sockets[io_name], socket)
-            if default_val is not None:
-                shader_io[io_name].default_value = default_val
-            if min_max is not None:
-                shader_io[io_name].min_value, shader_io[io_name].max_value = min_max
+        ng = _NodeGroupUtils(shader)
 
         ############################################################################
-        node_input = __new_node('NodeGroupInput', (-5, -1))
-        node_output = __new_node('NodeGroupOutput', (11, 1))
+        node_input = ng.new_node('NodeGroupInput', (-5, -1))
+        node_output = ng.new_node('NodeGroupOutput', (11, 1))
 
-        node_diffuse = __new_mix_node('ADD', (-3, 4))
+        node_diffuse = ng.new_mix_node('ADD', (-3, 4), fac=0.6)
         node_diffuse.use_clamp = True
-        node_diffuse.inputs['Fac'].default_value = 0.6
 
-        node_tex = __new_mix_node('MULTIPLY', (-2, 3.5))
-        node_toon = __new_mix_node('MULTIPLY', (-1, 3))
-        node_sph = __new_mix_node('MULTIPLY', (0, 2.5))
-        node_spa = __new_mix_node('ADD', (0, 1.5))
-        node_sphere = __new_mix_node('MIX', (1, 1))
+        node_tex = ng.new_mix_node('MULTIPLY', (-2, 3.5))
+        node_toon = ng.new_mix_node('MULTIPLY', (-1, 3))
+        node_sph = ng.new_mix_node('MULTIPLY', (0, 2.5))
+        node_spa = ng.new_mix_node('ADD', (0, 1.5))
+        node_sphere = ng.new_mix_node('MIX', (1, 1))
 
-        node_geo = __new_node('ShaderNodeNewGeometry', (6, 3.5))
-        node_invert = __new_math_node('LESS_THAN', (7, 3))
-        node_cull = __new_math_node('MAXIMUM', (8, 2.5))
-        node_alpha = __new_math_node('MINIMUM', (9, 2))
-        node_alpha_tex = __new_math_node('MULTIPLY', (-1, -2))
-        node_alpha_toon = __new_math_node('MULTIPLY', (0, -2.5))
-        node_alpha_sph = __new_math_node('MULTIPLY', (1, -3))
+        node_geo = ng.new_node('ShaderNodeNewGeometry', (6, 3.5))
+        node_invert = ng.new_math_node('LESS_THAN', (7, 3))
+        node_cull = ng.new_math_node('MAXIMUM', (8, 2.5))
+        node_alpha = ng.new_math_node('MINIMUM', (9, 2))
+        node_alpha_tex = ng.new_math_node('MULTIPLY', (-1, -2))
+        node_alpha_toon = ng.new_math_node('MULTIPLY', (0, -2.5))
+        node_alpha_sph = ng.new_math_node('MULTIPLY', (1, -3))
 
-        node_reflect = __new_math_node('DIVIDE', (7, -1.5))
+        node_reflect = ng.new_math_node('DIVIDE', (7, -1.5), value1=1)
         node_reflect.use_clamp = True
-        node_reflect.inputs[0].default_value = 1
 
-        shader_diffuse = __new_node('ShaderNodeBsdfDiffuse', (8, 0))
-        shader_glossy = __new_node('ShaderNodeBsdfGlossy', (8, -1))
-        shader_base_mix = __new_node('ShaderNodeMixShader', (9, 0))
+        shader_diffuse = ng.new_node('ShaderNodeBsdfDiffuse', (8, 0))
+        shader_glossy = ng.new_node('ShaderNodeBsdfGlossy', (8, -1))
+        shader_base_mix = ng.new_node('ShaderNodeMixShader', (9, 0))
         shader_base_mix.inputs['Fac'].default_value = 0.02
-        shader_trans = __new_node('ShaderNodeBsdfTransparent', (9, 1))
-        shader_alpha_mix = __new_node('ShaderNodeMixShader', (10, 1))
+        shader_trans = ng.new_node('ShaderNodeBsdfTransparent', (9, 1))
+        shader_alpha_mix = ng.new_node('ShaderNodeMixShader', (10, 1))
 
+        links = ng.links
         links.new(node_reflect.outputs['Value'], shader_glossy.inputs['Roughness'])
         links.new(shader_diffuse.outputs['BSDF'], shader_base_mix.inputs[1])
         links.new(shader_glossy.outputs['BSDF'], shader_base_mix.inputs[2])
@@ -813,27 +782,27 @@ class _FnMaterialCycles(_FnMaterialBI):
         links.new(shader_base_mix.outputs['Shader'], shader_alpha_mix.inputs[2])
 
         ############################################################################
-        __new_io(shader.inputs, node_input.outputs, 'Ambient Color', node_diffuse.inputs['Color1'], (0.4, 0.4, 0.4, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Diffuse Color', node_diffuse.inputs['Color2'], (0.8, 0.8, 0.8, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Specular Color', shader_glossy.inputs['Color'], (0.8, 0.8, 0.8, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Reflect', node_reflect.inputs[1], 50, min_max=(1, 512))
-        __new_io(shader.inputs, node_input.outputs, 'Base Tex Fac', node_tex.inputs['Fac'], 1, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Base Tex', node_tex.inputs['Color2'], (1, 1, 1, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Toon Tex Fac', node_toon.inputs['Fac'], 1, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Toon Tex', node_toon.inputs['Color2'], (1, 1, 1, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Sphere Tex Fac', node_sph.inputs['Fac'], 1, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Sphere Tex', node_sph.inputs['Color2'], (1, 1, 1, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Sphere Mul/Add', node_sphere.inputs['Fac'], 0, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Double Sided', node_cull.inputs[1], 0, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Alpha', node_alpha_tex.inputs[0], 1, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Base Alpha', node_alpha_tex.inputs[1], 1, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Toon Alpha', node_alpha_toon.inputs[1], 1, min_max=(0, 1))
-        __new_io(shader.inputs, node_input.outputs, 'Sphere Alpha', node_alpha_sph.inputs[1], 1, min_max=(0, 1))
+        ng.new_input_socket('Ambient Color', node_diffuse.inputs['Color1'], (0.4, 0.4, 0.4, 1))
+        ng.new_input_socket('Diffuse Color', node_diffuse.inputs['Color2'], (0.8, 0.8, 0.8, 1))
+        ng.new_input_socket('Specular Color', shader_glossy.inputs['Color'], (0.8, 0.8, 0.8, 1))
+        ng.new_input_socket('Reflect', node_reflect.inputs[1], 50, min_max=(1, 512))
+        ng.new_input_socket('Base Tex Fac', node_tex.inputs['Fac'], 1)
+        ng.new_input_socket('Base Tex', node_tex.inputs['Color2'], (1, 1, 1, 1))
+        ng.new_input_socket('Toon Tex Fac', node_toon.inputs['Fac'], 1)
+        ng.new_input_socket('Toon Tex', node_toon.inputs['Color2'], (1, 1, 1, 1))
+        ng.new_input_socket('Sphere Tex Fac', node_sph.inputs['Fac'], 1)
+        ng.new_input_socket('Sphere Tex', node_sph.inputs['Color2'], (1, 1, 1, 1))
+        ng.new_input_socket('Sphere Mul/Add', node_sphere.inputs['Fac'], 0)
+        ng.new_input_socket('Double Sided', node_cull.inputs[1], 0, min_max=(0, 1))
+        ng.new_input_socket('Alpha', node_alpha_tex.inputs[0], 1, min_max=(0, 1))
+        ng.new_input_socket('Base Alpha', node_alpha_tex.inputs[1], 1, min_max=(0, 1))
+        ng.new_input_socket('Toon Alpha', node_alpha_toon.inputs[1], 1, min_max=(0, 1))
+        ng.new_input_socket('Sphere Alpha', node_alpha_sph.inputs[1], 1, min_max=(0, 1))
 
         links.new(node_input.outputs['Sphere Tex Fac'], node_spa.inputs['Fac'])
         links.new(node_input.outputs['Sphere Tex'], node_spa.inputs['Color2'])
 
-        __new_io(shader.outputs, node_output.inputs, 'Shader', shader_alpha_mix.outputs['Shader'])
+        ng.new_output_socket('Shader', shader_alpha_mix.outputs['Shader'])
 
         return shader
 
