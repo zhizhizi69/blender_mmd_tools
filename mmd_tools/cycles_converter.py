@@ -77,8 +77,9 @@ def create_MMDBasicShader():
 
 def __enum_linked_nodes(nodes, to_node):
     yield to_node
+    if to_node.parent:
+        yield to_node.parent
     for n in set(l.from_node for i in to_node.inputs for l in i.links):
-        assert(n != to_node)
         yield from __enum_linked_nodes(nodes, n)
 
 def __cleanNodeTree(material):
@@ -89,8 +90,6 @@ def __cleanNodeTree(material):
             node_names -= set(used.name for used in __enum_linked_nodes(nodes, o))
     for name in node_names:
         nodes.remove(nodes[name])
-    if node_names:
-        material.update_tag()
 
 def is_principled_bsdf_supported():
     return hasattr(bpy.types, 'ShaderNodeBsdfPrincipled')
@@ -264,23 +263,29 @@ def __convertToMMDBasicShader(material):
         material.node_tree.links.new(out_node.inputs['Alpha'], mat_node.outputs['Alpha'])
 
 def __convertToPrincipledBsdf(material):
+    node_names = set()
     for s in tuple(n for n in material.node_tree.nodes if isinstance(n, bpy.types.ShaderNodeGroup)):
         if s.node_tree.name == 'MMDBasicShader':
             for l in s.outputs[0].links:
                 to_node = l.to_node
-                if isinstance(to_node, bpy.types.ShaderNodeOutputMaterial):
-                    __switchToPrincipledBsdf(material.node_tree, s)
-                elif isinstance(to_node, bpy.types.ShaderNodeGroup) and to_node.node_tree.name == 'MMDAlphaShader':
+                # assuming there is no bpy.types.NodeReroute between MMDBasicShader and MMDAlphaShader
+                if isinstance(to_node, bpy.types.ShaderNodeGroup) and to_node.node_tree.name == 'MMDAlphaShader':
                     __switchToPrincipledBsdf(material.node_tree, s, to_node)
-                    material.node_tree.nodes.remove(to_node)
+                    node_names.add(to_node.name)
+                else:
+                    __switchToPrincipledBsdf(material.node_tree, s)
+            node_names.add(s.name)
         elif s.node_tree.name == 'MMDShaderDev':
             __switchToPrincipledBsdf(material.node_tree, s)
-        else:
-            continue
-        material.node_tree.nodes.remove(s)
+            node_names.add(s.name)
+    # remove MMD shader nodes
+    nodes = material.node_tree.nodes
+    for name in node_names:
+        nodes.remove(nodes[name])
 
 def __switchToPrincipledBsdf(node_tree, node_basic, node_alpha=None):
     shader = node_tree.nodes.new('ShaderNodeBsdfPrincipled')
+    shader.parent = node_basic.parent
     shader.location.x = node_basic.location.x
     shader.location.y = node_basic.location.y
 
@@ -301,6 +306,7 @@ def __switchToPrincipledBsdf(node_tree, node_basic, node_alpha=None):
     output_links = node_basic.outputs[0].links
     if node_alpha:
         output_links = node_alpha.outputs[0].links
+        shader.parent = node_alpha.parent or shader.parent
         shader.location.x = node_alpha.location.x
 
         if alpha_socket_name in node_alpha.inputs:
@@ -312,6 +318,7 @@ def __switchToPrincipledBsdf(node_tree, node_basic, node_alpha=None):
                 shader.inputs['Transmission'].default_value = 1 - node_alpha.inputs[alpha_socket_name].default_value
                 if node_alpha.inputs[alpha_socket_name].is_linked:
                     node_invert = node_tree.nodes.new('ShaderNodeMath')
+                    node_invert.parent = shader.parent
                     node_invert.location.x = node_alpha.location.x - 250
                     node_invert.location.y = node_alpha.location.y - 300
                     node_invert.operation = 'SUBTRACT'
