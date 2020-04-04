@@ -17,14 +17,38 @@ class ConvertMaterialsForCycles(Operator):
     bl_description = 'Convert materials of selected objects for Cycles.'
     bl_options = {'REGISTER', 'UNDO'}
 
+    use_principled = bpy.props.BoolProperty(
+        name='Convert to Principled BSDF',
+        description='Convert MMD shader nodes to Principled BSDF as well if enabled',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
+
+    clean_nodes = bpy.props.BoolProperty(
+        name='Clean Nodes',
+        description='Remove redundant nodes as well if enabled. Disable it to keep node data.',
+        default=False,
+        options={'SKIP_SAVE'},
+        )
+
+    @classmethod
+    def poll(cls, context):
+        return next((x for x in context.selected_objects if x.type == 'MESH'), None)
+
+    def draw(self, context):
+        layout = self.layout
+        if cycles_converter.is_principled_bsdf_supported():
+            layout.prop(self, 'use_principled')
+        layout.prop(self, 'clean_nodes')
+
     def execute(self, context):
         try:
             context.scene.render.engine = 'CYCLES'
         except:
             self.report({'ERROR'}, ' * Failed to change to Cycles render engine.')
             return {'CANCELLED'}
-        for obj in [x for x in context.selected_objects if x.type == 'MESH']:
-            cycles_converter.convertToCyclesShader(obj)
+        for obj in (x for x in context.selected_objects if x.type == 'MESH'):
+            cycles_converter.convertToCyclesShader(obj, use_principled=self.use_principled, clean_nodes=self.clean_nodes)
         return {'FINISHED'}
 
 @register_wrap
