@@ -110,5 +110,4 @@ Known issues
 
 License
 ----------
-&copy; 2012-2014 sugiany, 2015-2017 powroupi.
-Distributed under the MIT License.
+Distributed under the GPLv3 License.
