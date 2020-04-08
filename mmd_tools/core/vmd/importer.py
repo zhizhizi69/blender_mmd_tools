@@ -354,6 +354,9 @@ class VMDImporter:
                 curr_rot = converter.convert_rotation(_rot(k.rotation))
                 if prev_rot is not None:
                     curr_rot = self.__minRotationDiff(prev_rot, curr_rot)
+                    #FIXME the rotation interpolation has slightly different result
+                    #   Blender: rot(x) = prev_rot*(1 - bezier(t)) + curr_rot*bezier(t)
+                    #       MMD: rot(x) = prev_rot.slerp(curr_rot, factor=bezier(t))
                 prev_rot = curr_rot
 
                 x.co = (frame, loc[0])

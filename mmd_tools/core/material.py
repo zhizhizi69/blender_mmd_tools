@@ -388,6 +388,7 @@ class _FnMaterialBI:
         diffuse = m.diffuse_color*min(1.0, m.diffuse_intensity/0.8) if use_diffuse else (1.0, 1.0, 1.0)
         mmd_material.diffuse_color = diffuse
 
+        cast_shadows = getattr(m, 'cast_shadows', m.use_cast_buffer_shadows)
         map_alpha = next((s.blend_type for s in m.texture_slots if s and s.use_map_alpha), None)
         if m.use_transparency and map_alpha in {None, 'MULTIPLY'}:
             mmd_material.alpha = m.alpha
@@ -395,7 +396,7 @@ class _FnMaterialBI:
         mmd_material.specular_color = m.specular_color*min(1.0, m.specular_intensity/0.8)
         mmd_material.shininess = m.specular_hardness
         mmd_material.is_double_sided = m.game_settings.use_backface_culling
-        mmd_material.enabled_self_shadow_map = m.use_cast_buffer_shadows and m.alpha > 1e-3
+        mmd_material.enabled_self_shadow_map = cast_shadows and m.alpha > 1e-3
         mmd_material.enabled_self_shadow = m.use_shadows
 
 
@@ -542,6 +543,7 @@ class _FnMaterialCycles(_FnMaterialBI):
         elif len(mat.diffuse_color) > 3:
             mat.diffuse_color[3] = mmd_mat.alpha
         self.__update_shader_input('Alpha', mmd_mat.alpha)
+        self.update_self_shadow_map()
 
     def update_specular_color(self):
         mat = self.material
@@ -589,6 +591,8 @@ class _FnMaterialCycles(_FnMaterialBI):
             if tex_node:
                 tex_node.name = 'mmd_base_tex'
 
+        shadow_method = getattr(m, 'shadow_method', None)
+
         mmd_material.diffuse_color = m.diffuse_color[:3]
         if hasattr(m, 'alpha'):
             mmd_material.alpha = m.alpha
@@ -606,9 +610,9 @@ class _FnMaterialCycles(_FnMaterialBI):
         elif hasattr(m, 'use_backface_culling'):
             mmd_material.is_double_sided = not m.use_backface_culling
 
-        if hasattr(m, 'shadow_method'):
-            mmd_material.enabled_self_shadow_map = (m.shadow_method != 'NONE') and mmd_material.alpha > 1e-3
-            mmd_material.enabled_self_shadow = (m.shadow_method != 'NONE')
+        if shadow_method:
+            mmd_material.enabled_self_shadow_map = (shadow_method != 'NONE') and mmd_material.alpha > 1e-3
+            mmd_material.enabled_self_shadow = (shadow_method != 'NONE')
 
 
     def __update_shader_input(self, name, val):
@@ -646,6 +650,7 @@ class _FnMaterialCycles(_FnMaterialBI):
             node_shader.inputs.get('Alpha', _Dummy).default_value = mmd_mat.alpha
             node_shader.inputs.get('Double Sided', _Dummy).default_value = mmd_mat.is_double_sided
             node_shader.inputs.get('Self Shadow', _Dummy).default_value = mmd_mat.enabled_self_shadow
+            self.update_sphere_texture_type()
 
         node_uv = nodes.get('mmd_tex_uv', None)
         if node_uv is None:

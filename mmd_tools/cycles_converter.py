@@ -75,19 +75,19 @@ def create_MMDBasicShader():
 
     return shader
 
-def __enum_linked_nodes(nodes, to_node):
-    yield to_node
-    if to_node.parent:
-        yield to_node.parent
-    for n in set(l.from_node for i in to_node.inputs for l in i.links):
-        yield from __enum_linked_nodes(nodes, n)
+def __enum_linked_nodes(node):
+    yield node
+    if node.parent:
+        yield node.parent
+    for n in set(l.from_node for i in node.inputs for l in i.links):
+        yield from __enum_linked_nodes(n)
 
 def __cleanNodeTree(material):
     nodes = getattr(material.node_tree, 'nodes', ())
     node_names = set(n.name for n in nodes)
     for o in (n for n in nodes if n.bl_idname in {'ShaderNodeOutput', 'ShaderNodeOutputMaterial'}):
         if any(i.is_linked for i in o.inputs):
-            node_names -= set(used.name for used in __enum_linked_nodes(nodes, o))
+            node_names -= set(linked.name for linked in __enum_linked_nodes(o))
     for name in node_names:
         nodes.remove(nodes[name])
 
