@@ -81,7 +81,7 @@ class FnSDEF():
             return {}
 
         vertices = {}
-        pose_bones = obj.modifiers.get('mmd_bone_order_override').object.pose.bones
+        pose_bones = getattr(obj, 'original', obj).modifiers.get('mmd_bone_order_override').object.pose.bones
         bone_map = {g.index:pose_bones[g.name] for g in obj.vertex_groups if g.name in pose_bones}
         sdef_c = obj.data.shape_keys.key_blocks['mmd_sdef_c'].data
         sdef_r0 = obj.data.shape_keys.key_blocks['mmd_sdef_r0'].data
@@ -106,6 +106,7 @@ class FnSDEF():
 
                     key = (hash(bone_map[bgs[0].group]), hash(bone_map[bgs[1].group]))
                     if key not in vertices:
+                        #TODO basically we can not cache any bone reference
                         vertices[key] = (bone_map[bgs[0].group], bone_map[bgs[1].group], [], [])
                     vertices[key][2].append((i, w0, w1, vd[i].co-c, (c+r0)/2, (c+r1)/2))
                     vertices[key][3].append(i)
@@ -129,11 +130,13 @@ class FnSDEF():
         if cls.__sdef_muted(obj, shapekey):
             return 0.0
 
+        pose_bones = obj.modifiers.get('mmd_bone_order_override').object.pose.bones
         if not bulk_update:
             shapekey_data = shapekey.data
             if use_scale:
                 # with scale
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
+                    bone0, bone1 = pose_bones[bone0.name], pose_bones[bone1.name]
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
@@ -150,6 +153,7 @@ class FnSDEF():
             else:
                 # default
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
+                    bone0, bone1 = pose_bones[bone0.name], pose_bones[bone1.name]
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
@@ -166,6 +170,7 @@ class FnSDEF():
             if use_scale:
                 # scale & bulk update
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
+                    bone0, bone1 = pose_bones[bone0.name], pose_bones[bone1.name]
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
@@ -182,6 +187,7 @@ class FnSDEF():
             else:
                 # bulk update
                 for bone0, bone1, sdef_data, vids in cls.g_verts[hash(obj)].values():
+                    bone0, bone1 = pose_bones[bone0.name], pose_bones[bone1.name]
                     if use_skip and not cls.__check_bone_update(obj, bone0, bone1):
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
