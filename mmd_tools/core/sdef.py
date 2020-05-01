@@ -142,8 +142,8 @@ class FnSDEF():
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
                     mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
-                    rot0 = mat0.to_quaternion()
-                    rot1 = mat1.to_quaternion()
+                    rot0 = mat0.to_euler('YXZ').to_quaternion()
+                    rot1 = mat1.to_euler('YXZ').to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
                     s0, s1 = mat0.to_scale(), mat1.to_scale()
@@ -159,8 +159,9 @@ class FnSDEF():
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
                     mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
-                    rot0 = mat0.to_quaternion()
-                    rot1 = mat1.to_quaternion()
+                    # workaround some weird result of matrix.to_quaternion() using to_euler(), but still minor issues
+                    rot0 = mat0.to_euler('YXZ').to_quaternion()
+                    rot1 = mat1.to_euler('YXZ').to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
                     for vid, w0, w1, pos_c, cr0, cr1 in sdef_data:
@@ -176,8 +177,8 @@ class FnSDEF():
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
                     mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
-                    rot0 = mat0.to_quaternion()
-                    rot1 = mat1.to_quaternion()
+                    rot0 = mat0.to_euler('YXZ').to_quaternion()
+                    rot1 = mat1.to_euler('YXZ').to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
                     s0, s1 = mat0.to_scale(), mat1.to_scale()
@@ -193,8 +194,8 @@ class FnSDEF():
                         continue
                     mat0 = matmul(bone0.matrix, bone0.bone.matrix_local.inverted())
                     mat1 = matmul(bone1.matrix, bone1.bone.matrix_local.inverted())
-                    rot0 = mat0.to_quaternion()
-                    rot1 = mat1.to_quaternion()
+                    rot0 = mat0.to_euler('YXZ').to_quaternion()
+                    rot1 = mat1.to_euler('YXZ').to_quaternion()
                     if rot1.dot(rot0) < 0:
                         rot1 = -rot1
                     shapekey_data[vids] = [matmul((rot0*w0 + rot1*w1).normalized().to_matrix(), pos_c) + matmul(mat0, cr0)*w0 + matmul(mat1, cr1)*w1 for vid, w0, w1, pos_c, cr0, cr1 in sdef_data]

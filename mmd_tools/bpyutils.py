@@ -299,9 +299,11 @@ class ObjectOp:
         def shape_key_remove(self, key):
             obj = self.__obj
             assert(key.id_data == obj.data.shape_keys)
-            key_blocks = obj.data.shape_keys.key_blocks # key.id_data.key_blocks
+            key_blocks = key.id_data.key_blocks
             relative_key_map = {k.name:getattr(k.relative_key, 'name', '') for k in key_blocks}
             last_index, obj.active_shape_key_index = obj.active_shape_key_index, key_blocks.find(key.name)
+            if last_index >= obj.active_shape_key_index:
+                last_index = max(0, last_index-1)
             bpy.context.scene.objects.active, last = obj, bpy.context.scene.objects.active
             self.__clean_drivers(key)
             bpy.ops.object.shape_key_remove()
@@ -313,10 +315,13 @@ class ObjectOp:
         def shape_key_remove(self, key):
             obj = self.__obj
             assert(key.id_data == obj.data.shape_keys)
+            key_blocks = key.id_data.key_blocks
             last_index = obj.active_shape_key_index
+            if last_index >= key_blocks.find(key.name):
+                last_index = max(0, last_index-1)
             self.__clean_drivers(key)
             obj.shape_key_remove(key)
-            obj.active_shape_key_index = min(last_index, len(obj.data.shape_keys.key_blocks)-1)
+            obj.active_shape_key_index = min(last_index, len(key_blocks)-1)
 
 class TransformConstraintOp:
 
