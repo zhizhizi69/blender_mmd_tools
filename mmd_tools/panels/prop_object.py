@@ -108,9 +108,6 @@ class MMDRigidPanel(_PanelBase, Panel):
 class MMDJointPanel(_PanelBase, Panel):
     bl_idname = 'JOINT_PT_mmd_tools_bone'
     bl_label = 'MMD Joint'
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
-    bl_context = 'object'
 
     @classmethod
     def poll(cls, context):

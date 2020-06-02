@@ -292,6 +292,7 @@ class _MorphSlider:
         return var
 
     def __cleanup(self, names_in_use=None):
+        from mmd_tools.core.shader import _MaterialMorph
         names_in_use = names_in_use or {}
         rig = self.__rig
         for mesh in rig.meshes():
@@ -307,6 +308,7 @@ class _MorphSlider:
                 if m and m.node_tree:
                     for n in m.node_tree.nodes:
                         if n.name.startswith('mmd_bind'):
+                            _MaterialMorph.reset_morph_links(n)
                             m.node_tree.nodes.remove(n)
                     if 'mmd_shader' in m.node_tree.nodes:
                         m.mmd_material.is_double_sided = m.mmd_material.is_double_sided # update mmd shader
