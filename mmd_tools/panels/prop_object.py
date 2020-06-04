@@ -81,7 +81,7 @@ class MMDRigidPanel(_PanelBase, Panel):
         c.row(align=True).prop(obj.mmd_rigid, 'shape', expand=True)
         #c.column(align=True).prop(obj.mmd_rigid, 'size', text='')
         col = c.column(align=True)
-        for i, name in enumerate(self.__RIGID_SIZE_MAP.get(obj.mmd_rigid.shape, ())):
+        for i, name in enumerate(self.__RIGID_SIZE_MAP[obj.mmd_rigid.shape]):
             col.prop(obj.mmd_rigid, 'size', text=name, index=i)
 
         row = layout.row()

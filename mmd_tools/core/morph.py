@@ -292,7 +292,6 @@ class _MorphSlider:
         return var
 
     def __cleanup(self, names_in_use=None):
-        from mmd_tools.core.shader import _MaterialMorph
         names_in_use = names_in_use or {}
         rig = self.__rig
         for mesh in rig.meshes():
@@ -304,16 +303,13 @@ class _MorphSlider:
             for m in mesh.modifiers: # uv morph
                 if m.name.startswith('mmd_bind') and m.name not in names_in_use:
                     mesh.modifiers.remove(m)
-            for m in mesh.data.materials:
-                if m and m.node_tree:
-                    for n in m.node_tree.nodes:
-                        if n.name.startswith('mmd_bind'):
-                            _MaterialMorph.reset_morph_links(n)
-                            m.node_tree.nodes.remove(n)
-                    if 'mmd_shader' in m.node_tree.nodes:
-                        m.mmd_material.is_double_sided = m.mmd_material.is_double_sided # update mmd shader
-                    else:
-                        m.update_tag()
+
+        from mmd_tools.core.shader import _MaterialMorph
+        for m in rig.materials():
+            if m and m.node_tree:
+                for n in sorted((x for x in m.node_tree.nodes if x.name.startswith('mmd_bind')), key=lambda x: -x.location[0]):
+                    _MaterialMorph.reset_morph_links(n)
+                    m.node_tree.nodes.remove(n)
 
         attributes = set(TransformConstraintOp.min_max_attributes('LOCATION', 'to'))
         attributes |= set(TransformConstraintOp.min_max_attributes('ROTATION', 'to'))
