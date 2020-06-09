@@ -259,16 +259,11 @@ class VMDImporter:
 
     @staticmethod
     def __minRotationDiff(prev_q, curr_q):
-        pq, q = prev_q, curr_q
-        nq = q.copy()
-        nq.negate()
-        t1 = (pq.w-q.w)**2+(pq.x-q.x)**2+(pq.y-q.y)**2+(pq.z-q.z)**2
-        t2 = (pq.w-nq.w)**2+(pq.x-nq.x)**2+(pq.y-nq.y)**2+(pq.z-nq.z)**2
-        #t1 = pq.rotation_difference(q).angle
-        #t2 = pq.rotation_difference(nq).angle
-        if t2 < t1:
-            return nq
-        return q
+        t1 = (prev_q.w - curr_q.w)**2 + (prev_q.x - curr_q.x)**2 + (prev_q.y - curr_q.y)**2 + (prev_q.z - curr_q.z)**2
+        t2 = (prev_q.w + curr_q.w)**2 + (prev_q.x + curr_q.x)**2 + (prev_q.y + curr_q.y)**2 + (prev_q.z + curr_q.z)**2
+        #t1 = prev_q.rotation_difference(curr_q).angle
+        #t2 = prev_q.rotation_difference(-curr_q).angle
+        return -curr_q if t2 < t1 else curr_q
 
     @staticmethod
     def __setInterpolation(bezier, kp0, kp1):
@@ -308,7 +303,14 @@ class VMDImporter:
                     return (angle, x, y, z)
                 @staticmethod
                 def compatible_rotation(prev, curr):
-                    (x, y, z), angle = compatible_quaternion(Quaternion(prev[1:], prev[0]), Quaternion(curr[1:], curr[0])).to_axis_angle()
+                    angle, x, y, z = curr
+                    if prev[1]*x + prev[2]*y + prev[3]*z < 0:
+                        angle, x, y, z = -angle, -x, -y, -z
+                    angle_diff = prev[0] - angle
+                    if abs(angle_diff) > math.pi:
+                        pi_2 = math.pi * 2
+                        bias = -0.5 if angle_diff < 0 else 0.5
+                        angle += int(bias + angle_diff/pi_2) * pi_2
                     return (angle, x, y, z)
             else:
                 convert_rotation = lambda rot: converter.convert_rotation(rot).to_euler(mode)
