@@ -233,16 +233,17 @@ class MMD_TOOLS_UL_ModelBones(UIList):
 
             mmd_bone = bone.mmd_bone
             count = len(pose_bones)
+            bone_transform_rank = index + mmd_bone.transform_order*count
 
             r = row_sub.row()
             bone_parent = bone.parent
             if bone_parent:
                 bone_parent = bone_parent.name
                 idx = vertex_groups.get(bone_parent, _DummyVertexGroup).index
-                if idx is None or (index + mmd_bone.transform_order*count) < (idx + pose_bones[bone_parent].mmd_bone.transform_order*count):
+                if idx is None or bone_transform_rank < (idx + pose_bones[bone_parent].mmd_bone.transform_order*count):
                     r.label(text=str(idx), icon='ERROR')
                 else:
-                    r.label(text=str(idx), icon='FILE_PARENT')
+                    r.label(text=str(idx), icon='INFO' if index < idx else 'FILE_PARENT')
             else:
                 r.label()
 
@@ -250,7 +251,7 @@ class MMD_TOOLS_UL_ModelBones(UIList):
             if mmd_bone.has_additional_rotation:
                 append_bone = mmd_bone.additional_transform_bone
                 idx = vertex_groups.get(append_bone, _DummyVertexGroup).index
-                if idx is None or (index + mmd_bone.transform_order*count) < (idx + pose_bones[append_bone].mmd_bone.transform_order*count):
+                if idx is None or bone_transform_rank < (idx + pose_bones[append_bone].mmd_bone.transform_order*count):
                     if append_bone:
                         r.label(text=str(idx), icon='ERROR')
                 else:
@@ -258,19 +259,21 @@ class MMD_TOOLS_UL_ModelBones(UIList):
             elif mmd_bone.has_additional_location:
                 append_bone = mmd_bone.additional_transform_bone
                 idx = vertex_groups.get(append_bone, _DummyVertexGroup).index
-                if idx is None or (index + mmd_bone.transform_order*count) < (idx + pose_bones[append_bone].mmd_bone.transform_order*count):
+                if idx is None or bone_transform_rank < (idx + pose_bones[append_bone].mmd_bone.transform_order*count):
                     if append_bone:
                         r.label(text=str(idx), icon='ERROR')
                 else:
                     r.label(text=str(idx), icon=ICON_APPEND_MOVE)
 
             for idx, b in sorted(((vertex_groups.get(b, _DummyVertexGroup).index, b) for b in cls._IK_MAP.get(hash(bone), ())), key=lambda i: i[0] or 0):
-                if idx is None or (index + mmd_bone.transform_order*count) > (idx + pose_bones[b].mmd_bone.transform_order*count):
-                    r.prop(pose_bones[b], 'mmd_ik_toggle', text=str(idx), toggle=True, icon='ERROR')
+                ik_bone = pose_bones[b]
+                is_ik_chain = (hash(bone) != cls._IK_BONES.get(b))
+                if idx is None or (is_ik_chain and bone_transform_rank > (idx + ik_bone.mmd_bone.transform_order*count)):
+                    r.prop(ik_bone, 'mmd_ik_toggle', text=str(idx), toggle=True, icon='ERROR')
                 elif b not in cls._IK_BONES:
-                    r.prop(pose_bones[b], 'mmd_ik_toggle', text=str(idx), toggle=True, icon='QUESTION')
+                    r.prop(ik_bone, 'mmd_ik_toggle', text=str(idx), toggle=True, icon='QUESTION')
                 else:
-                    r.prop(pose_bones[b], 'mmd_ik_toggle', text=str(idx), toggle=True, icon='LINKED' if hash(bone) != cls._IK_BONES.get(b) else 'HOOK')
+                    r.prop(ik_bone, 'mmd_ik_toggle', text=str(idx), toggle=True, icon='LINKED' if is_ik_chain else 'HOOK')
 
             row = row_sub.row(align=True)
             if mmd_bone.transform_after_dynamics:
@@ -311,7 +314,7 @@ class MMDBoneOrder(_PanelBase, Panel):
             layout.label(text='The armature object of active MMD model can\'t be found', icon='ERROR')
             return
 
-        bone_order_object = next((i for i in armature.children if 'mmd_bone_order_override' in i.modifiers), None) #TODO consistancy issue
+        bone_order_object = next((i for i in armature.children if 'mmd_bone_order_override' in i.modifiers), None) #TODO consistency issue
         bone_count = MMD_TOOLS_UL_ModelBones.update_bone_tables(armature, bone_order_object)
 
         col = layout.column(align=True)
