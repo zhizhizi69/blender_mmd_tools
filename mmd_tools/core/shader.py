@@ -184,6 +184,7 @@ class _MaterialMorph:
         shader = nodes.get('mmd_shader', None)
         if morph:
             node = nodes.new('ShaderNodeGroup')
+            node.parent = getattr(shader, 'parent', None)
             node.location = (-250, 0)
             node.node_tree = cls.__get_shader('Add' if morph.offset_type == 'ADD' else 'Mul')
             cls.__update_node_inputs(node, morph)
