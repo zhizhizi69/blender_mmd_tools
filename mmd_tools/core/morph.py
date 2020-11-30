@@ -503,6 +503,8 @@ class _MorphSlider:
             b = arm.pose.bones[bname]
             b.location = data.location
             b.rotation_quaternion = data.rotation
+            if b.rotation_quaternion.angle > pi: # Fix for consistency because Quaternion((0,1,0,0)).angle > pi
+                b.rotation_quaternion.angle = pi - 1e-6
             b.is_mmd_shadow_bone = True
             b.mmd_shadow_bone_type = 'BIND'
             pb = armObj.pose.bones[data.bone]
