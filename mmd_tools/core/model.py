@@ -614,7 +614,7 @@ class Model:
         elif bpy.app.version < (2, 80, 0):
             for i in self.temporaryObjects():
                 bpy.data.objects.remove(i, do_unlink=True)
-        elif bpy.app.version < (2, 93, 0):
+        elif bpy.app.version < (2, 81, 0):
             tmp_objs = tuple(self.temporaryObjects())
             for i in tmp_objs:
                 for c in i.users_collection:
