@@ -3,11 +3,12 @@
 bl_info = {
     "name": "mmd_tools",
     "author": "sugiany",
-    "version": (0, 7, 1),
+    "version": (0, 7, 2),
     "blender": (2, 80, 0),
     "location": "View3D > Tool Shelf > MMD Tools Panel",
     "description": "Utility tools for MMD model editing. (powroupi's forked version)",
     "warning": "",
+    "doc_url": "https://github.com/powroupi/blender_mmd_tools/wiki",
     "wiki_url": "https://github.com/powroupi/blender_mmd_tools/wiki",
     "tracker_url": "https://github.com/powroupi/blender_mmd_tools/issues",
     "category": "Object",
