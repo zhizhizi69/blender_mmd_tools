@@ -154,14 +154,8 @@ def clearUnusedMeshes():
 ## Boneのカスタムプロパティにname_jが存在する場合、name_jの値を
 # それ以外の場合は通常のbone名をキーとしたpose_boneへの辞書を作成
 def makePmxBoneMap(armObj):
-    boneMap = {}
-    for i in armObj.pose.bones:
-        # Maintain backward compatibility with mmd_tools v0.4.x or older.
-        name = i.get('mmd_bone_name_j', i.get('name_j', None))
-        if name is None:
-            name = i.mmd_bone.name_j or i.name
-        boneMap[name] = i
-    return boneMap
+    # Maintain backward compatibility with mmd_tools v0.4.x or older.
+    return {(i.mmd_bone.name_j or i.get('mmd_bone_name_j', i.get('name_j', i.name))):i for i in armObj.pose.bones}
 
 def uniqueName(name, used_names):
     if name not in used_names:
