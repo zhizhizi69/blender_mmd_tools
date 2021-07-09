@@ -117,6 +117,7 @@ def __getCustomNormalKeeper(mesh):
 
 def separateByMaterials(meshObj):
     if len(meshObj.data.materials) < 2:
+        selectAObject(meshObj)
         return
     import bpy
     custom_normal_keeper = __getCustomNormalKeeper(meshObj.data)

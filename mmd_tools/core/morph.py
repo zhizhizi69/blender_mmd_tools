@@ -226,6 +226,7 @@ class _MorphSlider:
         if obj and obj.data.shape_keys is None:
             key = obj.shape_key_add(name='--- morph sliders ---')
             key.mute = True
+            obj.active_shape_key_index = 0
         if binded and obj and obj.data.shape_keys.key_blocks[0].mute:
             return None
         return obj
@@ -263,12 +264,12 @@ class _MorphSlider:
 
     def __load(self, obj, mmd_root):
         attr_list = ('group', 'vertex', 'bone', 'uv', 'material')
-        morph_key_blocks = obj.data.shape_keys.key_blocks
+        morph_sliders = obj.data.shape_keys.key_blocks
         for m in (x for attr in attr_list for x in getattr(mmd_root, attr+'_morphs', ())):
             name = m.name
             #if name[-1] == '\\': # fix driver's bug???
             #    m.name = name = name + ' '
-            if name and name not in morph_key_blocks:
+            if name and name not in morph_sliders:
                 obj.shape_key_add(name=name)
 
 
@@ -291,15 +292,32 @@ class _MorphSlider:
         target.data_path = data_path
         return var
 
+    @staticmethod
+    def __shape_key_driver_check(key_block):
+        if not key_block.id_data.animation_data:
+            return True
+        d = key_block.id_data.animation_data.drivers.find(key_block.path_from_id('value'))
+        if isinstance(d, int): # for Blender 2.76 or older
+            data_path = key_block.path_from_id('value')
+            d = next((i for i in key_block.id_data.animation_data.drivers if i.data_path == data_path), None)
+        return (not d or d.driver.expression == ''.join(('*w','+g','v')[-1 if i < 1 else i%2]+str(i+1) for i in range(len(d.driver.variables))))
+
     def __cleanup(self, names_in_use=None):
         names_in_use = names_in_use or {}
         rig = self.__rig
+        morph_sliders = self.placeholder()
+        morph_sliders = morph_sliders.data.shape_keys.key_blocks if morph_sliders else {}
         for mesh in rig.meshes():
             for kb in getattr(mesh.data.shape_keys, 'key_blocks', ()):
-                if kb.name.startswith('mmd_bind') and kb.name not in names_in_use:
-                    kb.driver_remove('value')
-                    kb.relative_key.mute = False
-                    ObjectOp(mesh).shape_key_remove(kb)
+                if kb.name not in names_in_use:
+                    if kb.name.startswith('mmd_bind'):
+                        kb.driver_remove('value')
+                        kb.relative_key.mute = False
+                        ObjectOp(mesh).shape_key_remove(kb)
+                    elif kb.name in morph_sliders and self.__shape_key_driver_check(kb):
+                        ms = morph_sliders[kb.name]
+                        kb.driver_remove('value')
+                        kb.slider_min, kb.slider_max = min(ms.slider_min, kb.value), max(ms.slider_max, kb.value)
             for m in mesh.modifiers: # uv morph
                 if m.name.startswith('mmd_bind') and m.name not in names_in_use:
                     mesh.modifiers.remove(m)
@@ -347,7 +365,7 @@ class _MorphSlider:
 
         obj = self.create()
         arm = self.__dummy_armature(obj, create=True)
-        morph_key_blocks = obj.data.shape_keys.key_blocks
+        morph_sliders = obj.data.shape_keys.key_blocks
 
         # data gathering
         group_map = {}
@@ -359,14 +377,17 @@ class _MorphSlider:
             key_blocks = getattr(mesh.data.shape_keys, 'key_blocks', ())
             for kb in key_blocks:
                 kb_name = kb.name
-                if kb_name not in morph_key_blocks:
+                if kb_name not in morph_sliders:
                     continue
 
-                name_bind = 'mmd_bind%s'%hash(morph_key_blocks[kb_name])
-                if name_bind not in key_blocks:
-                    mesh.shape_key_add(name=name_bind)
-                kb_bind = key_blocks[name_bind]
-                kb_bind.relative_key = kb
+                if self.__shape_key_driver_check(kb):
+                    name_bind, kb_bind = kb_name, kb
+                else:
+                    name_bind = 'mmd_bind%s'%hash(morph_sliders[kb_name])
+                    if name_bind not in key_blocks:
+                        mesh.shape_key_add(name=name_bind)
+                    kb_bind = key_blocks[name_bind]
+                    kb_bind.relative_key = kb
                 kb_bind.slider_min = -10
                 kb_bind.slider_max = 10
 
@@ -477,8 +498,11 @@ class _MorphSlider:
         for kb_bind, morph_data_path, groups in (i for l in shape_key_map.values() for i in l):
             driver, variables = self.__driver_variables(kb_bind, 'value')
             var = self.__add_single_prop(variables, obj, morph_data_path, 'v')
-            driver.expression = '-(%s)'%__config_groups(variables, var.name, groups)
-            kb_bind.relative_key.mute = True
+            if kb_bind.name.startswith('mmd_bind'):
+                driver.expression = '-(%s)'%__config_groups(variables, var.name, groups)
+                kb_bind.relative_key.mute = True
+            else:
+                driver.expression = '%s'%__config_groups(variables, var.name, groups)
             kb_bind.mute = False
 
         # bone morphs
@@ -547,5 +571,5 @@ class _MorphSlider:
             if mat_edge:
                 __config_material_morph(mat_edge, morph_list)
 
-        morph_key_blocks[0].mute = False
+        morph_sliders[0].mute = False
 
