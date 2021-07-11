@@ -34,7 +34,7 @@ class FnMorph(object):
         key_blocks = obj.data.shape_keys.key_blocks
         for name in shape_key_names:
             if name not in key_blocks:
-                obj.shape_key_add(name=name)
+                obj.shape_key_add(name=name, from_mix=False)
             elif len(key_blocks) > 1:
                 __move_to_bottom(key_blocks, name)
 
@@ -270,7 +270,7 @@ class _MorphSlider:
             #if name[-1] == '\\': # fix driver's bug???
             #    m.name = name = name + ' '
             if name and name not in morph_sliders:
-                obj.shape_key_add(name=name)
+                obj.shape_key_add(name=name, from_mix=False)
 
 
     @staticmethod
@@ -293,7 +293,12 @@ class _MorphSlider:
         return var
 
     @staticmethod
-    def __shape_key_driver_check(key_block):
+    def __shape_key_driver_check(key_block, resolve_path=False):
+        if resolve_path:
+            try:
+                kb = key_block.id_data.path_resolve(key_block.path_from_id())
+            except ValueError as e:
+                return False
         if not key_block.id_data.animation_data:
             return True
         d = key_block.id_data.animation_data.drivers.find(key_block.path_from_id('value'))
@@ -303,6 +308,7 @@ class _MorphSlider:
         return (not d or d.driver.expression == ''.join(('*w','+g','v')[-1 if i < 1 else i%2]+str(i+1) for i in range(len(d.driver.variables))))
 
     def __cleanup(self, names_in_use=None):
+        from math import floor, ceil
         names_in_use = names_in_use or {}
         rig = self.__rig
         morph_sliders = self.placeholder()
@@ -317,7 +323,7 @@ class _MorphSlider:
                     elif kb.name in morph_sliders and self.__shape_key_driver_check(kb):
                         ms = morph_sliders[kb.name]
                         kb.driver_remove('value')
-                        kb.slider_min, kb.slider_max = min(ms.slider_min, kb.value), max(ms.slider_max, kb.value)
+                        kb.slider_min, kb.slider_max = min(ms.slider_min, floor(kb.value)), max(ms.slider_max, ceil(kb.value))
             for m in mesh.modifiers: # uv morph
                 if m.name.startswith('mmd_bind') and m.name not in names_in_use:
                     mesh.modifiers.remove(m)
@@ -380,12 +386,12 @@ class _MorphSlider:
                 if kb_name not in morph_sliders:
                     continue
 
-                if self.__shape_key_driver_check(kb):
+                if self.__shape_key_driver_check(kb, resolve_path=True):
                     name_bind, kb_bind = kb_name, kb
                 else:
                     name_bind = 'mmd_bind%s'%hash(morph_sliders[kb_name])
                     if name_bind not in key_blocks:
-                        mesh.shape_key_add(name=name_bind)
+                        mesh.shape_key_add(name=name_bind, from_mix=False)
                     kb_bind = key_blocks[name_bind]
                     kb_bind.relative_key = kb
                 kb_bind.slider_min = -10

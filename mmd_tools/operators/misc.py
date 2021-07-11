@@ -15,6 +15,24 @@ from mmd_tools.core.bone import FnBone
 
 
 @register_wrap
+class SelecttObject(Operator):
+    bl_idname = 'mmd_tools.object_select'
+    bl_label = 'Select Object'
+    bl_description = 'Select the object'
+    bl_options = {'REGISTER', 'UNDO', 'INTERNAL'}
+
+    name = bpy.props.StringProperty(
+        name='Name',
+        description='The object name',
+        default='',
+        options={'HIDDEN', 'SKIP_SAVE'},
+        )
+
+    def execute(self, context):
+        utils.selectAObject(bpy.data.objects[self.name])
+        return {'FINISHED'}
+
+@register_wrap
 class MoveObject(Operator, utils.ItemMoveOp):
     bl_idname = 'mmd_tools.object_move'
     bl_label = 'Move Object'
