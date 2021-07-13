@@ -2,31 +2,28 @@
 import re
 import os
 
+import bpy
 from mmd_tools import register_wrap
 from mmd_tools.bpyutils import SceneOp
 
 ## 指定したオブジェクトのみを選択状態かつアクティブにする
 def selectAObject(obj):
-    import bpy
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
     except Exception:
         pass
     bpy.ops.object.select_all(action='DESELECT')
-    SceneOp(bpy.context).active_object = obj
     SceneOp(bpy.context).select_object(obj)
+    SceneOp(bpy.context).active_object = obj
 
 ## 現在のモードを指定したオブジェクトのEdit Modeに変更する
 def enterEditMode(obj):
-    import bpy
     selectAObject(obj)
     if obj.mode != 'EDIT':
         bpy.ops.object.mode_set(mode='EDIT')
 
 def setParentToBone(obj, parent, bone_name):
-    import bpy
     selectAObject(parent)
-    bpy.ops.object.mode_set(mode='POSE')
     selectAObject(obj)
     SceneOp(bpy.context).active_object = parent
     parent.select = True
@@ -36,7 +33,6 @@ def setParentToBone(obj, parent, bone_name):
     bpy.ops.object.mode_set(mode='OBJECT')
 
 def selectSingleBone(context, armature, bone_name, reset_pose=False):
-    import bpy
     try:
         bpy.ops.object.mode_set(mode='OBJECT')
     except:
@@ -88,7 +84,6 @@ def mergeVertexGroup(meshObj, src_vertex_group_name, dest_vertex_group_name):
 
 def __getCustomNormalKeeper(mesh):
     if hasattr(mesh, 'has_custom_normals') and mesh.use_auto_smooth:
-        import bpy
         class _CustomNormalKeeper:
             def __init__(self, mesh):
                 mesh.calc_normals_split()
@@ -119,7 +114,6 @@ def separateByMaterials(meshObj):
     if len(meshObj.data.materials) < 2:
         selectAObject(meshObj)
         return
-    import bpy
     custom_normal_keeper = __getCustomNormalKeeper(meshObj.data)
     matrix_parent_inverse = meshObj.matrix_parent_inverse.copy()
     prev_parent = meshObj.parent
@@ -142,7 +136,6 @@ def separateByMaterials(meshObj):
         bpy.data.objects.remove(dummy_parent)
 
 def clearUnusedMeshes():
-    import bpy
     meshes_to_delete = []
     for mesh in bpy.data.meshes:
         if mesh.users == 0:
@@ -245,7 +238,6 @@ class ItemOp:
 
 @register_wrap
 class ItemMoveOp:
-    import bpy
     type = bpy.props.EnumProperty(
         name='Type',
         description='Move type',

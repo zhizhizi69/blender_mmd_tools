@@ -11,7 +11,7 @@ class __EditMode:
         self.__prevMode = obj.mode
         self.__obj = obj
         self.__obj_select = obj.select
-        with select_object(obj) as act_obj:
+        with select_object(obj):
             if obj.mode != 'EDIT':
                 bpy.ops.object.mode_set(mode='EDIT')
 
@@ -37,7 +37,7 @@ class __SelectObjects:
             i.select = False
 
         self.__active_object = active_object
-        self.__selected_objects = [active_object]+selected_objects
+        self.__selected_objects = tuple(set(selected_objects)|set([active_object]))
 
         self.__hides = []
         scene = SceneOp(bpy.context)
@@ -61,27 +61,15 @@ def addon_preferences(attrname, default=None):
     return getattr(addon.preferences, attrname, default) if addon else default
 
 def setParent(obj, parent):
-    ho = obj.hide
-    hp = parent.hide
-    obj.hide = False
-    parent.hide = False
-    select_object(parent)
-    obj.select = True
-    bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
-    obj.hide = ho
-    parent.hide = hp
+    with select_object(parent, objects=[parent, obj]):
+        bpy.ops.object.parent_set(type='OBJECT', xmirror=False, keep_transform=False)
 
 def setParentToBone(obj, parent, bone_name):
-    import bpy
-    select_object(parent)
-    bpy.ops.object.mode_set(mode='POSE')
-    select_object(obj)
-    SceneOp(bpy.context).active_object = parent
-    parent.select = True
-    bpy.ops.object.mode_set(mode='POSE')
-    parent.data.bones.active = parent.data.bones[bone_name]
-    bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
-    bpy.ops.object.mode_set(mode='OBJECT')
+    with select_object(parent, objects=[parent, obj]):
+        bpy.ops.object.mode_set(mode='POSE')
+        parent.data.bones.active = parent.data.bones[bone_name]
+        bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
+        bpy.ops.object.mode_set(mode='OBJECT')
 
 def edit_object(obj):
     """ Set the object interaction mode to 'EDIT'

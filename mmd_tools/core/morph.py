@@ -81,12 +81,19 @@ class FnMorph(object):
     def load_morphs(cls, rig):
         mmd_root = rig.rootObject().mmd_root
         vertex_morphs = mmd_root.vertex_morphs
+        uv_morphs = mmd_root.uv_morphs
         for obj in rig.meshes():
             for kb in getattr(obj.data.shape_keys, 'key_blocks', ())[1:]:
                 if not kb.name.startswith('mmd_') and kb.name not in vertex_morphs:
                     item = vertex_morphs.add()
                     item.name = kb.name
                     item.name_e = kb.name
+                    cls.category_guess(item)
+            for g, name, x in FnMorph.get_uv_morph_vertex_groups(obj):
+                if name not in uv_morphs:
+                    item = uv_morphs.add()
+                    item.name = item.name_e = name
+                    item.data_type = 'VERTEX_GROUP'
                     cls.category_guess(item)
 
 

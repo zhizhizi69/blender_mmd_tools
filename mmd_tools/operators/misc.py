@@ -15,7 +15,7 @@ from mmd_tools.core.bone import FnBone
 
 
 @register_wrap
-class SelecttObject(Operator):
+class SelectObject(Operator):
     bl_idname = 'mmd_tools.object_select'
     bl_label = 'Select Object'
     bl_description = 'Select the object'
