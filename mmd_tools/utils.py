@@ -13,7 +13,6 @@ def selectAObject(obj):
     except Exception:
         pass
     bpy.ops.object.select_all(action='DESELECT')
-    SceneOp(bpy.context).select_object(obj)
     SceneOp(bpy.context).active_object = obj
 
 ## 現在のモードを指定したオブジェクトのEdit Modeに変更する
@@ -23,10 +22,8 @@ def enterEditMode(obj):
         bpy.ops.object.mode_set(mode='EDIT')
 
 def setParentToBone(obj, parent, bone_name):
-    selectAObject(parent)
     selectAObject(obj)
     SceneOp(bpy.context).active_object = parent
-    parent.select = True
     bpy.ops.object.mode_set(mode='POSE')
     parent.data.bones.active = parent.data.bones[bone_name]
     bpy.ops.object.parent_set(type='BONE', xmirror=False, keep_transform=False)
@@ -39,7 +36,6 @@ def selectSingleBone(context, armature, bone_name, reset_pose=False):
         pass
     for i in context.selected_objects:
         i.select = False
-    SceneOp(context).select_object(armature)
     SceneOp(context).active_object = armature
     bpy.ops.object.mode_set(mode='POSE')
     if reset_pose:

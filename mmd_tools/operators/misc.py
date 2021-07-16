@@ -29,7 +29,7 @@ class SelectObject(Operator):
         )
 
     def execute(self, context):
-        utils.selectAObject(bpy.data.objects[self.name])
+        utils.selectAObject(context.scene.objects[self.name])
         return {'FINISHED'}
 
 @register_wrap

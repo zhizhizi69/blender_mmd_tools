@@ -170,7 +170,6 @@ def createObject(name='Object', object_data=None, target_scene=None):
     obj = bpy.data.objects.new(name=name, object_data=object_data)
     target_scene.link_object(obj)
     target_scene.active_object = obj
-    obj.select = True
     return obj
 
 def makeSphere(segment=8, ring_count=5, radius=1.0, target_object=None):
@@ -364,13 +363,23 @@ class TransformConstraintOp:
 
 if bpy.app.version < (2, 80, 0):
     class SceneOp:
-        def __init__(self, context):
+        def __init__(self, context=None):
             self.__context = context or bpy.context
             self.__scene = self.__context.scene
 
-        def select_object(self, obj):
+        def __ensure_selectable(self, obj):
             obj.hide = obj.hide_select = False
-            obj.select = obj.layers[self.__scene.active_layer] = True
+            if obj not in self.__context.selectable_objects:
+                selected_objects = self.__context.selected_objects
+                self.__scene.layers[next(i for i, enabled in enumerate(obj.layers) if enabled)] = True
+                if len(self.__context.selected_objects) != len(selected_objects):
+                    for i in self.__context.selected_objects:
+                        if i not in selected_objects:
+                            i.select = False
+
+        def select_object(self, obj):
+            self.__ensure_selectable(obj)
+            obj.select = True
 
         def link_object(self, obj):
             self.__scene.objects.link(obj)
@@ -381,7 +390,7 @@ if bpy.app.version < (2, 80, 0):
 
         @active_object.setter
         def active_object(self, obj):
-            obj.layers[self.__scene.active_layer] = True
+            self.select_object(obj)
             self.__scene.objects.active = obj
 
         @property
@@ -393,14 +402,38 @@ if bpy.app.version < (2, 80, 0):
             return self.__scene.objects
 else:
     class SceneOp:
-        def __init__(self, context):
+        def __init__(self, context=None):
             self.__context = context or bpy.context
+            self.__scene = self.__context.scene
             self.__collection = self.__context.collection
             self.__view_layer = self.__context.view_layer
 
+        def __ensure_selectable(self, obj):
+            obj.hide_viewport = obj.hide_select = False
+            obj.hide_set(False)
+            if obj not in self.__context.selectable_objects:
+                def __unhide(lc):
+                    lc.hide_viewport = lc.collection.hide_viewport = lc.collection.hide_select = False
+                    return True
+                def __layer_check(layer_collection):
+                    for lc in layer_collection.children:
+                        if __layer_check(lc):
+                            return __unhide(lc)
+                    if obj in layer_collection.collection.objects.values():
+                        if layer_collection.exclude:
+                            layer_collection.exclude = False
+                        return True
+                    return False
+                selected_objects = self.__context.selected_objects
+                __layer_check(self.__view_layer.layer_collection)
+                if len(self.__context.selected_objects) != len(selected_objects):
+                    for i in self.__context.selected_objects:
+                        if i not in selected_objects:
+                            i.select_set(False)
+
         def select_object(self, obj):
-            obj.hide = obj.hide_select = False
-            obj.select = True
+            self.__ensure_selectable(obj)
+            obj.select_set(True)
 
         def link_object(self, obj):
             self.__collection.objects.link(obj)
@@ -411,13 +444,14 @@ else:
 
         @active_object.setter
         def active_object(self, obj):
+            self.select_object(obj)
             self.__view_layer.objects.active = obj
 
         @property
         def id_scene(self):
-            return self.__view_layer
+            return self.__scene
 
         @property
         def id_objects(self):
-            return self.__view_layer.objects
+            return self.__scene.objects
 

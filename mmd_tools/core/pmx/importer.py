@@ -892,7 +892,6 @@ class PMXImporter:
         if 'MESH' in types:
             root.mmd_root.show_meshes = True
         self.__targetScene.active_object = root
-        root.select = True
 
         logging.info(' Finished importing the model in %f seconds.', time.time() - start_time)
         logging.info('----------------------------------------')
