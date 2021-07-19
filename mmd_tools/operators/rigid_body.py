@@ -8,6 +8,7 @@ from bpy.types import Operator
 
 from mmd_tools import register_wrap
 from mmd_tools import utils
+from mmd_tools.bpyutils import Props
 from mmd_tools.core import rigid_body
 import mmd_tools.core.model as mmd_model
 
@@ -202,7 +203,7 @@ class AddRigidBody(Operator):
             elif self.rigid_shape == 'CAPSULE':
                 size.x /= 3
         else:
-            size *= rig.rootObject().empty_draw_size
+            size *= getattr(rig.rootObject(), Props.empty_display_size)
 
         return rig.createRigidBody(
                 name=name_j,

@@ -250,7 +250,6 @@ class _MorphSlider:
             arm.mmd_type = 'PLACEHOLDER'
             arm.parent = obj
             SceneOp(bpy.context).link_object(arm)
-            arm.data.draw_type = 'STICK'
         return arm
 
 

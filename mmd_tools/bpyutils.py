@@ -4,6 +4,21 @@ import bpy
 
 matmul = (lambda a, b: a*b) if bpy.app.version < (2, 80, 0) else (lambda a, b: a.__matmul__(b))
 
+class Props: # For API changes of only name changed properties
+    if bpy.app.version < (2, 80, 0):
+        show_in_front = 'show_x_ray'
+        display_type = 'draw_type'
+        display_size = 'draw_size'
+        empty_display_type = 'empty_draw_type'
+        empty_display_size = 'empty_draw_size'
+    else:
+        show_in_front = 'show_in_front'
+        display_type = 'display_type'
+        display_size = 'display_size'
+        empty_display_type = 'empty_display_type'
+        empty_display_size = 'empty_display_size'
+
+
 class __EditMode:
     def __init__(self, obj):
         if not isinstance(obj, bpy.types.Object):

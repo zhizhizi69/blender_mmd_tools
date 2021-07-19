@@ -300,6 +300,7 @@ class MMDRoot(PropertyGroup):
         #get=_show_meshes_get,
         #set=_show_meshes_set,
         update=_toggleVisibilityOfMeshes,
+        default=True,
         )
 
     show_rigid_bodies = BoolProperty(

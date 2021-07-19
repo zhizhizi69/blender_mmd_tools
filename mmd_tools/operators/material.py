@@ -211,7 +211,8 @@ class EdgePreviewSetup(Operator):
             for obj in rig.meshes():
                 self.__clean_toon_edge(obj)
         else:
-            scale = rig.rootObject().empty_draw_size * 0.2
+            from mmd_tools.bpyutils import Props
+            scale = 0.2*getattr(rig.rootObject(), Props.empty_display_size)
             counts = sum(self.__create_toon_edge(obj, scale) for obj in rig.meshes())
             self.report({'INFO'}, 'Created %d toon edge(s)'%counts)
         return {'FINISHED'}
