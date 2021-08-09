@@ -941,11 +941,11 @@ class _PMXCleaner:
         for i, v in enumerate(pmx_vertices):
             vertex_map[i] = [tuple(v.co)]
         if not mesh_only:
-            for m in pmx_model.morphs:
+            for i, m in enumerate(pmx_model.morphs):
                 if not isinstance(m, pmx.VertexMorph) and not isinstance(m, pmx.UVMorph):
                     continue
                 for x in m.offsets:
-                    vertex_map[x.index].append(tuple(x.offset))
+                    vertex_map[x.index].append((i,)+tuple(x.offset))
         # generate vertex merging table
         keys = {}
         for i, v in enumerate(vertex_map):
