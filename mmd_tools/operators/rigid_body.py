@@ -466,6 +466,12 @@ class UpdateRigidBodyWorld(Operator):
         if not rbw.constraints:
             rbw.constraints = bpy.data.collections.new('RigidBodyConstraints')
             rbw.constraints.use_fake_user = True
+
+        if bpy.app.version >= (2, 92, 0):
+            # see: https://github.com/powroupi/blender_mmd_tools/issues/333
+            bpy.context.scene.rigidbody_world.substeps_per_frame = 1
+            bpy.context.scene.rigidbody_world.solver_iterations = 60
+
         return rbw.collection.objects, rbw.constraints.objects
 
     def execute(self, context):
