@@ -144,7 +144,18 @@ def register():
         bpy.types.VIEW3D_MT_armature_add.append(menu_func_armature)
         #bpy.context.preferences.filepaths.use_scripts_auto_execute = True
 
+    try:
+        from mmd_tools.m17n import translation_dict
+        bpy.app.translations.register(bl_info['name'], translation_dict)
+    except:
+        pass
+
 def unregister():
+    try:
+        bpy.app.translations.unregister(bl_info['name'])
+    except:
+        pass
+
     if bpy.app.version < (2, 80, 0):
         bpy.types.INFO_MT_file_import.remove(menu_func_import)
         bpy.types.INFO_MT_file_export.remove(menu_func_export)

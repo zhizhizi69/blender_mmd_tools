@@ -13,7 +13,7 @@ from mmd_tools.core.shader import _NodeGroupUtils
 @register_wrap
 class ConvertMaterialsForCycles(Operator):
     bl_idname = 'mmd_tools.convert_materials_for_cycles'
-    bl_label = 'Convert Shaders For Cycles'
+    bl_label = 'Convert Materials For Cycles'
     bl_description = 'Convert materials of selected objects for Cycles.'
     bl_options = {'REGISTER', 'UNDO'}
 
