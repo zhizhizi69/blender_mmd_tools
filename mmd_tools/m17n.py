@@ -237,7 +237,7 @@ translation_dict = {
         ("*", "Modes"): "模式",
         ("*", "MMD Names"): "MMD名称",
         ("*", "Blender Names"): "Blender名称",
-        ("*", "Use Morph Prefix"): "使用变体前缀",
+        ("*", "Use Morph Prefix"): "使用变形前缀",
         ("*", "Allow Fails"): "允许失败",
 
         ("Operator", "Import"): "导入",
@@ -250,7 +250,7 @@ translation_dict = {
         ("*", "Model:"): "模型:",
 
         ("*", "Types"): "类型",
-        ("*", "Morphs"): "变体",
+        ("*", "Morphs"): "变形",
         ("*", "Clean Model"): "清空模型",
         ("*", "Fix IK Links"): "修复IK关联",
         ("*", "Apply Bone Fixed Axis"): "应用骨骼固定轴",
@@ -285,7 +285,7 @@ translation_dict = {
         # 3D Viewport > Sidebar > MMD > Display Panel
         ("*", "Display Panel"): "显示面板",
         ("Operator", "Bone"): "骨骼",
-        ("Operator", "Morph"): "变体",
+        ("Operator", "Morph"): "变形",
         ("*", "Load Facial Items"): "载入面部项目",
         ("*", "Load Bone Groups"): "载入骨骼组",
         ("*", "Apply Bone Groups"): "应用骨骼组",
@@ -294,11 +294,11 @@ translation_dict = {
         ("Operator", "Delete All"): "删除全部",
 
         # 3D Viewport > Sidebar > MMD > Morph Tools Panel
-        ("*", "Morph Tools"): "变体工具",
+        ("*", "Morph Tools"): "变形工具",
         ("*", "Eye"): "眼",
         ("*", "Eye Brow"): "眼眉",
         ("*", "Mouth"): "嘴巴",
-        ("Operator", "Copy Morph"): "复制变体",
+        ("Operator", "Copy Morph"): "复制变形",
         ("*", "Rigid Bodies"): "刚体",
         ("*", "Active Model"): "活动的模型",
         ("*", "All Models"): "全部模型",
