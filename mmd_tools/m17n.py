@@ -23,9 +23,9 @@ translation_dict = {
 
         ("Operator", "Convert Materials For Cycles"): "マテリアルをCycles用に変換",
         ("*", "Convert to Principled BSDF"): "プリンシプルBSDFへ変換",
-        ("*", "Clean Nodes"): "ノードを掃除",
+        ("*", "Clean Nodes"): "ノードをクリーン",
         ("Operator", "Separate By Materials"): "マテリアルで分解",
-        ("*", "Clean Shape Keys"): "シェイプキーを掃除",
+        ("*", "Clean Shape Keys"): "シェイプキーをクリーン",
         ("Operator", "Join Meshes"): "メッシュを統合",
         ("*", "Sort Shape Keys"): "シェイプキーをソート",
         ("Operator", "Attach Meshes to Model"): "メッシュをモデルに取付",
