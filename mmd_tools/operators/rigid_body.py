@@ -466,6 +466,10 @@ class UpdateRigidBodyWorld(Operator):
         if not rbw.constraints:
             rbw.constraints = bpy.data.collections.new('RigidBodyConstraints')
             rbw.constraints.use_fake_user = True
+
+        if hasattr(bpy.context.scene.rigidbody_world, 'substeps_per_frame'):
+            bpy.context.scene.rigidbody_world.substeps_per_frame = 1
+
         return rbw.collection.objects, rbw.constraints.objects
 
     def execute(self, context):
