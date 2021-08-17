@@ -38,7 +38,6 @@ translation_dict = {
         ("*", "Use Morph Prefix"): "モーフ接頭辞を使用",
         ("*", "Allow Fails"): "失敗を許可",
 
-        ("Operator", "Import"): "インポート",
         ("*", "Bone Constraints:"): "ボーンコンストレイント:",
         ("*", "Physics:"): "物理演算:",
         ("Operator", "Build"): "構築",
@@ -47,6 +46,7 @@ translation_dict = {
         ("*", "Clean"): "クリーン",
         ("*", "Model:"): "モデル:",
 
+        ("Operator", "Import"): "インポート",
         ("*", "Types"): "タイプ",
         ("*", "Morphs"): "モーフ",
         ("*", "Clean Model"): "モデルをクリーン",
@@ -97,6 +97,8 @@ translation_dict = {
         ("*", "Eye Brow"): "眉毛",
         ("*", "Mouth"): "口",
         ("Operator", "Copy Morph"): "モーフをコピー",
+
+        # 3D Viewport > Sidebar > MMD > Rigid Bodies
         ("*", "Rigid Bodies"): "リジッドボディ",
         ("*", "Active Model"): "選択中のモデル",
         ("*", "All Models"): "全てのモデル",
@@ -105,6 +107,9 @@ translation_dict = {
         ("*", "Collision Group Mask"): "コリジョングループマスク",
         ("*", "Rigid Type"): "リジッドタイプ",
         ("*", "Hide Others"): "他を隠す",
+
+        # 3D Viewport > Sidebar > MMD > Joints
+        ("*", "Joints"): "ジョイント",
 
         # 3D Viewport > Sidebar > MMD > Material Sorter Panel
         ("*", "Material Sorter"): "マテリアル順序",
@@ -144,6 +149,16 @@ translation_dict = {
         ("*", "Bulk"): "バルク",
         ("*", "Skip"): "スキップ",
 
+        # Properties > Object Properties > MMD Lamp Tools
+        #("*", "MMD Lamp Tools"): "todo",
+        #("Operator", "Convert to MMD Lamp"): "todo",
+        #("*", "Light Source"): "todo",
+
+        # Properties > Object Properties > MMD Camera Tools
+        #("*", "MMD Camera Tools"): "todo",
+        #("Operator", "Convert to MMD Camera"): "todo",
+        #("*", "Camera Source"): "todo",
+
         # Properties > Object Properties > MMD Model Information Panel
         ("*", "MMD Model Information"): "MMDモデル情報",
         ("*", "Name (English)"): "名前(英語)",
@@ -153,6 +168,13 @@ translation_dict = {
         ("Operator", "Recalculate bone roll"): "ボーンロールを再計算",
         ("*", "This operation will break existing f-curve/action."): "この操作は既存のFカーブ/アクションを破壊します。",
         ("*", "Click [OK] to run the operation."): "[OK]をクリックして操作を実行してください。",
+
+        # Properties > Object Properties > MMD Rigid Body
+        #("*", "Collision Group Mask:"): "todo",
+
+        # Properties > Object Properties > MMD Joint
+        #("*", "Spring(Linear)"): "todo",
+        #("*", "Spring(Angular)"): "todo",
 
         # Properties > Material Properties > MMD Material Panel
         ("*", "MMD Material"): "MMDマテリアル",
@@ -223,7 +245,6 @@ translation_dict = {
         ("*", "Minimum Edge Alpha"): "最小边缘Alpha",
 
         ("Operator", "Convert Materials For Cycles"): "转换材质给Cycles",
-        ("Operator", "Convert Shaders For Cycles"): "转换着色器给Cycles",
         ("*", "Convert to Principled BSDF"): "转换为原理化BSDF",
         ("*", "Clean Nodes"): "清理节点",
         ("Operator", "Separate By Materials"): "按材质分开",
@@ -240,7 +261,6 @@ translation_dict = {
         ("*", "Use Morph Prefix"): "使用变形前缀",
         ("*", "Allow Fails"): "允许失败",
 
-        ("Operator", "Import"): "导入",
         ("*", "Bone Constraints:"): "骨骼约束:",
         ("*", "Physics:"): "物理:",
         ("Operator", "Build"): "建立",
@@ -249,6 +269,7 @@ translation_dict = {
         ("*", "Clean"): "清空",
         ("*", "Model:"): "模型:",
 
+        ("Operator", "Import"): "导入",
         ("*", "Types"): "类型",
         ("*", "Morphs"): "变形",
         ("*", "Clean Model"): "清空模型",
@@ -299,6 +320,8 @@ translation_dict = {
         ("*", "Eye Brow"): "眼眉",
         ("*", "Mouth"): "嘴巴",
         ("Operator", "Copy Morph"): "复制变形",
+
+        # 3D Viewport > Sidebar > MMD > Rigid Bodies
         ("*", "Rigid Bodies"): "刚体",
         ("*", "Active Model"): "活动的模型",
         ("*", "All Models"): "全部模型",
@@ -307,6 +330,9 @@ translation_dict = {
         ("*", "Collision Group Mask"): "碰撞组遮罩",
         ("*", "Rigid Type"): "刚类型",
         ("*", "Hide Others"): "隐藏其他",
+
+        # 3D Viewport > Sidebar > MMD > Joints
+        ("*", "Joints"): "关节",
 
         # 3D Viewport > Sidebar > MMD > Material Sorter Panel
         ("*", "Material Sorter"): "材质顺序",
@@ -346,6 +372,16 @@ translation_dict = {
         ("*", "Bulk"): "散装",
         ("*", "Skip"): "略过",
 
+        # Properties > Object Properties > MMD Lamp Tools
+        #("*", "MMD Lamp Tools"): "todo",
+        #("Operator", "Convert to MMD Lamp"): "todo",
+        #("*", "Light Source"): "todo",
+
+        # Properties > Object Properties > MMD Camera Tools
+        #("*", "MMD Camera Tools"): "todo",
+        #("Operator", "Convert to MMD Camera"): "todo",
+        #("*", "Camera Source"): "todo",
+
         # Properties > Object Properties > MMD Model Information Panel
         ("*", "MMD Model Information"): "MMD模型信息",
         ("*", "Name (English)"): "名称(英文)",
@@ -355,6 +391,13 @@ translation_dict = {
         ("Operator", "Recalculate bone roll"): "重算骨骼扭转",
         ("*", "This operation will break existing f-curve/action."): "这一操作将破坏现有的函数曲线/动作。",
         ("*", "Click [OK] to run the operation."): "点击[确定]来运行操作。",
+
+        # Properties > Object Properties > MMD Rigid Body
+        #("*", "Collision Group Mask:"): "todo",
+
+        # Properties > Object Properties > MMD Joint
+        #("*", "Spring(Linear)"): "todo",
+        #("*", "Spring(Angular)"): "todo",
 
         # Properties > Material Properties > MMD Material Panel
         ("*", "MMD Material"): "MMD材质",
