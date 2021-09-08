@@ -150,14 +150,14 @@ translation_dict = {
         ("*", "Skip"): "スキップ",
 
         # Properties > Object Properties > MMD Lamp Tools
-        #("*", "MMD Lamp Tools"): "todo",
-        #("Operator", "Convert to MMD Lamp"): "todo",
-        #("*", "Light Source"): "todo",
+        ("*", "MMD Lamp Tools"): "MMD照明ツール",
+        ("Operator", "Convert to MMD Lamp"): "MMD照明へ変換",
+        ("*", "Light Source"): "光源",
 
         # Properties > Object Properties > MMD Camera Tools
-        #("*", "MMD Camera Tools"): "todo",
-        #("Operator", "Convert to MMD Camera"): "todo",
-        #("*", "Camera Source"): "todo",
+        ("*", "MMD Camera Tools"): "MMDカメラツール",
+        ("Operator", "Convert to MMD Camera"): "MMDカメラへ変換",
+        ("*", "Camera Source"): "カメラソース",
 
         # Properties > Object Properties > MMD Model Information Panel
         ("*", "MMD Model Information"): "MMDモデル情報",
@@ -170,11 +170,11 @@ translation_dict = {
         ("*", "Click [OK] to run the operation."): "[OK]をクリックして操作を実行してください。",
 
         # Properties > Object Properties > MMD Rigid Body
-        #("*", "Collision Group Mask:"): "todo",
+        ("*", "Collision Group Mask:"): "コリジョングループマスク:",
 
         # Properties > Object Properties > MMD Joint
-        #("*", "Spring(Linear)"): "todo",
-        #("*", "Spring(Angular)"): "todo",
+        ("*", "Spring(Linear)"): "スプリング(リニア)",
+        ("*", "Spring(Angular)"): "スプリング(角度)",
 
         # Properties > Material Properties > MMD Material Panel
         ("*", "MMD Material"): "MMDマテリアル",
@@ -373,14 +373,14 @@ translation_dict = {
         ("*", "Skip"): "略过",
 
         # Properties > Object Properties > MMD Lamp Tools
-        #("*", "MMD Lamp Tools"): "todo",
-        #("Operator", "Convert to MMD Lamp"): "todo",
-        #("*", "Light Source"): "todo",
+        ("*", "MMD Lamp Tools"): "MMD照明工具",
+        ("Operator", "Convert to MMD Lamp"): "转换为MMD照明",
+        ("*", "Light Source"): "光源",
 
         # Properties > Object Properties > MMD Camera Tools
-        #("*", "MMD Camera Tools"): "todo",
-        #("Operator", "Convert to MMD Camera"): "todo",
-        #("*", "Camera Source"): "todo",
+        ("*", "MMD Camera Tools"): "MMD摄像机工具",
+        ("Operator", "Convert to MMD Camera"): "转换为MMD摄像机",
+        ("*", "Camera Source"): "摄像机源",
 
         # Properties > Object Properties > MMD Model Information Panel
         ("*", "MMD Model Information"): "MMD模型信息",
@@ -393,11 +393,11 @@ translation_dict = {
         ("*", "Click [OK] to run the operation."): "点击[确定]来运行操作。",
 
         # Properties > Object Properties > MMD Rigid Body
-        #("*", "Collision Group Mask:"): "todo",
+        ("*", "Collision Group Mask:"): "碰撞组遮罩:",
 
         # Properties > Object Properties > MMD Joint
-        #("*", "Spring(Linear)"): "todo",
-        #("*", "Spring(Angular)"): "todo",
+        ("*", "Spring(Linear)"): "弹簧(线性)",
+        ("*", "Spring(Angular)"): "弹簧(棱角)",
 
         # Properties > Material Properties > MMD Material Panel
         ("*", "MMD Material"): "MMD材质",
