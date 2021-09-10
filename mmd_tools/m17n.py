@@ -84,6 +84,11 @@ translation_dict = {
         ("*", "Display Panel"): "表示パネル",
         ("Operator", "Bone"): "ボーン",
         ("Operator", "Morph"): "モーフ",
+        #("Operator", "Add Display Item Frame"): "todo",
+        #("Operator", "Remove Display Item Frame"): "todo",
+        #("Operator", "Add Display Item"): "todo",
+        #("Operator", "Remove Display Item"): "todo",
+        #("*", "Quick setup display items"): "todo",
         ("*", "Load Facial Items"): "表情項目をロード",
         ("*", "Load Bone Groups"): "ボーングループをロード",
         ("*", "Apply Bone Groups"): "ボーングループを適用",
@@ -96,6 +101,9 @@ translation_dict = {
         ("*", "Eye"): "目",
         ("*", "Eye Brow"): "眉毛",
         ("*", "Mouth"): "口",
+        #("Operator", "Add Morph"): "todo",
+        #("Operator", "Remove Morph"): "todo",
+        #("Operator", "Remove Morph Offset"): "todo",
         ("Operator", "Copy Morph"): "モーフをコピー",
 
         # 3D Viewport > Sidebar > MMD > Rigid Bodies
@@ -110,19 +118,23 @@ translation_dict = {
 
         # 3D Viewport > Sidebar > MMD > Joints
         ("*", "Joints"): "ジョイント",
+        #("Operator", "Add Joint"): "todo",
+        #("Operator", "Remove Joint"): "todo",
 
         # 3D Viewport > Sidebar > MMD > Material Sorter Panel
         ("*", "Material Sorter"): "マテリアル順序",
         ("*", "Select a mesh object"): "メッシュを選択してください",
         ("*", "Use the arrows to sort"): "矢印を使って並べ替えてください",
+        #("Operator", "Move Material Up"): "todo",
+        #("Operator", "Move Material Down"): "todo",
 
         # 3D Viewport > Sidebar > MMD > Meshes Sorter Panel
         ("*", "Meshes Sorter"): "メッシュ順序",
         ("*", "Select a MMD Model"): "MMDモデルを選択してください",
+        #("Operator", "Move Object"): "todo",
 
         # 3D Viewport > Sidebar > MMD > Bone Order Panel
         ("*", "Bone Order"): "ボーン順序",
-        ("*", "Select a MMD Model"): "MMDモデルを選択してください",
         ("*", "After Dynamics"): "物理後",
         ("*", "Transform Order"): "変形階層",
 
@@ -307,6 +319,11 @@ translation_dict = {
         ("*", "Display Panel"): "显示面板",
         ("Operator", "Bone"): "骨骼",
         ("Operator", "Morph"): "变形",
+        #("Operator", "Add Display Item Frame"): "todo",
+        #("Operator", "Remove Display Item Frame"): "todo",
+        #("Operator", "Add Display Item"): "todo",
+        #"Operator", "Remove Display Item"): "todo",
+        #("*", "Quick setup display items"): "todo",
         ("*", "Load Facial Items"): "载入面部项目",
         ("*", "Load Bone Groups"): "载入骨骼组",
         ("*", "Apply Bone Groups"): "应用骨骼组",
@@ -319,6 +336,9 @@ translation_dict = {
         ("*", "Eye"): "眼",
         ("*", "Eye Brow"): "眼眉",
         ("*", "Mouth"): "嘴巴",
+        #("Operator", "Add Morph"): "todo",
+        #("Operator", "Remove Morph"): "todo",
+        #("Operator", "Remove Morph Offset"): "todo",
         ("Operator", "Copy Morph"): "复制变形",
 
         # 3D Viewport > Sidebar > MMD > Rigid Bodies
@@ -333,19 +353,23 @@ translation_dict = {
 
         # 3D Viewport > Sidebar > MMD > Joints
         ("*", "Joints"): "关节",
+        #("Operator", "Add Joint"): "todo",
+        #("Operator", "Remove Joint"): "todo",
 
         # 3D Viewport > Sidebar > MMD > Material Sorter Panel
         ("*", "Material Sorter"): "材质顺序",
         ("*", "Select a mesh object"): "选择一个网格物体",
         ("*", "Use the arrows to sort"): "使用箭头来排序",
+        #("Operator", "Move Material Up"): "todo",
+        #("Operator", "Move Material Down"): "todo",
 
         # 3D Viewport > Sidebar > MMD > Meshes Sorter Panel
         ("*", "Meshes Sorter"): "网格顺序",
         ("*", "Select a MMD Model"): "选择一个MMD模型",
+        #("Operator", "Move Object"): "todo",
 
         # 3D Viewport > Sidebar > MMD > Bone Order Panel
         ("*", "Bone Order"): "骨骼顺序",
-        ("*", "Select a MMD Model"): "选择一个MMD模型",
         ("*", "After Dynamics"): "物理後",
         ("*", "Transform Order"): "変形階層",
 
