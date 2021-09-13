@@ -84,11 +84,13 @@ translation_dict = {
         ("*", "Display Panel"): "表示パネル",
         ("Operator", "Bone"): "ボーン",
         ("Operator", "Morph"): "モーフ",
-        #("Operator", "Add Display Item Frame"): "todo",
-        #("Operator", "Remove Display Item Frame"): "todo",
-        #("Operator", "Add Display Item"): "todo",
-        #("Operator", "Remove Display Item"): "todo",
-        #("*", "Quick setup display items"): "todo",
+        ("Operator", "Add Display Item Frame"): "表示項目フレームを追加",
+        ("Operator", "Remove Display Item Frame"): "表示項目フレームを削除",
+        ("Operator", "Move Display Item Frame"): "表示項目フレームを移動",
+        ("Operator", "Add Display Item"): "表示項目を追加",
+        ("Operator", "Remove Display Item"): "表示項目を削除",
+        ("Operator", "Move Display Item"): "表示項目を移動",
+        ("*", "Quick setup display items"): "表示項目のクイックセットアップ",
         ("*", "Load Facial Items"): "表情項目をロード",
         ("*", "Load Bone Groups"): "ボーングループをロード",
         ("*", "Apply Bone Groups"): "ボーングループを適用",
@@ -101,10 +103,18 @@ translation_dict = {
         ("*", "Eye"): "目",
         ("*", "Eye Brow"): "眉毛",
         ("*", "Mouth"): "口",
-        #("Operator", "Add Morph"): "todo",
-        #("Operator", "Remove Morph"): "todo",
-        #("Operator", "Remove Morph Offset"): "todo",
+        ("Operator", "Add Morph"): "モーフを追加",
+        ("Operator", "Remove Morph"): "モーフを削除",
         ("Operator", "Copy Morph"): "モーフをコピー",
+        ("Operator", "Move Morph"): "モーフを移動",
+        ("Operator", "Add Morph Offset"): "モーフオフセットを追加",
+        ("Operator", "Remove Morph Offset"): "モーフオフセットを削除",
+        ("*", "Related Mesh"): "関連するメッシュ",
+        ("Operator", "Create Work Material"): "ワークマテリアルを生成",
+        ("Operator", "Init Material Offset"): "マテリアルオフセットを初期化",
+        ("*", "Texture factor"): "テクスチャ係数",
+        ("*", "Sphere Texture factor"): "スフィアテクスチャ係数",
+        ("*", "Toon Texture factor"): "トゥーンテクスチャ係数",
 
         # 3D Viewport > Sidebar > MMD > Rigid Bodies
         ("*", "Rigid Bodies"): "リジッドボディ",
@@ -118,20 +128,20 @@ translation_dict = {
 
         # 3D Viewport > Sidebar > MMD > Joints
         ("*", "Joints"): "ジョイント",
-        #("Operator", "Add Joint"): "todo",
-        #("Operator", "Remove Joint"): "todo",
+        ("Operator", "Add Joint"): "ジョイントを追加",
+        ("Operator", "Remove Joint"): "ジョイントを削除",
 
         # 3D Viewport > Sidebar > MMD > Material Sorter Panel
         ("*", "Material Sorter"): "マテリアル順序",
         ("*", "Select a mesh object"): "メッシュを選択してください",
         ("*", "Use the arrows to sort"): "矢印を使って並べ替えてください",
-        #("Operator", "Move Material Up"): "todo",
-        #("Operator", "Move Material Down"): "todo",
+        ("Operator", "Move Material Up"): "マテリアルを移動",
+        ("Operator", "Move Material Down"): "マテリアルを移動",
 
         # 3D Viewport > Sidebar > MMD > Meshes Sorter Panel
         ("*", "Meshes Sorter"): "メッシュ順序",
         ("*", "Select a MMD Model"): "MMDモデルを選択してください",
-        #("Operator", "Move Object"): "todo",
+        ("Operator", "Move Object"): "オブジェクトを移動",
 
         # 3D Viewport > Sidebar > MMD > Bone Order Panel
         ("*", "Bone Order"): "ボーン順序",
@@ -182,9 +192,15 @@ translation_dict = {
         ("*", "Click [OK] to run the operation."): "[OK]をクリックして操作を実行してください。",
 
         # Properties > Object Properties > MMD Rigid Body
+        ("*", "MMD Rigid Body"): "MMDリジッドボディ",
+        ("*", "Physics + Bone"): "物理演算 + ボーン",
         ("*", "Collision Group Mask:"): "コリジョングループマスク:",
 
         # Properties > Object Properties > MMD Joint
+        ("*", "MMD Joint"): "MMDジョイント",
+        ("*", "X-Axis:"): "X軸:",
+        ("*", "Y-Axis:"): "Y軸:",
+        ("*", "Z-Axis:"): "Z軸:",
         ("*", "Spring(Linear)"): "スプリング(リニア)",
         ("*", "Spring(Angular)"): "スプリング(角度)",
 
@@ -319,11 +335,13 @@ translation_dict = {
         ("*", "Display Panel"): "显示面板",
         ("Operator", "Bone"): "骨骼",
         ("Operator", "Morph"): "变形",
-        #("Operator", "Add Display Item Frame"): "todo",
-        #("Operator", "Remove Display Item Frame"): "todo",
-        #("Operator", "Add Display Item"): "todo",
-        #"Operator", "Remove Display Item"): "todo",
-        #("*", "Quick setup display items"): "todo",
+        ("Operator", "Add Display Item Frame"): "添加显示项目帧",
+        ("Operator", "Remove Display Item Frame"): "移除显示项目帧",
+        ("Operator", "Move Display Item Frame"): "移动显示项目帧",
+        ("Operator", "Add Display Item"): "添加显示项目",
+        ("Operator", "Remove Display Item"): "移除显示项目",
+        ("Operator", "Move Display Item"): "移动显示项目",
+        ("*", "Quick setup display items"): "快速设置显示项目",
         ("*", "Load Facial Items"): "载入面部项目",
         ("*", "Load Bone Groups"): "载入骨骼组",
         ("*", "Apply Bone Groups"): "应用骨骼组",
@@ -336,10 +354,18 @@ translation_dict = {
         ("*", "Eye"): "眼",
         ("*", "Eye Brow"): "眼眉",
         ("*", "Mouth"): "嘴巴",
-        #("Operator", "Add Morph"): "todo",
-        #("Operator", "Remove Morph"): "todo",
-        #("Operator", "Remove Morph Offset"): "todo",
+        ("Operator", "Add Morph"): "添加变形",
+        ("Operator", "Remove Morph"): "移除变形",
         ("Operator", "Copy Morph"): "复制变形",
+        ("Operator", "Move Morph"): "移动变形",
+        ("Operator", "Add Morph Offset"): "添加变形偏移",
+        ("Operator", "Remove Morph Offset"): "移除变形偏移",
+        ("*", "Related Mesh"): "相关网格",
+        ("Operator", "Create Work Material"): "创建工作材质",
+        ("Operator", "Init Material Offset"): "初始化材质偏移",
+        ("*", "Texture factor"): "纹理系数",
+        ("*", "Sphere Texture factor"): "球体纹理系数",
+        ("*", "Toon Texture factor"): "卡通纹理系数",
 
         # 3D Viewport > Sidebar > MMD > Rigid Bodies
         ("*", "Rigid Bodies"): "刚体",
@@ -353,20 +379,20 @@ translation_dict = {
 
         # 3D Viewport > Sidebar > MMD > Joints
         ("*", "Joints"): "关节",
-        #("Operator", "Add Joint"): "todo",
-        #("Operator", "Remove Joint"): "todo",
+        ("Operator", "Add Joint"): "添加关节",
+        ("Operator", "Remove Joint"): "移除关节",
 
         # 3D Viewport > Sidebar > MMD > Material Sorter Panel
         ("*", "Material Sorter"): "材质顺序",
         ("*", "Select a mesh object"): "选择一个网格物体",
         ("*", "Use the arrows to sort"): "使用箭头来排序",
-        #("Operator", "Move Material Up"): "todo",
-        #("Operator", "Move Material Down"): "todo",
+        ("Operator", "Move Material Up"): "移动材质",
+        ("Operator", "Move Material Down"): "移动材质",
 
         # 3D Viewport > Sidebar > MMD > Meshes Sorter Panel
         ("*", "Meshes Sorter"): "网格顺序",
         ("*", "Select a MMD Model"): "选择一个MMD模型",
-        #("Operator", "Move Object"): "todo",
+        ("Operator", "Move Object"): "移动物体",
 
         # 3D Viewport > Sidebar > MMD > Bone Order Panel
         ("*", "Bone Order"): "骨骼顺序",
@@ -417,9 +443,15 @@ translation_dict = {
         ("*", "Click [OK] to run the operation."): "点击[确定]来运行操作。",
 
         # Properties > Object Properties > MMD Rigid Body
+        ("*", "MMD Rigid Body"): "MMD刚体",
+        ("*", "Physics + Bone"): "物理 + 骨骼",
         ("*", "Collision Group Mask:"): "碰撞组遮罩:",
 
         # Properties > Object Properties > MMD Joint
+        ("*", "MMD Joint"): "MMD关节",
+        ("*", "X-Axis:"): "X轴:",
+        ("*", "Y-Axis:"): "Y轴:",
+        ("*", "Z-Axis:"): "Z轴:",
         ("*", "Spring(Linear)"): "弹簧(线性)",
         ("*", "Spring(Angular)"): "弹簧(棱角)",
 
